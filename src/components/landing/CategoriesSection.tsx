@@ -1,0 +1,169 @@
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
+
+const categories = [
+  {
+    id: 'hair-care',
+    slug: 'cuidado-cabello',
+    nameKey: 'categories.hair',
+    image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=500&fit=crop',
+    color: 'from-rose-400 to-pink-500',
+    products: 120,
+  },
+  {
+    id: 'personal-care',
+    slug: 'aseo-personal',
+    nameKey: 'categories.personal',
+    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=500&fit=crop',
+    color: 'from-amber-400 to-orange-500',
+    products: 85,
+  },
+];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.2,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0 },
+};
+
+export function CategoriesSection() {
+  const { t } = useTranslation();
+
+  return (
+    <section className="py-24 bg-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <motion.span
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-rose-600 font-medium tracking-wider uppercase text-sm"
+          >
+            {t('categories.subtitle')}
+          </motion.span>
+          <h2 className="mt-2 text-4xl md:text-5xl font-serif font-bold text-gray-900">
+            {t('categories.title')}
+          </h2>
+          <motion.div
+            initial={{ width: 0 }}
+            whileInView={{ width: '4rem' }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.3, duration: 0.5 }}
+            className="h-1 bg-rose-600 mx-auto mt-4 rounded-full"
+          />
+        </motion.div>
+
+        {/* Categories Grid */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid md:grid-cols-2 gap-8"
+        >
+          {categories.map((category) => (
+            <motion.div
+              key={category.id}
+              variants={itemVariants}
+              whileHover={{ y: -10 }}
+              className="group"
+            >
+              <Link to={`/shop?category=${category.slug}`}>
+                <div className="relative h-96 rounded-3xl overflow-hidden shadow-xl">
+                  {/* Background Image */}
+                  <div className="absolute inset-0">
+                    <motion.img
+                      src={category.image}
+                      alt={t(category.nameKey)}
+                      className="w-full h-full object-cover"
+                      whileHover={{ scale: 1.1 }}
+                      transition={{ duration: 0.6 }}
+                    />
+                    <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-60 mix-blend-multiply`} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <span className="text-white/80 text-sm">
+                        {category.products}+ productos
+                      </span>
+                      <h3 className="text-3xl md:text-4xl font-serif font-bold text-white mt-2">
+                        {t(category.nameKey)}
+                      </h3>
+                      <motion.div
+                        className="mt-4 flex items-center gap-2 text-white font-medium"
+                        whileHover={{ x: 5 }}
+                      >
+                        <span>{t('categories.view_all')}</span>
+                        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                      </motion.div>
+                    </motion.div>
+                  </div>
+
+                  {/* Decorative elements */}
+                  <motion.div
+                    className="absolute top-6 right-6 w-16 h-16 border-2 border-white/30 rounded-full"
+                    animate={{
+                      rotate: 360,
+                    }}
+                    transition={{
+                      duration: 20,
+                      repeat: Infinity,
+                      ease: 'linear',
+                    }}
+                  />
+                  <div className="absolute top-8 right-8 w-12 h-12 border-2 border-white/20 rounded-full" />
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* View All Button */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+          className="text-center mt-12"
+        >
+          <Link to="/categories">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="px-8 py-4 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-gray-900 hover:text-white transition-all inline-flex items-center gap-2"
+            >
+              {t('categories.view_all')}
+              <ArrowRight className="w-5 h-5" />
+            </motion.button>
+          </Link>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
