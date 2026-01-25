@@ -17,8 +17,27 @@ interface OrderFilters {
 export function useOrders(filters?: OrderFilters, page = 1, pageSize = 20) {
   return useQuery<PaginatedResponse<Order>>({
     queryKey: ['orders', filters, page, pageSize],
-    queryFn: () => orderService.getOrders(filters, page, pageSize),
+    queryFn: async () => {
+      try {
+        return await orderService.getOrders(filters, page, pageSize);
+      } catch (error: any) {
+        console.error('Error en useOrders:', error);
+        return {
+          data: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('Auth') || error?.code === 'PGRST301') {
+        return false;
+      }
+      return failureCount < 1;
+    },
   });
 }
 

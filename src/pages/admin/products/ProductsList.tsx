@@ -26,6 +26,9 @@ import toast from 'react-hot-toast';
 export function ProductsList() {
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
+  
+  // Debug logging
+  console.log('🔍 ProductsList renderizado');
   const [pageSize, setPageSize] = useState(20);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -56,13 +59,22 @@ export function ProductsList() {
     filters.categoryId = categoryFilter;
   }
 
-  const { data, isLoading, error } = useProducts(filters, page, pageSize);
+  const { data, isLoading, error, isError } = useProducts(filters, page, pageSize);
 
   const products = data?.data || [];
   const total = data?.total || 0;
 
-  // Show error state
-  if (error) {
+  // Debug logging
+  console.log('🔍 ProductsList estado:', {
+    isLoading,
+    isError,
+    error: error?.message,
+    dataLength: products.length,
+    total,
+  });
+
+  // Show error state (only for non-auth errors)
+  if (isError && error && !(error as any)?.message?.includes('Auth')) {
     return (
       <div className="space-y-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
@@ -450,17 +462,25 @@ export function ProductsList() {
       </div>
 
       {/* Products Table */}
-      <DataTable
-        data={products}
-        columns={columns}
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-        loading={isLoading}
-        emptyMessage="No se encontraron productos"
-      />
+      {isLoading ? (
+        <div className="bg-white rounded-lg shadow-sm border p-12">
+          <div className="flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+      ) : (
+        <DataTable
+          data={products}
+          columns={columns}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          loading={false}
+          emptyMessage="No se encontraron productos"
+        />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog

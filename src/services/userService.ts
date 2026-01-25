@@ -46,7 +46,19 @@ export const userService = {
 
       const { data, error, count } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error en query de usuarios:', error);
+        if (error.message?.includes('Auth') || error.code === 'PGRST301') {
+          return {
+            data: [],
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 0,
+          };
+        }
+        throw error;
+      }
 
       const totalPages = count ? Math.ceil(count / pageSize) : 0;
 
@@ -57,8 +69,17 @@ export const userService = {
         pageSize,
         totalPages,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching users:', error);
+      if (error?.message?.includes('Auth') || error?.code === 'PGRST301') {
+        return {
+          data: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
       throw error;
     }
   },

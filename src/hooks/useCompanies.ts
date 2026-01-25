@@ -15,8 +15,27 @@ interface CompanyFilters {
 export function useCompanies(filters?: CompanyFilters, page = 1, pageSize = 20) {
   return useQuery<PaginatedResponse<Company>>({
     queryKey: ['companies', filters, page, pageSize],
-    queryFn: () => companyService.getCompanies(filters, page, pageSize),
+    queryFn: async () => {
+      try {
+        return await companyService.getCompanies(filters, page, pageSize);
+      } catch (error: any) {
+        console.error('Error en useCompanies:', error);
+        return {
+          data: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: (failureCount, error: any) => {
+      if (error?.message?.includes('Auth') || error?.code === 'PGRST301') {
+        return false;
+      }
+      return failureCount < 1;
+    },
   });
 }
 

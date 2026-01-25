@@ -79,7 +79,20 @@ export const productService = {
 
       const { data, error, count } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error en query de productos:', error);
+        // If it's an auth error, return empty result instead of throwing
+        if (error.message?.includes('Auth') || error.code === 'PGRST301') {
+          return {
+            data: [],
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 0,
+          };
+        }
+        throw error;
+      }
 
       const totalPages = count ? Math.ceil(count / pageSize) : 0;
 
@@ -90,8 +103,18 @@ export const productService = {
         pageSize,
         totalPages,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching products:', error);
+      // Return empty result for auth errors instead of throwing
+      if (error?.message?.includes('Auth') || error?.code === 'PGRST301') {
+        return {
+          data: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
       throw error;
     }
   },

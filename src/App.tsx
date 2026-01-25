@@ -140,11 +140,18 @@ function App() {
       try {
         // Check if there's any indication of a stored session
         // Supabase stores session in localStorage with key pattern: sb-<project-ref>-auth-token
+        // Check all possible Supabase session storage keys
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
         const projectRef = supabaseUrl.split('//')[1]?.split('.')[0] || '';
-        const sessionKey = projectRef ? `sb-${projectRef}-auth-token` : null;
         
-        const hasStoredSession = sessionKey && localStorage.getItem(sessionKey);
+        // Supabase stores session in multiple possible keys
+        const possibleKeys = [
+          projectRef ? `sb-${projectRef}-auth-token` : null,
+          'sb-auth-token',
+          ...Object.keys(localStorage).filter(key => key.includes('supabase') || key.includes('sb-')),
+        ].filter(Boolean) as string[];
+        
+        const hasStoredSession = possibleKeys.some(key => localStorage.getItem(key));
         const hasCookie = document.cookie.includes('sb-') || document.cookie.includes('supabase');
         
         if (hasStoredSession || hasCookie) {

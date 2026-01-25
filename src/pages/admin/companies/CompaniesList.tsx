@@ -20,11 +20,11 @@ export function CompaniesList() {
     filters.isActive = statusFilter === 'active';
   }
 
-  const { data, isLoading, error } = useCompanies(filters, page, pageSize);
+  const { data, isLoading, error, isError } = useCompanies(filters, page, pageSize);
   const companies = data?.data || [];
   const total = data?.total || 0;
 
-  if (error) {
+  if (isError && error && !(error as any)?.message?.includes('Auth')) {
     return (
       <div className="space-y-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-6">
@@ -181,17 +181,25 @@ export function CompaniesList() {
       </div>
 
       {/* Companies Table */}
-      <DataTable
-        data={companies}
-        columns={columns}
-        page={page}
-        pageSize={pageSize}
-        total={total}
-        onPageChange={setPage}
-        onPageSizeChange={setPageSize}
-        loading={isLoading}
-        emptyMessage="No se encontraron empresas"
-      />
+      {isLoading ? (
+        <div className="bg-white rounded-lg shadow-sm border p-12">
+          <div className="flex items-center justify-center">
+            <div className="w-12 h-12 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" />
+          </div>
+        </div>
+      ) : (
+        <DataTable
+          data={companies}
+          columns={columns}
+          page={page}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          loading={false}
+          emptyMessage="No se encontraron empresas"
+        />
+      )}
     </div>
   );
 }

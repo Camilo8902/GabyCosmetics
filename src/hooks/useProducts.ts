@@ -9,8 +9,30 @@ import toast from 'react-hot-toast';
 export function useProducts(filters?: ProductFilters, page = 1, pageSize = 20) {
   return useQuery<PaginatedResponse<Product>>({
     queryKey: ['products', filters, page, pageSize],
-    queryFn: () => productService.getProducts(filters, page, pageSize),
+    queryFn: async () => {
+      try {
+        const result = await productService.getProducts(filters, page, pageSize);
+        return result;
+      } catch (error: any) {
+        console.error('Error en useProducts:', error);
+        // Return empty result instead of throwing
+        return {
+          data: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
+    },
     staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: (failureCount, error: any) => {
+      // Don't retry on auth errors
+      if (error?.message?.includes('Auth') || error?.code === 'PGRST301') {
+        return false;
+      }
+      return failureCount < 1;
+    },
   });
 }
 
