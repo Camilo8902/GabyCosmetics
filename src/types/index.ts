@@ -327,6 +327,10 @@ export interface ProductFilters {
   attributes?: Record<string, string[]>;
   inStock?: boolean;
   featured?: boolean;
+  is_active?: boolean;
+  is_visible?: boolean;
+  includeInactive?: boolean; // For admin panel - include inactive products
+  includeInvisible?: boolean; // For admin panel - include invisible products
 }
 
 // Stripe Payment Types

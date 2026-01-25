@@ -19,9 +19,23 @@ export const productService = {
           categories:product_categories(category:categories(*)),
           company:companies(*),
           inventory:inventory(*)
-        `, { count: 'exact' })
-        .eq('is_active', true)
-        .eq('is_visible', true);
+        `, { count: 'exact' });
+
+      // Only filter by active/visible if not explicitly requesting all products (for admin panel)
+      if (filters?.includeInactive !== true) {
+        query = query.eq('is_active', true);
+      }
+      if (filters?.includeInvisible !== true) {
+        query = query.eq('is_visible', true);
+      }
+
+      // Apply explicit status filters if provided
+      if (filters?.is_active !== undefined) {
+        query = query.eq('is_active', filters.is_active);
+      }
+      if (filters?.is_visible !== undefined) {
+        query = query.eq('is_visible', filters.is_visible);
+      }
 
       // Apply filters
       if (filters?.categoryId) {

@@ -24,6 +24,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { AuthCallback } from '@/pages/auth/AuthCallback';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
+import { ProductsList } from '@/pages/admin/products/ProductsList';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
 
@@ -163,7 +164,7 @@ function App() {
 
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
-            <Route path="products" element={<div><h1 className="text-2xl font-bold mb-6">Gestión de Productos</h1></div>} />
+            <Route path="products" element={<ProductsList />} />
             <Route path="orders" element={<div><h1 className="text-2xl font-bold mb-6">Gestión de Pedidos</h1></div>} />
             <Route path="users" element={<div><h1 className="text-2xl font-bold mb-6">Gestión de Usuarios</h1></div>} />
             <Route path="companies" element={<div><h1 className="text-2xl font-bold mb-6">Gestión de Empresas</h1></div>} />
