@@ -36,6 +36,14 @@ export const supabase = createClient(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      storageKey: 'sb-auth-token',
+      flowType: 'pkce',
+    },
+    global: {
+      headers: {
+        'x-client-info': 'gaby-cosmetics',
+      },
     },
   }
 );
@@ -153,13 +161,48 @@ export const updatePassword = async (newPassword: string) => {
 };
 
 export const getCurrentUser = async () => {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  return { user, error };
+  try {
+    // Try getSession first (more reliable)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+      return { user: null, error: sessionError };
+    }
+    return { user: session.user, error: null };
+  } catch (error) {
+    // Fallback to getUser if getSession fails
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      return { user, error };
+    } catch (getUserError) {
+      return { user: null, error: getUserError };
+    }
+  }
 };
 
 export const getSession = async () => {
-  const { data: { session }, error } = await supabase.auth.getSession();
-  return { session, error };
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    return { session, error };
+  } catch (err: any) {
+    // getSession can throw AuthSessionMissingError - this is normal when not authenticated
+    if (err?.name === 'AuthSessionMissingError' || 
+        err?.message?.includes('Auth session missing')) {
+      return { session: null, error: null }; // Not an error, just no session
+    }
+    return { session: null, error: err };
+  }
+};
+
+/**
+ * Safely check if user has an active session without throwing errors
+ */
+export const hasActiveSession = async (): Promise<boolean> => {
+  try {
+    const { session } = await getSession();
+    return !!session;
+  } catch {
+    return false;
+  }
 };
 
 // Storage helpers

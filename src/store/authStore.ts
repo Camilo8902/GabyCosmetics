@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, UserRole } from '@/types';
-import { supabase } from '@/lib/supabase';
+import { supabase, getSession } from '@/lib/supabase';
 
 interface AuthState {
   user: User | null;
@@ -54,13 +54,12 @@ export const useAuthStore = create<AuthState>()(
       fetchUser: async () => {
         try {
           set({ isLoading: true });
-          console.log('👤 Obteniendo usuario autenticado...');
-
-          // First try to get session (more reliable)
-          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          // Use safe getSession helper that doesn't throw errors
+          const { session, error: sessionError } = await getSession();
           
           if (sessionError || !session) {
-            console.log('⚠️ No hay sesión activa');
+            // No session is not an error, just means user is not authenticated
             set({ user: null, isAuthenticated: false, isLoading: false });
             return;
           }
@@ -69,12 +68,9 @@ export const useAuthStore = create<AuthState>()(
           const authUser = session.user;
 
           if (!authUser) {
-            console.log('⚠️ No hay usuario en la sesión');
             set({ user: null, isAuthenticated: false, isLoading: false });
             return;
           }
-
-          console.log('✅ Usuario autenticado encontrado:', authUser.id);
 
           // Fetch user profile from our users table
           const { data: profile, error: profileError } = await supabase
@@ -84,8 +80,6 @@ export const useAuthStore = create<AuthState>()(
             .single();
 
           if (profileError || !profile) {
-            console.log('⚠️ Perfil no encontrado, creando nuevo perfil...');
-            
             // If no profile exists, create one with default role
             const newUser: Partial<User> = {
               id: authUser.id,
@@ -125,24 +119,28 @@ export const useAuthStore = create<AuthState>()(
               return;
             }
 
-            console.log('✅ Perfil de usuario creado:', createdProfile);
             set({
               user: createdProfile as User,
               isAuthenticated: true,
               isLoading: false
             });
           } else {
-            console.log('✅ Perfil de usuario encontrado:', profile);
             set({
               user: profile as User,
               isAuthenticated: true,
               isLoading: false
             });
           }
-        } catch (error) {
-          console.error('❌ Error inesperado al obtener usuario:', error);
+        } catch (error: any) {
+          // Don't log AuthSessionMissingError as it's expected when not authenticated
+          // This error is completely normal when user is not logged in
+          if (!error?.message?.includes('Auth session missing') && 
+              error?.name !== 'AuthSessionMissingError') {
+            // Only log real errors, not "no session" errors
+            console.error('❌ Error inesperado al obtener usuario:', error);
+          }
           set({ user: null, isAuthenticated: false, isLoading: false });
-          throw error; // Re-throw to allow caller to handle
+          // Don't throw - just silently fail, it's expected when not authenticated
         }
       },
 

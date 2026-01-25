@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuthStore } from '@/store/authStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 
@@ -88,22 +89,7 @@ function ProtectedRoute({
 }) {
   const { isAuthenticated, user, isLoading } = useAuthStore();
 
-  // Debug logging
-  useEffect(() => {
-    if (allowedRoles) {
-      console.log('🔒 ProtectedRoute - Verificando acceso:', {
-        isLoading,
-        isAuthenticated,
-        userRole: user?.role,
-        allowedRoles,
-        hasAccess: user && allowedRoles.includes(user.role),
-        userObject: user,
-      });
-    }
-  }, [isLoading, isAuthenticated, user, allowedRoles]);
-
   if (isLoading) {
-    console.log('⏳ ProtectedRoute - Cargando autenticación...');
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
         <div className="w-12 h-12 border-4 border-rose-600 border-t-transparent rounded-full animate-spin mb-4" />
@@ -113,16 +99,10 @@ function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    console.log('❌ ProtectedRoute - No autenticado, redirigiendo a login');
     return <Navigate to="/auth/login" replace />;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
-    console.log('❌ ProtectedRoute - Rol no permitido:', {
-      userRole: user.role,
-      allowedRoles,
-      userEmail: user.email,
-    });
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -136,7 +116,6 @@ function ProtectedRoute({
     );
   }
 
-  console.log('✅ ProtectedRoute - Acceso permitido para:', user?.role);
   return <>{children}</>;
 }
 
@@ -152,21 +131,42 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
-  const { fetchUser, setLoading } = useAuthStore();
+  const { fetchUser, setLoading, setUser } = useAuthStore();
 
   useEffect(() => {
     let mounted = true;
 
     const checkAuth = async () => {
       try {
-        await fetchUser();
-      } catch (error) {
-        console.error('Auth check failed:', error);
-        if (mounted) {
-          setLoading(false);
+        // Check if there's any indication of a stored session
+        // Supabase stores session in localStorage with key pattern: sb-<project-ref>-auth-token
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+        const projectRef = supabaseUrl.split('//')[1]?.split('.')[0] || '';
+        const sessionKey = projectRef ? `sb-${projectRef}-auth-token` : null;
+        
+        const hasStoredSession = sessionKey && localStorage.getItem(sessionKey);
+        const hasCookie = document.cookie.includes('sb-') || document.cookie.includes('supabase');
+        
+        if (hasStoredSession || hasCookie) {
+          // There might be a session, try to fetch user
+          await fetchUser();
+        } else {
+          // No stored session, user is definitely not authenticated
+          // This is normal and not an error
+          if (mounted) {
+            setUser(null);
+            setLoading(false);
+          }
         }
-      } finally {
+      } catch (error: any) {
+        // Silently handle auth errors - they're expected when user is not logged in
+        // Don't log AuthSessionMissingError as it's normal
+        if (!error?.message?.includes('Auth session missing') && 
+            error?.name !== 'AuthSessionMissingError') {
+          console.error('Auth check error:', error);
+        }
         if (mounted) {
+          setUser(null);
           setLoading(false);
         }
       }
@@ -178,14 +178,22 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Auth state changed:', event);
       if (mounted) {
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          await fetchUser();
-        } else if (event === 'SIGNED_OUT') {
-          useAuthStore.getState().logout();
-        } else if (event === 'USER_UPDATED' && session) {
-          await fetchUser();
+        try {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+            await fetchUser();
+          } else if (event === 'SIGNED_OUT') {
+            useAuthStore.getState().logout();
+          } else if (event === 'USER_UPDATED' && session) {
+            await fetchUser();
+          }
+        } catch (error: any) {
+          // Silently handle errors in auth state changes
+          // Don't log AuthSessionMissingError as it's normal
+          if (!error?.message?.includes('Auth session missing') && 
+              error?.name !== 'AuthSessionMissingError') {
+            console.error('Error en auth state change:', error);
+          }
         }
       }
     });
