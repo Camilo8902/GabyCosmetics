@@ -169,11 +169,16 @@ export const getCurrentUser = async () => {
     }
     return { user: session.user, error: null };
   } catch (error) {
-    // Fallback to getUser if getSession fails
+    // Fallback to getUser if getSession fails - but catch AuthSessionMissingError
     try {
       const { data: { user }, error } = await supabase.auth.getUser();
       return { user, error };
-    } catch (getUserError) {
+    } catch (getUserError: any) {
+      // Handle AuthSessionMissingError gracefully
+      if (getUserError?.name === 'AuthSessionMissingError' || 
+          getUserError?.message?.includes('Auth session missing')) {
+        return { user: null, error: null }; // Not an error, just no session
+      }
       return { user: null, error: getUserError };
     }
   }
@@ -202,6 +207,31 @@ export const hasActiveSession = async (): Promise<boolean> => {
     return !!session;
   } catch {
     return false;
+  }
+};
+
+/**
+ * Safe auth initialization - handles all edge cases gracefully
+ * Returns the current auth state without throwing errors
+ */
+export const initAuth = async () => {
+  try {
+    // First, check if there's a stored session
+    const { session, error } = await getSession();
+    
+    if (error || !session) {
+      return { user: null, error: null }; // No session is not an error
+    }
+    
+    // We have a session, get user data
+    return { user: session.user, error: null };
+  } catch (error: any) {
+    // Only log if it's not an expected auth error
+    if (error?.name !== 'AuthSessionMissingError' && 
+        !error?.message?.includes('Auth session missing')) {
+      console.warn('⚠️ Auth init warning:', error);
+    }
+    return { user: null, error: null };
   }
 };
 

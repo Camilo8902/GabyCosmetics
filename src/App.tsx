@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { useAuthStore } from '@/store/authStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 
@@ -185,31 +184,56 @@ function App() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (mounted) {
-        try {
-          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-            await fetchUser();
-          } else if (event === 'SIGNED_OUT') {
-            useAuthStore.getState().logout();
-          } else if (event === 'USER_UPDATED' && session) {
-            await fetchUser();
-          }
-        } catch (error: any) {
-          // Silently handle errors in auth state changes
-          // Don't log AuthSessionMissingError as it's normal
-          if (!error?.message?.includes('Auth session missing') && 
-              error?.name !== 'AuthSessionMissingError') {
-            console.error('Error en auth state change:', error);
-          }
+      if (!mounted) return;
+      
+      try {
+        console.log('🔄 Auth state changed:', event, session ? 'with session' : 'no session');
+        
+        if (event === 'SIGNED_IN' && session) {
+          // Only fetch user when we have a valid session
+          await fetchUser();
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          // Token refreshed, update user data
+          await fetchUser();
+        } else if (event === 'SIGNED_OUT') {
+          // User signed out, clear state
+          useAuthStore.getState().setUser(null);
+          useAuthStore.getState().setLoading(false);
+        } else if (event === 'USER_UPDATED' && session) {
+          // User updated, refresh data
+          await fetchUser();
+        } else if (event === 'INITIAL_SESSION' && session) {
+          // Initial session on page load
+          await fetchUser();
         }
+        // For other events (like 'MFAChallengeVerified', etc.), do nothing
+      } catch (error: any) {
+        // Silently handle errors in auth state changes
+        // AuthSessionMissingError is expected when there's no session
+        if (!error?.message?.includes('Auth session missing') && 
+            error?.name !== 'AuthSessionMissingError') {
+          console.error('Error en auth state change:', error);
+        }
+        // On error, ensure loading is set to false
+        useAuthStore.getState().setLoading(false);
       }
     });
 
     // Handle visibility change (when tab becomes active again)
+    // Only refresh if we've already completed initial auth check
     const handleVisibilityChange = () => {
       if (!document.hidden && mounted) {
-        console.log('👁️ Tab became visible, checking auth...');
-        checkAuth();
+        const authState = useAuthStore.getState();
+        // Only re-check auth if we're not still loading and we have a previous session
+        if (!authState.isLoading) {
+          console.log('👁️ Tab became visible, checking auth...');
+          // Use a debounced check to avoid excessive calls
+          setTimeout(() => {
+            if (mounted) {
+              checkAuth();
+            }
+          }, 100);
+        }
       }
     };
 

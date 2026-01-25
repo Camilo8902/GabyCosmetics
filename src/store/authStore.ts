@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User, UserRole } from '@/types';
-import { supabase, getSession } from '@/lib/supabase';
+import { supabase, getSession, initAuth } from '@/lib/supabase';
 
 interface AuthState {
   user: User | null;
