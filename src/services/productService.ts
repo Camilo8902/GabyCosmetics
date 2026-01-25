@@ -260,6 +260,12 @@ export const productService = {
    */
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
     try {
+      if (!id) {
+        throw new Error('Product ID is required for update');
+      }
+
+      console.log('Updating product:', { id, updates });
+
       const { data, error } = await supabase
         .from('products')
         .update(updates)
@@ -267,7 +273,16 @@ export const productService = {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error updating product:', error);
+        throw error;
+      }
+
+      if (!data) {
+        throw new Error('No data returned from update');
+      }
+
+      console.log('Product updated successfully:', data);
       return data as Product;
     } catch (error) {
       console.error('Error updating product:', error);

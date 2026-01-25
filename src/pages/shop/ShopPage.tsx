@@ -16,6 +16,8 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { useProducts, useCategories } from '@/hooks';
+import type { Product } from '@/types';
 import { cn } from '@/lib/utils';
 
 // Demo products
@@ -151,6 +153,8 @@ export function ShopPage() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { addItem } = useCartStore();
+  const { data: realProducts = [], isLoading } = useProducts();
+  const { data: realCategories = [] } = useCategories();
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -161,20 +165,74 @@ export function ShopPage() {
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
 
+  // Demo products for fallback
+  const demoProducts = [
+    {
+      id: '1',
+      name: 'Shampoo Reparador Intensivo',
+      name_en: 'Intensive Repair Shampoo',
+      slug: 'shampoo-reparador-intensivo',
+      price: 299,
+      compare_at_price: 399,
+      category: 'cuidado-cabello',
+      subcategory: 'shampoos',
+      image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop',
+      rating: 4.5,
+      reviews: 124,
+      is_featured: true,
+    },
+    {
+      id: '2',
+      name: 'Acondicionador Nutritivo',
+      name_en: 'Nourishing Conditioner',
+      slug: 'acondicionador-nutritivo',
+      price: 249,
+      compare_at_price: undefined,
+      category: 'cuidado-cabello',
+      subcategory: 'acondicionadores',
+      image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=400&fit=crop',
+      rating: 4.8,
+      reviews: 89,
+      is_featured: true,
+    },
+  ];
+
+  // Convert real products to shop format and merge with demo
+  const processedProducts = realProducts.map((p: any) => ({
+    id: p.id,
+    name: p.name,
+    name_en: p.name_en,
+    slug: p.slug,
+    price: p.price,
+    compare_at_price: p.compare_at_price,
+    category: p.categories?.[0]?.slug || 'otros',
+    subcategory: p.categories?.[0]?.slug || 'otros',
+    image: p.images?.[0]?.url || 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop',
+    rating: 4.5,
+    reviews: 0,
+    is_featured: p.is_featured,
+  }));
+
+  const allProducts = processedProducts.length > 0 ? processedProducts : demoProducts;
+  const categories = realCategories.length > 0 ? realCategories : [
+    { slug: 'cuidado-cabello', name: 'Cuidado del Cabello', name_en: 'Hair Care' },
+    { slug: 'aseo-personal', name: 'Aseo Personal', name_en: 'Personal Care' },
+  ];
+
   // Filter and sort products
   const filteredProducts = useMemo(() => {
     let products = [...allProducts];
 
     // Category filter
     if (selectedCategory) {
-      products = products.filter((p) => p.category === selectedCategory);
+      products = products.filter((p: any) => p.category === selectedCategory);
     }
 
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       products = products.filter(
-        (p) =>
+        (p: any) =>
           p.name.toLowerCase().includes(query) ||
           p.name_en.toLowerCase().includes(query)
       );
@@ -182,10 +240,10 @@ export function ShopPage() {
 
     // Price filter
     if (minPrice) {
-      products = products.filter((p) => p.price >= Number(minPrice));
+      products = products.filter((p: any) => p.price >= Number(minPrice));
     }
     if (maxPrice) {
-      products = products.filter((p) => p.price <= Number(maxPrice));
+      products = products.filter((p: any) => p.price <= Number(maxPrice));
     }
 
     // Sort
@@ -207,7 +265,7 @@ export function ShopPage() {
     }
 
     return products;
-  }, [selectedCategory, selectedSort, searchQuery, minPrice, maxPrice]);
+  }, [selectedCategory, selectedSort, searchQuery, minPrice, maxPrice, allProducts]);
 
   const updateFilter = (key: string, value: string) => {
     const newParams = new URLSearchParams(searchParams);
