@@ -40,25 +40,26 @@ Se creó el archivo `supabase-triggers.sql` que:
 - Crea un trigger que se activa cuando se inserta un nuevo usuario en `auth.users`
 - Actualiza las políticas RLS para permitir las operaciones necesarias
 
-### Paso 2: Verificar Variables de Entorno en Netlify
+### Paso 2: Verificar Variables de Entorno en Vercel
 
-1. Ve a tu proyecto en [Netlify Dashboard](https://app.netlify.com)
-2. Navega a **Site settings** → **Environment variables**
+1. Ve a tu proyecto en [Vercel Dashboard](https://vercel.com/dashboard)
+2. Navega a **Settings** → **Environment Variables**
 3. Verifica que tengas configuradas:
    ```
    VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
    VITE_SUPABASE_ANON_KEY=tu-clave-anonima-real
    ```
 4. Si no están configuradas, agrégalas con los valores correctos de tu proyecto Supabase
+5. Asegúrate de seleccionar los ambientes correctos (Production, Preview, Development)
 
 ### Paso 3: Verificar Configuración de Autenticación en Supabase
 
 1. Ve a **Authentication** → **URL Configuration** en Supabase
 2. Verifica que las URLs de redirección incluyan:
-   - `https://tu-dominio.netlify.app/auth/callback`
+   - `https://tu-dominio.vercel.app/auth/callback` (o tu dominio personalizado)
    - `http://localhost:5173/auth/callback` (para desarrollo local)
 3. Asegúrate de que **Site URL** esté configurada correctamente:
-   - Producción: `https://tu-dominio.netlify.app`
+   - Producción: `https://tu-dominio.vercel.app` (o tu dominio personalizado)
    - Desarrollo: `http://localhost:5173`
 
 ### Paso 4: Desplegar Cambios
@@ -70,7 +71,7 @@ Se creó el archivo `supabase-triggers.sql` que:
    git push
    ```
 
-2. Netlify desplegará automáticamente los cambios
+2. Vercel desplegará automáticamente los cambios cuando hagas push a la rama principal
 
 ## 🧪 Pruebas
 
@@ -134,8 +135,8 @@ Todos los logs importantes están prefijados con emojis:
 4. Verifica que el trigger SQL se haya ejecutado
 
 ### Error "Supabase no está configurado":
-- Verifica que las variables de entorno estén configuradas en Netlify
-- Reinicia el sitio en Netlify después de agregar las variables
+- Verifica que las variables de entorno estén configuradas en Vercel
+- Vuelve a desplegar el proyecto en Vercel después de agregar las variables (Settings → Deployments → Redeploy)
 
 ### Error al crear perfil de usuario:
 - Verifica que el trigger SQL se haya ejecutado correctamente
