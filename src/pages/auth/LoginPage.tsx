@@ -35,16 +35,51 @@ export function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     try {
-      const { error } = await signInWithEmail(data.email, data.password);
-      if (error) {
-        toast.error(error.message);
+      console.log('🔐 Intentando iniciar sesión...');
+      
+      // Validate Supabase configuration
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || supabaseUrl === 'your_supabase_url' || !supabaseKey || supabaseKey === 'your_supabase_anon_key') {
+        console.error('❌ Supabase no configurado');
+        toast.error('Error de configuración: Por favor configura las variables de entorno de Supabase');
+        setIsLoading(false);
         return;
       }
-      await fetchUser();
-      toast.success('¡Bienvenido de vuelta!');
-      navigate('/');
+
+      const { data: signInData, error } = await signInWithEmail(data.email, data.password);
+      
+      if (error) {
+        console.error('❌ Error en signInWithEmail:', error);
+        toast.error(error.message || 'Error al iniciar sesión. Verifica tus credenciales.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!signInData?.user) {
+        console.error('❌ No se recibió usuario en la respuesta');
+        toast.error('Error al iniciar sesión. No se recibió información del usuario.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('✅ Autenticación exitosa, obteniendo perfil de usuario...');
+      
+      try {
+        await fetchUser();
+        console.log('✅ Perfil de usuario obtenido correctamente');
+        toast.success('¡Bienvenido de vuelta!');
+        navigate('/');
+      } catch (fetchError) {
+        console.error('❌ Error al obtener perfil de usuario:', fetchError);
+        // Even if fetchUser fails, the user is authenticated, so we can still proceed
+        toast.success('¡Bienvenido de vuelta!');
+        navigate('/');
+      }
     } catch (error) {
-      toast.error('Error al iniciar sesión');
+      console.error('❌ Error inesperado en login:', error);
+      toast.error(error instanceof Error ? error.message : 'Error al iniciar sesión. Por favor intenta de nuevo.');
     } finally {
       setIsLoading(false);
     }

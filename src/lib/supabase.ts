@@ -21,11 +21,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Auth helpers
 export const signInWithEmail = async (email: string, password: string) => {
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
-  return { data, error };
+  try {
+    console.log('🔐 Intentando autenticar usuario...');
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) {
+      console.error('❌ Error en signInWithPassword:', error);
+    } else {
+      console.log('✅ Autenticación exitosa');
+    }
+    
+    return { data, error };
+  } catch (error) {
+    console.error('❌ Error inesperado en signInWithEmail:', error);
+    return {
+      data: null,
+      error: {
+        message: error instanceof Error ? error.message : 'Error inesperado al iniciar sesión',
+      } as any,
+    };
+  }
 };
 
 export const signUpWithEmail = async (

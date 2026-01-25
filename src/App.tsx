@@ -22,6 +22,7 @@ import { HomePage } from '@/pages/HomePage';
 import { ShopPage } from '@/pages/shop/ShopPage';
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
+import { AuthCallback } from '@/pages/auth/AuthCallback';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
@@ -122,7 +123,7 @@ function App() {
 
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
-          <Route path="/auth/callback" element={<div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" /></div>} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route path="/account" element={<ProtectedRoute><PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Mi Cuenta</h1></div></PublicLayout></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute><div className="min-h-screen flex items-center justify-center"><h1 className="text-3xl font-bold">Checkout</h1></div></ProtectedRoute>} />
