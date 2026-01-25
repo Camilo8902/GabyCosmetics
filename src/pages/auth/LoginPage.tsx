@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { signInWithEmail, signInWithGoogle } from '@/lib/supabase';
+import { signInWithEmail, signInWithGoogle, isSupabaseConfigured } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 
 const loginSchema = z.object({
@@ -38,12 +38,9 @@ export function LoginPage() {
       console.log('🔐 Intentando iniciar sesión...');
       
       // Validate Supabase configuration
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || supabaseUrl === 'your_supabase_url' || !supabaseKey || supabaseKey === 'your_supabase_anon_key') {
+      if (!isSupabaseConfigured()) {
         console.error('❌ Supabase no configurado');
-        toast.error('Error de configuración: Por favor configura las variables de entorno de Supabase');
+        toast.error('Error de configuración: Por favor configura las variables de entorno de Supabase en Vercel. Ver la consola para más detalles.');
         setIsLoading(false);
         return;
       }

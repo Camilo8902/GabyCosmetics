@@ -1,27 +1,60 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Get environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim() || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || '';
 
 // Validate environment variables
-if (!supabaseUrl || supabaseUrl === 'your_supabase_url' || !supabaseAnonKey || supabaseAnonKey === 'your_supabase_anon_key') {
+const isConfigValid = 
+  supabaseUrl && 
+  supabaseUrl !== 'your_supabase_url' && 
+  supabaseUrl !== '' &&
+  supabaseAnonKey && 
+  supabaseAnonKey !== 'your_supabase_anon_key' && 
+  supabaseAnonKey !== '';
+
+if (!isConfigValid) {
   console.error('❌ Supabase configuration error:');
   console.error('VITE_SUPABASE_URL:', supabaseUrl || 'NOT SET');
   console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET (but may be invalid)' : 'NOT SET');
-  console.error('Please configure your .env.local file with valid Supabase credentials.');
+  console.error('');
+  console.error('📝 Para solucionar esto:');
+  console.error('1. Ve a Vercel Dashboard → Settings → Environment Variables');
+  console.error('2. Agrega VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY');
+  console.error('3. Asegúrate de seleccionar Production, Preview y Development');
+  console.error('4. Redesplega el proyecto después de agregar las variables');
+  console.error('');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-  },
-});
+// Create Supabase client with fallback to prevent crashes
+// Use dummy values if not configured (will fail gracefully on API calls)
+export const supabase = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseAnonKey || 'placeholder-key',
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
+
+// Export a function to check if Supabase is configured
+export const isSupabaseConfigured = () => isConfigValid;
 
 // Auth helpers
 export const signInWithEmail = async (email: string, password: string) => {
   try {
+    if (!isConfigValid) {
+      return {
+        data: null,
+        error: {
+          message: 'Supabase no está configurado. Por favor configura las variables de entorno en Vercel.',
+        } as any,
+      };
+    }
+
     console.log('🔐 Intentando autenticar usuario...');
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
@@ -53,11 +86,11 @@ export const signUpWithEmail = async (
 ) => {
   try {
     // Validate configuration before attempting signup
-    if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+    if (!isConfigValid) {
       return {
         data: null,
         error: {
-          message: 'Supabase no está configurado. Por favor configura VITE_SUPABASE_URL en tu archivo .env.local',
+          message: 'Supabase no está configurado. Por favor configura las variables de entorno en Vercel.',
         } as any,
       };
     }
