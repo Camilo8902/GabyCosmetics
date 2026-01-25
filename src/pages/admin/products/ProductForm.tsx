@@ -117,6 +117,7 @@ export function ProductForm() {
           id,
           updates: data,
         });
+        // Note: Hook already shows success toast
 
         // Update image if provided
         if (imageFile) {
@@ -144,11 +145,10 @@ export function ProductForm() {
           console.error('Warning: Category update failed:', categoryError);
           toast.error('Producto actualizado, pero las categorías no se pudieron asignar');
         }
-
-        toast.success('Producto actualizado exitosamente');
       } else {
         // Create new product
         const newProduct = await createProduct.mutateAsync(data);
+        // Note: Hook already shows success toast
         
         // Upload image if provided
         if (imageFile) {
@@ -177,7 +177,6 @@ export function ProductForm() {
           toast.error('Producto creado, pero las categorías no se pudieron asignar');
         }
 
-        toast.success('Producto creado exitosamente');
         navigate(`/admin/products/${newProduct.id}/edit`);
       }
     } catch (error) {
