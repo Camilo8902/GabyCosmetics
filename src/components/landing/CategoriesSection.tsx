@@ -1,9 +1,12 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader } from 'lucide-react';
+import { useCategories } from '@/hooks/useCategories';
+import { useProducts } from '@/hooks/useProducts';
 
-const categories = [
+// Demo categories fallback
+const demoCategories = [
   {
     id: 'hair-care',
     slug: 'cuidado-cabello',
@@ -39,6 +42,34 @@ const itemVariants = {
 
 export function CategoriesSection() {
   const { t } = useTranslation();
+  const { data: realCategories, isLoading: categoriesLoading } = useCategories();
+  const { data: allProducts, isLoading: productsLoading } = useProducts();
+
+  // Count products per category
+  const productCountByCategory = (realCategories || []).reduce((acc, category) => {
+    const count = (allProducts || []).filter(
+      (p) => p.categories && p.categories.some((c) => c.id === category.id)
+    ).length;
+    acc[category.id] = count || 0;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Transform real categories to display format
+  const displayCategories = (realCategories || demoCategories).map((cat, index) => ({
+    id: cat.id,
+    slug: cat.slug,
+    name: cat.name,
+    description: cat.description,
+    image:
+      cat.image_url ||
+      (index % 2 === 0
+        ? 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=500&fit=crop'
+        : 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=500&fit=crop'),
+    color: index % 2 === 0 ? 'from-rose-400 to-pink-500' : 'from-amber-400 to-orange-500',
+    products: productCountByCategory[cat.id] || 0,
+  }));
+
+  const isLoading = categoriesLoading || productsLoading;
 
   return (
     <section className="py-24 bg-white">
