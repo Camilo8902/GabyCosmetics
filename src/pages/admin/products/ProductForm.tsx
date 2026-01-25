@@ -4,7 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useProduct, useCreateProduct, useUpdateProduct } from '@/hooks';
+import { 
+  useProduct, 
+  useCreateProduct, 
+  useUpdateProduct,
+  useUploadProductImage,
+  useSetProductCategories
+} from '@/hooks';
 import { productSchema } from '@/utils/validators';
 import { FormField } from '@/components/ui/FormField';
 import { ImageUploader } from '@/components/ui/ImageUploader';
@@ -41,6 +47,8 @@ export function ProductForm() {
   const { data: categories } = useCategories(true);
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
+  const uploadProductImage = useUploadProductImage();
+  const setProductCategories = useSetProductCategories();
 
   const {
     register,
@@ -104,18 +112,57 @@ export function ProductForm() {
   const onSubmit = async (data: ProductFormData) => {
     try {
       if (isEditing && id) {
+        // Update existing product
         await updateProduct.mutateAsync({
           id,
           updates: data,
         });
+
+        // Update image if provided
+        if (imageFile) {
+          await uploadProductImage.mutateAsync({
+            productId: id,
+            file: imageFile,
+            isPrimary: true,
+          });
+        }
+
+        // Update categories
+        if (selectedCategories.length > 0) {
+          await setProductCategories.mutateAsync({
+            productId: id,
+            categoryIds: selectedCategories,
+          });
+        }
+
         toast.success('Producto actualizado exitosamente');
       } else {
+        // Create new product
         const newProduct = await createProduct.mutateAsync(data);
+        
+        // Upload image if provided
+        if (imageFile) {
+          await uploadProductImage.mutateAsync({
+            productId: newProduct.id,
+            file: imageFile,
+            isPrimary: true,
+          });
+        }
+
+        // Set categories
+        if (selectedCategories.length > 0) {
+          await setProductCategories.mutateAsync({
+            productId: newProduct.id,
+            categoryIds: selectedCategories,
+          });
+        }
+
         toast.success('Producto creado exitosamente');
         navigate(`/admin/products/${newProduct.id}/edit`);
       }
     } catch (error) {
-      // Error handled by hook
+      console.error('Error saving product:', error);
+      toast.error('Error al guardar el producto');
     }
   };
 

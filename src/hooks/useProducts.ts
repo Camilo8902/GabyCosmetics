@@ -157,3 +157,22 @@ export function useUploadProductImage() {
     },
   });
 }
+
+/**
+ * Hook for setting product categories
+ */
+export function useSetProductCategories() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, categoryIds }: { productId: string; categoryIds: string[] }) =>
+      productService.setProductCategories(productId, categoryIds),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['product', variables.productId] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al actualizar categorías');
+    },
+  });
+}

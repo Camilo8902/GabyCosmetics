@@ -334,4 +334,34 @@ export const productService = {
       throw error;
     }
   },
+
+  /**
+   * Link categories to a product
+   */
+  async setProductCategories(productId: string, categoryIds: string[]): Promise<void> {
+    try {
+      // First delete existing category associations
+      await supabase
+        .from('product_categories')
+        .delete()
+        .eq('product_id', productId);
+
+      // Then insert new ones if any
+      if (categoryIds && categoryIds.length > 0) {
+        const { error } = await supabase
+          .from('product_categories')
+          .insert(
+            categoryIds.map((categoryId) => ({
+              product_id: productId,
+              category_id: categoryId,
+            }))
+          );
+
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.error('Error setting product categories:', error);
+      throw error;
+    }
+  },
 };

@@ -3,84 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Heart, Star, Eye } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { useFeaturedProducts } from '@/hooks';
 import type { Product } from '@/types';
 
-// Demo products data
-const demoProducts: (Product & { image: string })[] = [
-  {
-    id: '1',
-    company_id: null,
-    name: 'Shampoo Reparador Intensivo',
-    name_en: 'Intensive Repair Shampoo',
-    slug: 'shampoo-reparador-intensivo',
-    description: 'Shampoo profesional para cabello dañado',
-    description_en: 'Professional shampoo for damaged hair',
-    price: 299,
-    compare_at_price: 399,
-    has_variants: false,
-    is_active: true,
-    is_featured: true,
-    is_visible: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop',
-  },
-  {
-    id: '2',
-    company_id: null,
-    name: 'Acondicionador Nutritivo',
-    name_en: 'Nourishing Conditioner',
-    slug: 'acondicionador-nutritivo',
-    description: 'Acondicionador con keratina y aceite de argán',
-    description_en: 'Conditioner with keratin and argan oil',
-    price: 249,
-    has_variants: false,
-    is_active: true,
-    is_featured: true,
-    is_visible: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=400&fit=crop',
-  },
-  {
-    id: '3',
-    company_id: null,
-    name: 'Mascarilla Capilar Premium',
-    name_en: 'Premium Hair Mask',
-    slug: 'mascarilla-capilar-premium',
-    description: 'Tratamiento intensivo semanal',
-    description_en: 'Weekly intensive treatment',
-    price: 449,
-    compare_at_price: 549,
-    has_variants: false,
-    is_active: true,
-    is_featured: true,
-    is_visible: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    image: 'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=400&h=400&fit=crop',
-  },
-  {
-    id: '4',
-    company_id: null,
-    name: 'Sérum Anti-Frizz',
-    name_en: 'Anti-Frizz Serum',
-    slug: 'serum-anti-frizz',
-    description: 'Sérum para control del frizz',
-    description_en: 'Frizz control serum',
-    price: 349,
-    has_variants: false,
-    is_active: true,
-    is_featured: true,
-    is_visible: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&h=400&fit=crop',
-  },
-];
-
 interface ProductCardProps {
-  product: Product & { image: string };
+  product: Product & { image?: string };
   index: number;
 }
 
@@ -88,6 +15,8 @@ function ProductCard({ product, index }: ProductCardProps) {
   const { t, i18n } = useTranslation();
   const { addItem } = useCartStore();
 
+  // Get image from product.images array or fallback to demo image
+  const productImage = product.images?.[0]?.url || product.image || 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop';
   const name = i18n.language === 'en' ? product.name_en : product.name;
   const discount = product.compare_at_price
     ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
@@ -105,7 +34,7 @@ function ProductCard({ product, index }: ProductCardProps) {
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden bg-gray-100">
           <motion.img
-            src={product.image}
+            src={productImage}
             alt={name}
             className="w-full h-full object-cover"
             whileHover={{ scale: 1.1 }}
@@ -202,6 +131,83 @@ function ProductCard({ product, index }: ProductCardProps) {
 
 export function FeaturedProducts() {
   const { t } = useTranslation();
+  const { data: products = [] } = useFeaturedProducts(8);
+  
+  // Fallback to demo products if no real products exist
+  const fallbackProducts: (Product & { image: string })[] = [
+    {
+      id: '1',
+      company_id: null,
+      name: 'Shampoo Reparador Intensivo',
+      name_en: 'Intensive Repair Shampoo',
+      slug: 'shampoo-reparador-intensivo',
+      description: 'Shampoo profesional para cabello dañado',
+      description_en: 'Professional shampoo for damaged hair',
+      price: 299,
+      compare_at_price: 399,
+      has_variants: false,
+      is_active: true,
+      is_featured: true,
+      is_visible: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop',
+    },
+    {
+      id: '2',
+      company_id: null,
+      name: 'Acondicionador Nutritivo',
+      name_en: 'Nourishing Conditioner',
+      slug: 'acondicionador-nutritivo',
+      description: 'Acondicionador con keratina y aceite de argán',
+      description_en: 'Conditioner with keratin and argan oil',
+      price: 249,
+      has_variants: false,
+      is_active: true,
+      is_featured: true,
+      is_visible: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=400&fit=crop',
+    },
+    {
+      id: '3',
+      company_id: null,
+      name: 'Mascarilla Capilar Premium',
+      name_en: 'Premium Hair Mask',
+      slug: 'mascarilla-capilar-premium',
+      description: 'Tratamiento intensivo semanal',
+      description_en: 'Weekly intensive treatment',
+      price: 449,
+      compare_at_price: 549,
+      has_variants: false,
+      is_active: true,
+      is_featured: true,
+      is_visible: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      image: 'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=400&h=400&fit=crop',
+    },
+    {
+      id: '4',
+      company_id: null,
+      name: 'Sérum Anti-Frizz',
+      name_en: 'Anti-Frizz Serum',
+      slug: 'serum-anti-frizz',
+      description: 'Sérum para control del frizz',
+      description_en: 'Frizz control serum',
+      price: 349,
+      has_variants: false,
+      is_active: true,
+      is_featured: true,
+      is_visible: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&h=400&fit=crop',
+    },
+  ];
+
+  const displayProducts = products && products.length > 0 ? products : fallbackProducts;
 
   return (
     <section className="py-24 bg-gradient-to-b from-white to-rose-50">
@@ -230,7 +236,7 @@ export function FeaturedProducts() {
 
         {/* Products Grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {demoProducts.map((product, index) => (
+          {displayProducts.map((product, index) => (
             <ProductCard key={product.id} product={product} index={index} />
           ))}
         </div>
