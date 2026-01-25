@@ -60,7 +60,7 @@ export function useAdminMetrics() {
     1
   );
 
-  const { data: previousProducts } = useProducts({ isActive: true }, 1, 1);
+  const { data: previousProducts } = useProducts({ is_active: true }, 1, 1);
 
   const { data: previousUsers } = useUsers({ isActive: true }, 1, 1);
 
