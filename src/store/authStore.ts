@@ -67,6 +67,7 @@ export const useAuthStore = create<AuthState>()(
           
           if (sessionError || !session) {
             // No session is not an error, just means user is not authenticated
+            console.log('ℹ️ No active session - user is not authenticated');
             set({ user: null, isAuthenticated: false, isLoading: false });
             return;
           }
@@ -139,9 +140,13 @@ export const useAuthStore = create<AuthState>()(
             });
           }
         } catch (error: any) {
-          // Don't log AuthSessionMissingError as it's expected when not authenticated
-          if (!error?.message?.includes('Auth session missing') && 
-              error?.name !== 'AuthSessionMissingError') {
+          // Expected behavior: If there's no session, there's no error, just set user to null
+          // Only log if it's an unexpected error
+          const isExpectedAuthError = error?.message?.includes('Auth session missing') || 
+                                      error?.name === 'AuthSessionMissingError' ||
+                                      error?.message?.includes('session');
+          
+          if (!isExpectedAuthError) {
             console.error('❌ Error inesperado al obtener usuario:', error);
           }
           set({ user: null, isAuthenticated: false, isLoading: false });

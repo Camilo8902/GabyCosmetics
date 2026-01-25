@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Background circle -->
+  <circle cx="16" cy="16" r="15" fill="#f3e8e8" stroke="#e91e63" stroke-width="1"/>
+  
+  <!-- Lipstick shape -->
+  <rect x="12" y="10" width="8" height="6" rx="2" fill="#e91e63"/>
+  <path d="M 12 16 Q 12 18 14 20 Q 16 22 16 22 Q 16 22 18 20 Q 20 18 20 16 Z" fill="#c2185b"/>
+  
+  <!-- Shine highlight -->
+  <ellipse cx="14" cy="12" rx="1.5" ry="1" fill="#fff" opacity="0.6"/>
+</svg>

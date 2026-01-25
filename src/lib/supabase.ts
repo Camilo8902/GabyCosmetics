@@ -187,6 +187,13 @@ export const getCurrentUser = async () => {
 export const getSession = async () => {
   try {
     const { data: { session }, error } = await supabase.auth.getSession();
+    
+    // If error is AuthSessionMissingError, it's not an actual error - just no session
+    if (error && error?.name === 'AuthSessionMissingError' || 
+        error?.message?.includes('Auth session missing')) {
+      return { session: null, error: null };
+    }
+    
     return { session, error };
   } catch (err: any) {
     // getSession can throw AuthSessionMissingError - this is normal when not authenticated
