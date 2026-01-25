@@ -11,49 +11,13 @@ export function BestSellers() {
   const { addItem } = useCartStore();
   const { data: products = [] } = useBestSellers(4);
 
-  const fallbackProducts = [
-    {
-      id: '5',
-      name: 'Kit Completo Cabello',
-      name_en: 'Complete Hair Kit',
-      slug: 'kit-completo-cabello',
-      price: 799,
-      compare_at_price: 999,
-      image: 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400&h=400&fit=crop',
-      badge: 'TOP 1',
-    },
-    {
-      id: '6',
-      name: 'Aceite de Argán Puro',
-      name_en: 'Pure Argan Oil',
-      slug: 'aceite-argan-puro',
-      price: 399,
-      compare_at_price: 499,
-      image: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&h=400&fit=crop',
-      badge: 'TOP 2',
-    },
-    {
-      id: '7',
-      name: 'Tratamiento Nocturno',
-      name_en: 'Night Treatment',
-      slug: 'tratamiento-nocturno',
-      price: 549,
-      image: 'https://images.unsplash.com/photo-1570194065650-d99fb4b38b17?w=400&h=400&fit=crop',
-      badge: 'TOP 3',
-    },
-    {
-      id: '8',
-      name: 'Spray Protector Térmico',
-      name_en: 'Thermal Protector Spray',
-      slug: 'spray-protector-termico',
-      price: 279,
-      compare_at_price: 349,
-      image: 'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=400&h=400&fit=crop',
-      badge: 'HOT',
-    },
-  ];
+  // Only display real products from database
+  const displayProducts = products && products.length > 0 ? products : [];
 
-  const displayProducts = products && products.length > 0 ? products : fallbackProducts;
+  // Don't render if no products available
+  if (displayProducts.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-24 bg-gray-900 text-white relative overflow-hidden">

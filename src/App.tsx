@@ -287,6 +287,7 @@ function App() {
             <Route path="categories" element={<CategoriesList />} />
             <Route path="categories/new" element={<CategoryForm />} />
             <Route path="categories/:id/edit" element={<CategoryForm />} />
+            <Route path="categories/:id" element={<CategoryForm />} />
             <Route path="reports" element={<div><h1 className="text-2xl font-bold mb-6">Reportes</h1></div>} />
             <Route path="settings" element={<div><h1 className="text-2xl font-bold mb-6">Configuración</h1></div>} />
           </Route>

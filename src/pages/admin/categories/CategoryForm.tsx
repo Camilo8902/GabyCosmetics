@@ -1,10 +1,10 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Loader } from 'lucide-react';
+import { ArrowLeft, Loader, Upload, Image as ImageIcon, X } from 'lucide-react';
 import { FormField } from '@/components/ui/FormField';
 import { useCategory } from '@/hooks/useCategories';
 import { useCreateCategory, useUpdateCategory } from '@/hooks/useCategories';
@@ -32,6 +32,9 @@ export function CategoryForm() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get existing category data if editing
   const { data: category } = useCategory(id || null);
@@ -50,7 +53,7 @@ export function CategoryForm() {
 
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const isLoading = createMutation.isPending || updateMutation.isPending || uploading;
 
   // Populate form with existing data
   useEffect(() => {
@@ -63,6 +66,9 @@ export function CategoryForm() {
         description_en: category.description_en || '',
         image_url: category.image_url || '',
       });
+      if (category.image_url) {
+        setImagePreview(category.image_url);
+      }
     }
   }, [category, isEdit, methods]);
 
@@ -78,6 +84,49 @@ export function CategoryForm() {
       methods.setValue('slug', slug);
     }
   }, [watchName, isEdit, methods]);
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('El archivo debe ser una imagen');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('La imagen no debe exceder 5MB');
+      return;
+    }
+
+    try {
+      setUploading(true);
+      
+      // Convert to data URL for preview and storage
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const dataUrl = reader.result as string;
+        setImagePreview(dataUrl);
+        methods.setValue('image_url', dataUrl);
+        toast.success('Imagen seleccionada correctamente');
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Error al procesar imagen:', error);
+      toast.error('Error al procesar la imagen');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const clearImage = () => {
+    setImagePreview(null);
+    methods.setValue('image_url', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const onSubmit = async (data: CategoryFormData) => {
     try {
@@ -179,13 +228,80 @@ export function CategoryForm() {
             />
           </div>
 
-          {/* Image URL */}
-          <FormField
-            name="image_url"
-            label="URL de Imagen (Opcional)"
-            placeholder="https://example.com/image.jpg"
-            type="text"
-            helperText="URL de una imagen para la categoría. Si no se proporciona, se usará una por defecto"
+          {/* Image Upload */}
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Foto de Portada
+            </label>
+            
+            {/* Image Preview */}
+            {imagePreview && (
+              <div className="relative w-full h-64 rounded-lg overflow-hidden bg-gray-100 group">
+                <img
+                  src={imagePreview}
+                  alt="Vista previa"
+                  className="w-full h-full object-cover"
+                />
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  type="button"
+                  onClick={clearImage}
+                  className="absolute top-2 right-2 p-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors opacity-0 group-hover:opacity-100"
+                >
+                  <X className="w-5 h-5" />
+                </motion.button>
+              </div>
+            )}
+
+            {/* Upload Area */}
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                imagePreview
+                  ? 'border-gray-300 hover:border-gray-400 bg-gray-50'
+                  : 'border-rose-300 hover:border-rose-400 bg-rose-50'
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                disabled={uploading}
+                className="hidden"
+              />
+              
+              {uploading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader className="w-5 h-5 animate-spin text-rose-600" />
+                  <span className="text-gray-600">Procesando imagen...</span>
+                </div>
+              ) : imagePreview ? (
+                <div className="flex items-center justify-center gap-2 text-gray-600">
+                  <ImageIcon className="w-5 h-5" />
+                  <span>Cambiar imagen</span>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Upload className="w-8 h-8 text-rose-600 mx-auto" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      Arrastra una imagen o haz click para seleccionar
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      PNG, JPG, GIF hasta 5MB
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Hidden input for image_url */}
+          <input
+            type="hidden"
+            {...methods.register('image_url')}
           />
 
           {/* Action Buttons */}

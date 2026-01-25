@@ -5,25 +5,8 @@ import { ArrowRight, Loader } from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
 import { useProducts } from '@/hooks/useProducts';
 
-// Demo categories fallback
-const demoCategories = [
-  {
-    id: 'hair-care',
-    slug: 'cuidado-cabello',
-    nameKey: 'categories.hair',
-    image: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=500&fit=crop',
-    color: 'from-rose-400 to-pink-500',
-    products: 120,
-  },
-  {
-    id: 'personal-care',
-    slug: 'aseo-personal',
-    nameKey: 'categories.personal',
-    image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=500&fit=crop',
-    color: 'from-amber-400 to-orange-500',
-    products: 85,
-  },
-];
+// Demo categories fallback - Removed, only show categories from database
+const demoCategories = [];
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -55,20 +38,18 @@ export function CategoriesSection() {
     return acc;
   }, {} as Record<string, number>);
 
-  // Transform real categories to display format
-  const displayCategories = (realCategories || demoCategories).map((cat, index) => ({
-    id: cat.id,
-    slug: cat.slug,
-    name: cat.name,
-    description: cat.description,
-    image:
-      cat.image_url ||
-      (index % 2 === 0
-        ? 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400&h=500&fit=crop'
-        : 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=500&fit=crop'),
-    color: index % 2 === 0 ? 'from-rose-400 to-pink-500' : 'from-amber-400 to-orange-500',
-    products: productCountByCategory[cat.id] || 0,
-  }));
+  // Transform real categories to display format - only show if they have an image
+  const displayCategories = (realCategories || demoCategories)
+    .filter((cat) => cat.image_url) // Only show categories with images
+    .map((cat, index) => ({
+      id: cat.id,
+      slug: cat.slug,
+      name: cat.name,
+      description: cat.description,
+      image: cat.image_url,
+      color: index % 2 === 0 ? 'from-rose-400 to-pink-500' : 'from-amber-400 to-orange-500',
+      products: productCountByCategory[cat.id] || 0,
+    }));
 
   const isLoading = categoriesLoading || productsLoading;
 

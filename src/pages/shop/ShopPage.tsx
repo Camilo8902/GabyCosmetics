@@ -20,127 +20,6 @@ import { useProducts, useCategories } from '@/hooks';
 import type { Product } from '@/types';
 import { cn } from '@/lib/utils';
 
-// Demo products
-const allProducts = [
-  {
-    id: '1',
-    name: 'Shampoo Reparador Intensivo',
-    name_en: 'Intensive Repair Shampoo',
-    slug: 'shampoo-reparador-intensivo',
-    price: 299,
-    compare_at_price: 399,
-    category: 'cuidado-cabello',
-    subcategory: 'shampoos',
-    image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop',
-    rating: 4.5,
-    reviews: 124,
-    is_featured: true,
-  },
-  {
-    id: '2',
-    name: 'Acondicionador Nutritivo',
-    name_en: 'Nourishing Conditioner',
-    slug: 'acondicionador-nutritivo',
-    price: 249,
-    compare_at_price: undefined,
-    category: 'cuidado-cabello',
-    subcategory: 'acondicionadores',
-    image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=400&fit=crop',
-    rating: 4.8,
-    reviews: 89,
-    is_featured: true,
-  },
-  {
-    id: '3',
-    name: 'Mascarilla Capilar Premium',
-    name_en: 'Premium Hair Mask',
-    slug: 'mascarilla-capilar-premium',
-    price: 449,
-    compare_at_price: 549,
-    category: 'cuidado-cabello',
-    subcategory: 'tratamientos-cabello',
-    image: 'https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?w=400&h=400&fit=crop',
-    rating: 4.9,
-    reviews: 256,
-    is_featured: true,
-  },
-  {
-    id: '4',
-    name: 'Sérum Anti-Frizz',
-    name_en: 'Anti-Frizz Serum',
-    slug: 'serum-anti-frizz',
-    price: 349,
-    compare_at_price: undefined,
-    category: 'cuidado-cabello',
-    subcategory: 'styling',
-    image: 'https://images.unsplash.com/photo-1598440947619-2c35fc9aa908?w=400&h=400&fit=crop',
-    rating: 4.7,
-    reviews: 67,
-    is_featured: true,
-  },
-  {
-    id: '5',
-    name: 'Kit Completo Cabello',
-    name_en: 'Complete Hair Kit',
-    slug: 'kit-completo-cabello',
-    price: 799,
-    compare_at_price: 999,
-    category: 'cuidado-cabello',
-    subcategory: 'shampoos',
-    image: 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400&h=400&fit=crop',
-    rating: 4.9,
-    reviews: 312,
-    is_featured: false,
-  },
-  {
-    id: '6',
-    name: 'Aceite de Argán Puro',
-    name_en: 'Pure Argan Oil',
-    slug: 'aceite-argan-puro',
-    price: 399,
-    compare_at_price: 499,
-    category: 'cuidado-cabello',
-    subcategory: 'tratamientos-cabello',
-    image: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&h=400&fit=crop',
-    rating: 4.8,
-    reviews: 198,
-    is_featured: false,
-  },
-  {
-    id: '7',
-    name: 'Jabón Artesanal Lavanda',
-    name_en: 'Artisan Lavender Soap',
-    slug: 'jabon-artesanal-lavanda',
-    price: 89,
-    compare_at_price: undefined,
-    category: 'aseo-personal',
-    subcategory: 'jabones',
-    image: 'https://images.unsplash.com/photo-1600857062241-98e5dba7f214?w=400&h=400&fit=crop',
-    rating: 4.6,
-    reviews: 145,
-    is_featured: false,
-  },
-  {
-    id: '8',
-    name: 'Crema Corporal Hidratante',
-    name_en: 'Moisturizing Body Cream',
-    slug: 'crema-corporal-hidratante',
-    price: 199,
-    compare_at_price: 249,
-    category: 'aseo-personal',
-    subcategory: 'cremas-corporales',
-    image: 'https://images.unsplash.com/photo-1608571423902-eed4a5ad8108?w=400&h=400&fit=crop',
-    rating: 4.4,
-    reviews: 87,
-    is_featured: false,
-  },
-];
-
-const categories = [
-  { slug: 'cuidado-cabello', name: 'Cuidado del Cabello', name_en: 'Hair Care' },
-  { slug: 'aseo-personal', name: 'Aseo Personal', name_en: 'Personal Care' },
-];
-
 const sortOptions = [
   { value: 'featured', label: 'Destacados', label_en: 'Featured' },
   { value: 'newest', label: 'Más Recientes', label_en: 'Newest' },
@@ -166,39 +45,7 @@ export function ShopPage() {
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
 
-  // Demo products for fallback
-  const demoProducts = [
-    {
-      id: '1',
-      name: 'Shampoo Reparador Intensivo',
-      name_en: 'Intensive Repair Shampoo',
-      slug: 'shampoo-reparador-intensivo',
-      price: 299,
-      compare_at_price: 399,
-      category: 'cuidado-cabello',
-      subcategory: 'shampoos',
-      image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop',
-      rating: 4.5,
-      reviews: 124,
-      is_featured: true,
-    },
-    {
-      id: '2',
-      name: 'Acondicionador Nutritivo',
-      name_en: 'Nourishing Conditioner',
-      slug: 'acondicionador-nutritivo',
-      price: 249,
-      compare_at_price: undefined,
-      category: 'cuidado-cabello',
-      subcategory: 'acondicionadores',
-      image: 'https://images.unsplash.com/photo-1556228578-0d85b1a4d571?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviews: 89,
-      is_featured: true,
-    },
-  ];
-
-  // Convert real products to shop format and merge with demo
+  // Convert real products to shop format
   const processedProducts = realProducts.map((p: any) => ({
     id: p.id,
     name: p.name,
@@ -208,13 +55,14 @@ export function ShopPage() {
     compare_at_price: p.compare_at_price,
     category: p.categories?.[0]?.slug || 'otros',
     subcategory: p.categories?.[0]?.slug || 'otros',
-    image: p.images?.[0]?.url || 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop',
+    image: p.images?.[0]?.url || null,
     rating: 4.5,
     reviews: 0,
     is_featured: p.is_featured,
   }));
 
-  const allProducts = processedProducts.length > 0 ? processedProducts : demoProducts;
+  // Only show products that have images
+  const allProducts = processedProducts.filter(p => p.image);
   const categories = realCategories.length > 0 ? realCategories : [
     { slug: 'cuidado-cabello', name: 'Cuidado del Cabello', name_en: 'Hair Care' },
     { slug: 'aseo-personal', name: 'Aseo Personal', name_en: 'Personal Care' },
