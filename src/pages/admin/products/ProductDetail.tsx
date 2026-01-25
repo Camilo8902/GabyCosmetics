@@ -201,13 +201,17 @@ export function ProductDetail() {
                   <p className="text-sm font-medium text-gray-900">{product.barcode}</p>
                 </div>
               )}
-              {product.inventory && product.inventory.length > 0 && (
+              {product.inventory && (
                 <div>
                   <p className="text-sm text-gray-500">Stock</p>
                   <p className={`text-lg font-bold ${
-                    (product.inventory[0]?.quantity || 0) < 10 ? 'text-red-600' : 'text-gray-900'
+                    (Array.isArray(product.inventory) 
+                      ? product.inventory[0]?.quantity || 0 
+                      : product.inventory?.quantity || 0) < 10 ? 'text-red-600' : 'text-gray-900'
                   }`}>
-                    {product.inventory[0]?.quantity || 0}
+                    {Array.isArray(product.inventory) 
+                      ? product.inventory[0]?.quantity || 0 
+                      : product.inventory?.quantity || 0}
                   </p>
                 </div>
               )}

@@ -106,11 +106,11 @@ export function OrderDetail() {
                       <p className="text-sm text-gray-500">Variante: {item.variant_name}</p>
                     )}
                     <p className="text-sm text-gray-500">
-                      Cantidad: {item.quantity} × {formatCurrency(item.price || 0)}
+                      Cantidad: {item.quantity} × {formatCurrency(item.price || item.unit_price || 0)}
                     </p>
                   </div>
                   <p className="font-bold text-gray-900">
-                    {formatCurrency((item.price || 0) * item.quantity)}
+                    {formatCurrency((item.price || item.unit_price || 0) * item.quantity)}
                   </p>
                 </div>
               ))}
@@ -133,16 +133,16 @@ export function OrderDetail() {
                   <span className="text-gray-900">{formatCurrency(order.shipping_cost)}</span>
                 </div>
               )}
-              {order.tax_amount && (
+              {(order.tax_amount || order.tax) && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Impuestos</span>
-                  <span className="text-gray-900">{formatCurrency(order.tax_amount)}</span>
+                  <span className="text-gray-900">{formatCurrency(order.tax_amount || order.tax || 0)}</span>
                 </div>
               )}
-              {order.discount_amount && (
+              {(order.discount_amount || order.discount) && (
                 <div className="flex justify-between">
                   <span className="text-gray-600">Descuento</span>
-                  <span className="text-red-600">-{formatCurrency(order.discount_amount)}</span>
+                  <span className="text-red-600">-{formatCurrency(order.discount_amount || order.discount || 0)}</span>
                 </div>
               )}
               <div className="flex justify-between pt-3 border-t">

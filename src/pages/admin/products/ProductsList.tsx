@@ -178,7 +178,7 @@ export function ProductsList() {
     }
   };
 
-  const columns = [
+  const columns: Array<any> = [
     {
       key: 'select',
       header: (
@@ -299,7 +299,7 @@ export function ProductsList() {
       key: 'category',
       header: 'Categoría',
       render: (product: Product) => {
-        const category = product.categories?.[0]?.category;
+        const category = product.categories?.[0];
         return category ? (
           <span className="text-sm text-gray-600">{category.name}</span>
         ) : (

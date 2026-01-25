@@ -39,12 +39,24 @@ export const productService = {
 
       // Apply filters
       if (filters?.categoryId) {
-        query = query.in('id', 
-          supabase
-            .from('product_categories')
-            .select('product_id')
-            .eq('category_id', filters.categoryId)
-        );
+        const { data: categoryProducts } = await supabase
+          .from('product_categories')
+          .select('product_id')
+          .eq('category_id', filters.categoryId);
+        
+        const productIds = categoryProducts?.map((item) => item.product_id) || [];
+        if (productIds.length > 0) {
+          query = query.in('id', productIds);
+        } else {
+          // Return empty result if no products found for this category
+          return {
+            data: [],
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 0,
+          };
+        }
       }
 
       if (filters?.minPrice) {

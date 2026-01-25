@@ -33,6 +33,7 @@ export interface Company {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  user?: User; // User who owns the company
 }
 
 // Hierarchical Categories (scalable)
@@ -135,6 +136,7 @@ export interface Inventory {
   allow_backorder: boolean;
   location?: string; // Warehouse location
   updated_at: string;
+  [key: string]: any; // Allow array indexing for backwards compatibility
 }
 
 // Product Variants (for advanced inventory)
@@ -229,14 +231,16 @@ export interface Order {
   shipping_cost: number;
   discount: number;
   total: number;
-  shipping_address: Address;
-  billing_address?: Address;
+  shipping_address: Address | Record<string, any>; // Allow flexible address format
+  billing_address?: Address | Record<string, any>;
   payment?: Payment; // Payment information
   notes?: string;
   created_at: string;
   updated_at: string;
   items?: OrderItem[];
   user?: User;
+  tax_amount?: number; // Alternative tax field name
+  discount_amount?: number; // Alternative discount field name
 }
 
 export interface OrderItem {
@@ -251,6 +255,7 @@ export interface OrderItem {
   product_name: string;
   product_image?: string;
   variant_name?: string; // e.g., "Small - Red"
+  price?: number; // Optional price field for compatibility
   product?: Product;
   variant?: ProductVariant;
 }

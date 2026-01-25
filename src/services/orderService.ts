@@ -39,12 +39,24 @@ export const orderService = {
       }
 
       if (filters?.companyId) {
-        query = query.in('id',
-          supabase
-            .from('order_items')
-            .select('order_id')
-            .eq('company_id', filters.companyId)
-        );
+        const { data: companyOrders } = await supabase
+          .from('order_items')
+          .select('order_id')
+          .eq('company_id', filters.companyId);
+        
+        const orderIds = companyOrders?.map((item) => item.order_id) || [];
+        if (orderIds.length > 0) {
+          query = query.in('id', orderIds);
+        } else {
+          // Return empty result if no orders found for this company
+          return {
+            data: [],
+            total: 0,
+            page,
+            pageSize,
+            totalPages: 0,
+          };
+        }
       }
 
       if (filters?.startDate) {
