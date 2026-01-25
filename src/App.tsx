@@ -132,18 +132,26 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
 function App() {
   const { fetchUser, setLoading, setUser } = useAuthStore();
 
+  // Handle hydration - if we have persisted user data, mark loading as false
+  useEffect(() => {
+    const authState = useAuthStore.getState();
+    // If we have a persisted user and is still loading, stop loading
+    if (authState.user && authState.isAuthenticated && authState.isLoading) {
+      console.log('💧 Hydration: Found persisted user, setting loading to false');
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let mounted = true;
+    let authCheckTimeout: NodeJS.Timeout;
 
     const checkAuth = async () => {
       try {
         // Check if there's any indication of a stored session
-        // Supabase stores session in localStorage with key pattern: sb-<project-ref>-auth-token
-        // Check all possible Supabase session storage keys
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
         const projectRef = supabaseUrl.split('//')[1]?.split('.')[0] || '';
         
-        // Supabase stores session in multiple possible keys
         const possibleKeys = [
           projectRef ? `sb-${projectRef}-auth-token` : null,
           'sb-auth-token',
@@ -154,24 +162,37 @@ function App() {
         const hasCookie = document.cookie.includes('sb-') || document.cookie.includes('supabase');
         
         if (hasStoredSession || hasCookie) {
-          // There might be a session, try to fetch user
-          await fetchUser();
+          console.log('🔐 Stored session found, fetching user...');
+          
+          // Set a timeout to prevent infinite loading
+          authCheckTimeout = setTimeout(() => {
+            if (mounted) {
+              console.warn('⚠️ Auth check timed out, setting loading to false');
+              setLoading(false);
+            }
+          }, 5000); // 5 second timeout
+          
+          try {
+            await fetchUser();
+          } finally {
+            if (mounted) {
+              clearTimeout(authCheckTimeout);
+            }
+          }
         } else {
-          // No stored session, user is definitely not authenticated
-          // This is normal and not an error
+          console.log('🚫 No stored session found');
           if (mounted) {
             setUser(null);
             setLoading(false);
           }
         }
       } catch (error: any) {
-        // Silently handle auth errors - they're expected when user is not logged in
-        // Don't log AuthSessionMissingError as it's normal
-        if (!error?.message?.includes('Auth session missing') && 
-            error?.name !== 'AuthSessionMissingError') {
-          console.error('Auth check error:', error);
-        }
         if (mounted) {
+          clearTimeout(authCheckTimeout);
+          if (!error?.message?.includes('Auth session missing') && 
+              error?.name !== 'AuthSessionMissingError') {
+            console.error('Auth check error:', error);
+          }
           setUser(null);
           setLoading(false);
         }
@@ -241,6 +262,7 @@ function App() {
 
     return () => {
       mounted = false;
+      clearTimeout(authCheckTimeout);
       subscription.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };

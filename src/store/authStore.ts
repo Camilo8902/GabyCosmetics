@@ -52,6 +52,13 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchUser: async () => {
+        // Skip if already loaded and we have a user
+        const currentState = get();
+        if (!currentState.isLoading && currentState.user && currentState.isAuthenticated) {
+          console.log('👤 Usuario ya cargado, saltando fetchUser');
+          return;
+        }
+        
         try {
           set({ isLoading: true });
           
@@ -133,14 +140,11 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error: any) {
           // Don't log AuthSessionMissingError as it's expected when not authenticated
-          // This error is completely normal when user is not logged in
           if (!error?.message?.includes('Auth session missing') && 
               error?.name !== 'AuthSessionMissingError') {
-            // Only log real errors, not "no session" errors
             console.error('❌ Error inesperado al obtener usuario:', error);
           }
           set({ user: null, isAuthenticated: false, isLoading: false });
-          // Don't throw - just silently fail, it's expected when not authenticated
         }
       },
 
