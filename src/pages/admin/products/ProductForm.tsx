@@ -128,7 +128,7 @@ export function ProductForm() {
             });
           } catch (imageError) {
             console.error('Warning: Image upload failed but product was saved:', imageError);
-            toast.warning('Producto actualizado, pero la imagen no se pudo cargar');
+            toast.error('Producto actualizado, pero la imagen no se pudo cargar');
           }
         }
 
@@ -142,7 +142,7 @@ export function ProductForm() {
           }
         } catch (categoryError) {
           console.error('Warning: Category update failed:', categoryError);
-          toast.warning('Producto actualizado, pero las categorías no se pudieron asignar');
+          toast.error('Producto actualizado, pero las categorías no se pudieron asignar');
         }
 
         toast.success('Producto actualizado exitosamente');
@@ -160,7 +160,7 @@ export function ProductForm() {
             });
           } catch (imageError) {
             console.error('Warning: Image upload failed but product was created:', imageError);
-            toast.warning('Producto creado, pero la imagen no se pudo cargar');
+            toast.error('Producto creado, pero la imagen no se pudo cargar');
           }
         }
 
@@ -174,7 +174,7 @@ export function ProductForm() {
           }
         } catch (categoryError) {
           console.error('Warning: Category assignment failed:', categoryError);
-          toast.warning('Producto creado, pero las categorías no se pudieron asignar');
+          toast.error('Producto creado, pero las categorías no se pudieron asignar');
         }
 
         toast.success('Producto creado exitosamente');

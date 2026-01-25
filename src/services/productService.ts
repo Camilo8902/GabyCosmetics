@@ -357,7 +357,7 @@ export const productService = {
   /**
    * Convert file to data URL as fallback
    */
-  private async fileToDataUrl(file: File): Promise<string> {
+  async fileToDataUrl(file: File): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
