@@ -48,7 +48,19 @@ function ProtectedRoute({
 }) {
   const { isAuthenticated, user, isLoading } = useAuthStore();
 
+  // Debug logging
+  if (allowedRoles) {
+    console.log('🔒 ProtectedRoute - Verificando acceso:', {
+      isLoading,
+      isAuthenticated,
+      userRole: user?.role,
+      allowedRoles,
+      hasAccess: user && allowedRoles.includes(user.role),
+    });
+  }
+
   if (isLoading) {
+    console.log('⏳ ProtectedRoute - Cargando...');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" />
@@ -57,13 +69,19 @@ function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
+    console.log('❌ ProtectedRoute - No autenticado, redirigiendo a login');
     return <Navigate to="/auth/login" replace />;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
+    console.log('❌ ProtectedRoute - Rol no permitido:', {
+      userRole: user.role,
+      allowedRoles,
+    });
     return <Navigate to="/" replace />;
   }
 
+  console.log('✅ ProtectedRoute - Acceso permitido');
   return <>{children}</>;
 }
 

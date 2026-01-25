@@ -1,0 +1,137 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { productService } from '@/services/productService';
+import type { Product, ProductFilters, PaginatedResponse } from '@/types';
+import toast from 'react-hot-toast';
+
+/**
+ * Hook for fetching products with filters and pagination
+ */
+export function useProducts(filters?: ProductFilters, page = 1, pageSize = 20) {
+  return useQuery<PaginatedResponse<Product>>({
+    queryKey: ['products', filters, page, pageSize],
+    queryFn: () => productService.getProducts(filters, page, pageSize),
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+}
+
+/**
+ * Hook for fetching a single product by ID
+ */
+export function useProduct(id: string | null) {
+  return useQuery<Product | null>({
+    queryKey: ['product', id],
+    queryFn: () => (id ? productService.getProductById(id) : Promise.resolve(null)),
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Hook for fetching a single product by slug
+ */
+export function useProductBySlug(slug: string | null) {
+  return useQuery<Product | null>({
+    queryKey: ['product', 'slug', slug],
+    queryFn: () => (slug ? productService.getProductBySlug(slug) : Promise.resolve(null)),
+    enabled: !!slug,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Hook for fetching featured products
+ */
+export function useFeaturedProducts(limit = 8) {
+  return useQuery<Product[]>({
+    queryKey: ['products', 'featured', limit],
+    queryFn: () => productService.getFeaturedProducts(limit),
+    staleTime: 1000 * 60 * 15, // 15 minutes
+  });
+}
+
+/**
+ * Hook for fetching best sellers
+ */
+export function useBestSellers(limit = 8) {
+  return useQuery<Product[]>({
+    queryKey: ['products', 'best-sellers', limit],
+    queryFn: () => productService.getBestSellers(limit),
+    staleTime: 1000 * 60 * 15,
+  });
+}
+
+/**
+ * Hook for creating a product
+ */
+export function useCreateProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (product: Partial<Product>) => productService.createProduct(product),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Producto creado exitosamente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al crear el producto');
+    },
+  });
+}
+
+/**
+ * Hook for updating a product
+ */
+export function useUpdateProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Product> }) =>
+      productService.updateProduct(id, updates),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      queryClient.invalidateQueries({ queryKey: ['product', variables.id] });
+      toast.success('Producto actualizado exitosamente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al actualizar el producto');
+    },
+  });
+}
+
+/**
+ * Hook for deleting a product
+ */
+export function useDeleteProduct() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => productService.deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Producto eliminado exitosamente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al eliminar el producto');
+    },
+  });
+}
+
+/**
+ * Hook for uploading product images
+ */
+export function useUploadProductImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ productId, file, isPrimary }: { productId: string; file: File; isPrimary?: boolean }) =>
+      productService.uploadProductImage(productId, file, isPrimary),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['product', variables.productId] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Imagen subida exitosamente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al subir la imagen');
+    },
+  });
+}

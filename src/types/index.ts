@@ -82,9 +82,10 @@ export interface Product {
   price: number;
   compare_at_price?: number;
   cost_price?: number;
-  sku?: string;
+  sku?: string; // Base SKU (if no variants)
   barcode?: string;
   weight?: number;
+  has_variants: boolean; // Whether product has variants
   is_active: boolean;
   is_featured: boolean;
   is_visible: boolean;
@@ -94,9 +95,10 @@ export interface Product {
   images?: ProductImage[];
   categories?: Category[];
   attributes?: ProductAttribute[];
+  variants?: ProductVariant[]; // Product variants
   company?: Company;
   reviews?: Review[];
-  inventory?: Inventory;
+  inventory?: Inventory; // Base inventory (if no variants)
 }
 
 export interface ProductImage {
@@ -123,7 +125,7 @@ export interface ProductCategory {
   category_id: string;
 }
 
-// Inventory
+// Inventory - Advanced with variants and SKUs
 export interface Inventory {
   id: string;
   product_id: string;
@@ -131,7 +133,36 @@ export interface Inventory {
   low_stock_threshold: number;
   track_inventory: boolean;
   allow_backorder: boolean;
+  location?: string; // Warehouse location
   updated_at: string;
+}
+
+// Product Variants (for advanced inventory)
+export interface ProductVariant {
+  id: string;
+  product_id: string;
+  sku: string;
+  name: string; // e.g., "Small - Red"
+  name_en: string;
+  price: number;
+  compare_at_price?: number;
+  cost_price?: number;
+  barcode?: string;
+  weight?: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  inventory?: Inventory;
+  attributes?: Record<string, string>; // e.g., { size: "Small", color: "Red" }
+}
+
+// Variant Attributes (e.g., Size, Color)
+export interface VariantAttribute {
+  id: string;
+  name: string;
+  name_en: string;
+  values: string[]; // e.g., ["Small", "Medium", "Large"]
+  order_index: number;
 }
 
 // Reviews
@@ -200,6 +231,7 @@ export interface Order {
   total: number;
   shipping_address: Address;
   billing_address?: Address;
+  payment?: Payment; // Payment information
   notes?: string;
   created_at: string;
   updated_at: string;
@@ -211,13 +243,16 @@ export interface OrderItem {
   id: string;
   order_id: string;
   product_id: string;
+  variant_id?: string; // If product has variants
   company_id?: string;
   quantity: number;
   unit_price: number;
   total_price: number;
   product_name: string;
   product_image?: string;
+  variant_name?: string; // e.g., "Small - Red"
   product?: Product;
+  variant?: ProductVariant;
 }
 
 // Coupons
@@ -292,4 +327,37 @@ export interface ProductFilters {
   attributes?: Record<string, string[]>;
   inStock?: boolean;
   featured?: boolean;
+}
+
+// Stripe Payment Types
+export interface StripePaymentIntent {
+  id: string;
+  client_secret: string;
+  amount: number;
+  currency: string;
+  status: 'requires_payment_method' | 'requires_confirmation' | 'requires_action' | 'processing' | 'requires_capture' | 'canceled' | 'succeeded';
+}
+
+export interface StripeCheckoutSession {
+  id: string;
+  url: string;
+  amount_total: number;
+  currency: string;
+  payment_status: 'paid' | 'unpaid' | 'no_payment_required';
+}
+
+// Payment Methods
+export type PaymentMethod = 'stripe_card' | 'stripe_other';
+
+export interface Payment {
+  id: string;
+  order_id: string;
+  payment_intent_id?: string; // Stripe payment intent ID
+  method: PaymentMethod;
+  amount: number;
+  currency: string;
+  status: 'pending' | 'processing' | 'succeeded' | 'failed' | 'refunded';
+  transaction_id?: string;
+  created_at: string;
+  updated_at: string;
 }

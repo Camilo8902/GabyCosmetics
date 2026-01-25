@@ -250,7 +250,10 @@ export function Header() {
                           </div>
                           <Link
                             to={getDashboardLink()}
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => {
+                              console.log('🔗 Navegando a:', getDashboardLink());
+                              setIsUserMenuOpen(false);
+                            }}
                             className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
                           >
                             <LayoutDashboard className="w-4 h-4" />
@@ -258,16 +261,20 @@ export function Header() {
                           </Link>
                           <Link
                             to="/account"
-                            onClick={() => setIsUserMenuOpen(false)}
+                            onClick={() => {
+                              console.log('🔗 Navegando a: /account');
+                              setIsUserMenuOpen(false);
+                            }}
                             className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
                           >
                             <Settings className="w-4 h-4" />
                             {t('nav.account')}
                           </Link>
                           <button
-                            onClick={() => {
-                              logout();
+                            onClick={async () => {
+                              console.log('🚪 Cerrando sesión...');
                               setIsUserMenuOpen(false);
+                              await logout();
                             }}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                           >
