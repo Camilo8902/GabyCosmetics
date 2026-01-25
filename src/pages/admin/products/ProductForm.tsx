@@ -145,6 +145,9 @@ export function ProductForm() {
           console.error('Warning: Category update failed:', categoryError);
           toast.error('Producto actualizado, pero las categorías no se pudieron asignar');
         }
+
+        // Navigate back to products list after successful update
+        navigate('/admin/products');
       } else {
         // Create new product
         const newProduct = await createProduct.mutateAsync(data);

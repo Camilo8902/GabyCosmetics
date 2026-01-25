@@ -138,8 +138,9 @@ export function CategoryForm() {
             updated_at: new Date().toISOString(),
           },
         });
-        toast.success('Categoría actualizada exitosamente');
+        // Toast already shown by hook
       } else {
+        console.log('Creating category with data:', data);
         await createMutation.mutateAsync({
           ...data,
           is_active: true,
@@ -147,12 +148,13 @@ export function CategoryForm() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         });
-        toast.success('Categoría creada exitosamente');
+        // Toast already shown by hook
       }
       navigate('/admin/categories');
     } catch (error) {
       console.error('Error submitting form:', error);
-      // Error toast is already shown by the mutation hook
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      toast.error(`Error: ${errorMsg}`);
     }
   };
 

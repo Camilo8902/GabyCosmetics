@@ -47,7 +47,23 @@ export const slugSchema = z
   .min(1, 'El slug es requerido');
 
 // URL validation
-export const urlSchema = z.string().url('URL inválida').optional().or(z.literal(''));
+export const urlSchema = z
+  .string()
+  .refine(
+    (value) => {
+      if (!value) return true; // Empty string is valid
+      if (value.startsWith('data:')) return true; // Data URLs (base64 images) are valid
+      try {
+        new URL(value);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    'URL inválida'
+  )
+  .optional()
+  .or(z.literal(''));
 
 // File validation
 export const fileSchema = z
