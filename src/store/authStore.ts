@@ -37,11 +37,19 @@ export const useAuthStore = create<AuthState>()(
 
       setLoading: (isLoading) => set({ isLoading }),
 
-      logout: () => set({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false
-      }),
+      logout: async () => {
+        try {
+          await supabase.auth.signOut();
+        } catch (error) {
+          console.error('Error al cerrar sesión en Supabase:', error);
+        } finally {
+          set({
+            user: null,
+            isAuthenticated: false,
+            isLoading: false
+          });
+        }
+      },
 
       fetchUser: async () => {
         try {

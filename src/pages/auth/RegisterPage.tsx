@@ -39,15 +39,44 @@ export function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setIsLoading(true);
     try {
-      const { error } = await signUpWithEmail(data.email, data.password, data.fullName);
-      if (error) {
-        toast.error(error.message);
+      // Validate Supabase configuration
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || supabaseUrl === 'your_supabase_url' || !supabaseKey || supabaseKey === 'your_supabase_anon_key') {
+        toast.error('Error de configuración: Por favor configura las variables de entorno de Supabase');
+        console.error('Supabase no está configurado correctamente');
+        setIsLoading(false);
         return;
       }
-      setIsSuccess(true);
+
+      const { data: signUpData, error } = await signUpWithEmail(data.email, data.password, data.fullName);
+      
+      if (error) {
+        console.error('Error en registro:', error);
+        toast.error(error.message || 'Error al crear la cuenta. Por favor intenta de nuevo.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if email confirmation is required
+      if (signUpData?.user && !signUpData.session) {
+        // Email confirmation required
+        setIsSuccess(true);
+        setIsLoading(false);
+      } else if (signUpData?.session) {
+        // User is immediately authenticated (email confirmation disabled)
+        setIsSuccess(true);
+        setIsLoading(false);
+      } else {
+        // Unexpected response
+        console.error('Respuesta inesperada del registro:', signUpData);
+        toast.error('Error inesperado al crear la cuenta');
+        setIsLoading(false);
+      }
     } catch (error) {
-      toast.error('Error al crear la cuenta');
-    } finally {
+      console.error('Error inesperado en registro:', error);
+      toast.error(error instanceof Error ? error.message : 'Error al crear la cuenta. Por favor intenta de nuevo.');
       setIsLoading(false);
     }
   };

@@ -3,7 +3,21 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Validate environment variables
+if (!supabaseUrl || supabaseUrl === 'your_supabase_url' || !supabaseAnonKey || supabaseAnonKey === 'your_supabase_anon_key') {
+  console.error('❌ Supabase configuration error:');
+  console.error('VITE_SUPABASE_URL:', supabaseUrl || 'NOT SET');
+  console.error('VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET (but may be invalid)' : 'NOT SET');
+  console.error('Please configure your .env.local file with valid Supabase credentials.');
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 // Auth helpers
 export const signInWithEmail = async (email: string, password: string) => {
@@ -19,18 +33,43 @@ export const signUpWithEmail = async (
   password: string,
   fullName: string
 ) => {
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        full_name: fullName,
-        role: 'customer',
+  try {
+    // Validate configuration before attempting signup
+    if (!supabaseUrl || supabaseUrl === 'your_supabase_url') {
+      return {
+        data: null,
+        error: {
+          message: 'Supabase no está configurado. Por favor configura VITE_SUPABASE_URL en tu archivo .env.local',
+        } as any,
+      };
+    }
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          role: 'customer',
+        },
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
-      emailRedirectTo: `${window.location.origin}/auth/callback`,
-    },
-  });
-  return { data, error };
+    });
+
+    if (error) {
+      console.error('Supabase signup error:', error);
+    }
+
+    return { data, error };
+  } catch (error) {
+    console.error('Unexpected error in signUpWithEmail:', error);
+    return {
+      data: null,
+      error: {
+        message: error instanceof Error ? error.message : 'Error inesperado al crear la cuenta',
+      } as any,
+    };
+  }
 };
 
 export const signInWithGoogle = async () => {
