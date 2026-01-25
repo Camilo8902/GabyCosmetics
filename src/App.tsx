@@ -56,25 +56,9 @@ const queryClient = new QueryClient({
       refetchOnWindowFocus: false, // Prevent refetch when tab becomes active (fixes blank page issue)
       refetchOnReconnect: true,
       refetchOnMount: true,
-      onError: (error: any) => {
-        // Handle auth errors globally
-        if (error?.message?.includes('Auth') || 
-            error?.message?.includes('session') ||
-            error?.code === 'PGRST301') {
-          console.warn('⚠️ Error de autenticación en query:', error);
-          // Don't redirect here, let ProtectedRoute handle it
-        }
-      },
     },
     mutations: {
       retry: false,
-      onError: (error: any) => {
-        if (error?.message?.includes('Auth') || 
-            error?.message?.includes('session') ||
-            error?.code === 'PGRST301') {
-          console.warn('⚠️ Error de autenticación en mutation:', error);
-        }
-      },
     },
   },
 });

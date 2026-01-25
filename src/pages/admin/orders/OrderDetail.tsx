@@ -190,8 +190,31 @@ export function OrderDetail() {
                 <MapPin className="w-5 h-5" />
                 Dirección de Envío
               </h2>
-              <div className="text-sm text-gray-600 whitespace-pre-line">
-                {order.shipping_address}
+              <div className="text-sm text-gray-600 space-y-1">
+                {typeof order.shipping_address === 'object' ? (
+                  <>
+                    {(order.shipping_address as any).full_name && (
+                      <p>{(order.shipping_address as any).full_name}</p>
+                    )}
+                    {(order.shipping_address as any).address_line1 && (
+                      <p>{(order.shipping_address as any).address_line1}</p>
+                    )}
+                    {(order.shipping_address as any).address_line2 && (
+                      <p>{(order.shipping_address as any).address_line2}</p>
+                    )}
+                    {(order.shipping_address as any).city && (
+                      <p>{(order.shipping_address as any).city}, {(order.shipping_address as any).state}</p>
+                    )}
+                    {(order.shipping_address as any).postal_code && (
+                      <p>{(order.shipping_address as any).postal_code}</p>
+                    )}
+                    {(order.shipping_address as any).country && (
+                      <p>{(order.shipping_address as any).country}</p>
+                    )}
+                  </>
+                ) : (
+                  <p>{String(order.shipping_address)}</p>
+                )}
               </div>
             </div>
           )}

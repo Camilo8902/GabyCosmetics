@@ -45,7 +45,7 @@ export function useAdminMetrics() {
   );
 
   const { data: currentUsers, isLoading: usersLoading } = useUsers(
-    { is_active: true },
+    { isActive: true },
     1,
     1
   );
@@ -60,9 +60,9 @@ export function useAdminMetrics() {
     1
   );
 
-  const { data: previousProducts } = useProducts({ is_active: true }, 1, 1);
+  const { data: previousProducts } = useProducts({ isActive: true }, 1, 1);
 
-  const { data: previousUsers } = useUsers({ is_active: true }, 1, 1);
+  const { data: previousUsers } = useUsers({ isActive: true }, 1, 1);
 
   const isLoading = productsLoading || ordersLoading || usersLoading;
 
@@ -78,10 +78,12 @@ export function useAdminMetrics() {
   // Calculate orders by status
   const ordersByStatus: Record<OrderStatus, number> = {
     pending: 0,
+    confirmed: 0,
     processing: 0,
     shipped: 0,
     delivered: 0,
     cancelled: 0,
+    refunded: 0,
   };
 
   currentOrders?.data?.forEach((order) => {
