@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -67,6 +67,9 @@ export function ProductForm() {
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  
+  // Track loading state including async mutations
+  const isLoading = isSubmitting || createProduct.isPending || updateProduct.isPending || uploadProductImage.isPending;
 
   // Auto-generate slug from name
   const nameValue = watch('name');
@@ -219,7 +222,8 @@ export function ProductForm() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <FormProvider {...methods}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
@@ -229,20 +233,17 @@ export function ProductForm() {
               <div className="space-y-4">
                 <FormField
                   label="Nombre (Español)"
-                  {...register('name')}
-                  error={errors.name?.message}
+                  name="name"
                   required
                 />
                 <FormField
                   label="Nombre (Inglés)"
-                  {...register('name_en')}
-                  error={errors.name_en?.message}
+                  name="name_en"
                   required
                 />
                 <FormField
                   label="Slug"
-                  {...register('slug')}
-                  error={errors.slug?.message}
+                  name="slug"
                   helperText="URL amigable (se genera automáticamente)"
                   required
                 />
@@ -289,26 +290,23 @@ export function ProductForm() {
               <div className="grid md:grid-cols-3 gap-4">
                 <FormField
                   label="Precio"
+                  name="price"
                   type="number"
                   step="0.01"
-                  {...register('price', { valueAsNumber: true })}
-                  error={errors.price?.message}
                   required
                 />
                 <FormField
                   label="Precio Comparado"
+                  name="compare_at_price"
                   type="number"
                   step="0.01"
-                  {...register('compare_at_price', { valueAsNumber: true })}
-                  error={errors.compare_at_price?.message}
                   helperText="Precio anterior (para mostrar descuento)"
                 />
                 <FormField
                   label="Precio de Costo"
+                  name="cost_price"
                   type="number"
                   step="0.01"
-                  {...register('cost_price', { valueAsNumber: true })}
-                  error={errors.cost_price?.message}
                   helperText="Solo para administración"
                 />
               </div>
@@ -320,21 +318,18 @@ export function ProductForm() {
               <div className="grid md:grid-cols-2 gap-4">
                 <FormField
                   label="SKU"
-                  {...register('sku')}
-                  error={errors.sku?.message}
+                  name="sku"
                   helperText="Código único del producto"
                 />
                 <FormField
                   label="Código de Barras"
-                  {...register('barcode')}
-                  error={errors.barcode?.message}
+                  name="barcode"
                 />
                 <FormField
                   label="Peso (kg)"
+                  name="weight"
                   type="number"
                   step="0.01"
-                  {...register('weight', { valueAsNumber: true })}
-                  error={errors.weight?.message}
                 />
               </div>
             </div>
@@ -411,16 +406,17 @@ export function ProductForm() {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isLoading}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Save className="w-5 h-5" />
-                    {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Producto'}
+                    {isLoading ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Producto'}
                   </button>
             </div>
           </div>
         </div>
-      </form>
+        </form>
+      </FormProvider>
     </div>
   );
 }
