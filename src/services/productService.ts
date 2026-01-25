@@ -294,41 +294,60 @@ export const productService = {
 
   /**
    * Upload product images
+   * Falls back to storing image as base64 if storage bucket not available
    */
   async uploadProductImage(productId: string, file: File, isPrimary = false): Promise<string> {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${productId}/${Date.now()}.${fileExt}`;
-      const filePath = `products/${fileName}`;
+      let imageUrl = '';
+      
+      try {
+        // First try to upload to Supabase Storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${productId}/${Date.now()}.${fileExt}`;
+        const filePath = `products/${fileName}`;
 
-      // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('product-images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false,
+          });
 
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('product-images')
-        .getPublicUrl(filePath);
+        if (uploadError) {
+          // If bucket not found, fall back to data URL
+          if (uploadError.message?.includes('Bucket not found') || 
+              uploadError.message?.includes('404')) {
+            console.warn('Storage bucket not found, using data URL fallback');
+            imageUrl = await this.fileToDataUrl(file);
+          } else {
+            throw uploadError;
+          }
+        } else {
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(filePath);
+          imageUrl = publicUrl;
+        }
+      } catch (storageError) {
+        // Fallback: convert file to data URL for storage
+        console.warn('Could not upload to storage, using data URL:', storageError);
+        imageUrl = await this.fileToDataUrl(file);
+      }
 
       // Save image record to database
       const { error: dbError } = await supabase
         .from('product_images')
         .insert({
           product_id: productId,
-          url: publicUrl,
+          url: imageUrl,
           is_primary: isPrimary,
           order_index: 0,
         });
 
       if (dbError) throw dbError;
 
-      return publicUrl;
+      return imageUrl;
     } catch (error) {
       console.error('Error uploading product image:', error);
       throw error;
@@ -336,29 +355,88 @@ export const productService = {
   },
 
   /**
+   * Convert file to data URL as fallback
+   */
+  private async fileToDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  },
+
+  /**
    * Link categories to a product
    */
   async setProductCategories(productId: string, categoryIds: string[]): Promise<void> {
     try {
+      // Validate inputs
+      if (!productId) {
+        throw new Error('Product ID is required');
+      }
+
+      if (!categoryIds || categoryIds.length === 0) {
+        // Just delete existing categories if no new ones provided
+        const { error: deleteError } = await supabase
+          .from('product_categories')
+          .delete()
+          .eq('product_id', productId);
+        
+        if (deleteError) {
+          console.warn('Warning deleting old categories:', deleteError);
+        }
+        return;
+      }
+
+      // Filter out empty strings
+      const validCategoryIds = categoryIds.filter(id => id && id.trim());
+
+      if (validCategoryIds.length === 0) {
+        // Delete all associations if no valid categories
+        await supabase
+          .from('product_categories')
+          .delete()
+          .eq('product_id', productId);
+        return;
+      }
+
       // First delete existing category associations
-      await supabase
+      const { error: deleteError } = await supabase
         .from('product_categories')
         .delete()
         .eq('product_id', productId);
 
-      // Then insert new ones if any
-      if (categoryIds && categoryIds.length > 0) {
-        const { error } = await supabase
-          .from('product_categories')
-          .insert(
-            categoryIds.map((categoryId) => ({
-              product_id: productId,
-              category_id: categoryId,
-            }))
-          );
-
-        if (error) throw error;
+      if (deleteError) {
+        console.warn('Warning deleting old categories:', deleteError);
       }
+
+      // Then insert new ones
+      const categoriesToInsert = validCategoryIds.map((categoryId) => ({
+        product_id: productId,
+        category_id: categoryId,
+      }));
+
+      const { error: insertError, data: insertData } = await supabase
+        .from('product_categories')
+        .insert(categoriesToInsert);
+
+      if (insertError) {
+        console.error('Error inserting categories:', insertError);
+        
+        // Check if it's a foreign key constraint error (category doesn't exist)
+        if (insertError.message?.includes('23503') || 
+            insertError.message?.includes('foreign key')) {
+          throw new Error('Una o más categorías seleccionadas no existen. Por favor, selecciona categorías válidas.');
+        }
+        
+        throw insertError;
+      }
+
+      console.log('Categories linked successfully:', insertData);
     } catch (error) {
       console.error('Error setting product categories:', error);
       throw error;

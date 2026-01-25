@@ -120,19 +120,29 @@ export function ProductForm() {
 
         // Update image if provided
         if (imageFile) {
-          await uploadProductImage.mutateAsync({
-            productId: id,
-            file: imageFile,
-            isPrimary: true,
-          });
+          try {
+            await uploadProductImage.mutateAsync({
+              productId: id,
+              file: imageFile,
+              isPrimary: true,
+            });
+          } catch (imageError) {
+            console.error('Warning: Image upload failed but product was saved:', imageError);
+            toast.warning('Producto actualizado, pero la imagen no se pudo cargar');
+          }
         }
 
         // Update categories
-        if (selectedCategories.length > 0) {
-          await setProductCategories.mutateAsync({
-            productId: id,
-            categoryIds: selectedCategories,
-          });
+        try {
+          if (selectedCategories.length > 0) {
+            await setProductCategories.mutateAsync({
+              productId: id,
+              categoryIds: selectedCategories,
+            });
+          }
+        } catch (categoryError) {
+          console.error('Warning: Category update failed:', categoryError);
+          toast.warning('Producto actualizado, pero las categorías no se pudieron asignar');
         }
 
         toast.success('Producto actualizado exitosamente');
@@ -142,19 +152,29 @@ export function ProductForm() {
         
         // Upload image if provided
         if (imageFile) {
-          await uploadProductImage.mutateAsync({
-            productId: newProduct.id,
-            file: imageFile,
-            isPrimary: true,
-          });
+          try {
+            await uploadProductImage.mutateAsync({
+              productId: newProduct.id,
+              file: imageFile,
+              isPrimary: true,
+            });
+          } catch (imageError) {
+            console.error('Warning: Image upload failed but product was created:', imageError);
+            toast.warning('Producto creado, pero la imagen no se pudo cargar');
+          }
         }
 
         // Set categories
-        if (selectedCategories.length > 0) {
-          await setProductCategories.mutateAsync({
-            productId: newProduct.id,
-            categoryIds: selectedCategories,
-          });
+        try {
+          if (selectedCategories.length > 0) {
+            await setProductCategories.mutateAsync({
+              productId: newProduct.id,
+              categoryIds: selectedCategories,
+            });
+          }
+        } catch (categoryError) {
+          console.error('Warning: Category assignment failed:', categoryError);
+          toast.warning('Producto creado, pero las categorías no se pudieron asignar');
         }
 
         toast.success('Producto creado exitosamente');
@@ -162,7 +182,8 @@ export function ProductForm() {
       }
     } catch (error) {
       console.error('Error saving product:', error);
-      toast.error('Error al guardar el producto');
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      toast.error(`Error al guardar el producto: ${errorMessage}`);
     }
   };
 
