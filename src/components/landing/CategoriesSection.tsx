@@ -43,11 +43,12 @@ const itemVariants = {
 export function CategoriesSection() {
   const { t } = useTranslation();
   const { data: realCategories, isLoading: categoriesLoading } = useCategories();
-  const { data: allProducts, isLoading: productsLoading } = useProducts();
+  const { data: productsData, isLoading: productsLoading } = useProducts();
+  const allProducts = productsData?.data || [];
 
   // Count products per category
   const productCountByCategory = (realCategories || []).reduce((acc, category) => {
-    const count = (allProducts || []).filter(
+    const count = allProducts.filter(
       (p) => p.categories && p.categories.some((c) => c.id === category.id)
     ).length;
     acc[category.id] = count || 0;

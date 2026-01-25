@@ -14,7 +14,8 @@ export function CategoriesList() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: categories, isLoading: categoriesLoading } = useCategories(true);
-  const { data: allProducts } = useProducts();
+  const { data: productsData } = useProducts();
+  const allProducts = productsData?.data || [];
   const { mutate: deleteCategory, isPending: isDeleting } = useDeleteCategory();
 
   // Count products per category

@@ -153,7 +153,8 @@ export function ShopPage() {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { addItem } = useCartStore();
-  const { data: realProducts = [], isLoading } = useProducts();
+  const { data: productsData, isLoading } = useProducts();
+  const realProducts = productsData?.data || [];
   const { data: realCategories = [] } = useCategories();
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');

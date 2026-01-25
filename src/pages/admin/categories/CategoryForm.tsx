@@ -159,7 +159,7 @@ export function CategoryForm() {
             placeholder="cuidado-cabello"
             type="text"
             required
-            helpText="Se genera automáticamente, pero puedes editarlo. Solo letras minúsculas, números y guiones"
+            helperText="Se genera automáticamente, pero puedes editarlo. Solo letras minúsculas, números y guiones"
           />
 
           {/* Descriptions */}
@@ -185,7 +185,7 @@ export function CategoryForm() {
             label="URL de Imagen (Opcional)"
             placeholder="https://example.com/image.jpg"
             type="text"
-            helpText="URL de una imagen para la categoría. Si no se proporciona, se usará una por defecto"
+            helperText="URL de una imagen para la categoría. Si no se proporciona, se usará una por defecto"
           />
 
           {/* Action Buttons */}
