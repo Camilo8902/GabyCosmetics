@@ -25,6 +25,14 @@ import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { AuthCallback } from '@/pages/auth/AuthCallback';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { ProductsList } from '@/pages/admin/products/ProductsList';
+import { ProductForm } from '@/pages/admin/products/ProductForm';
+import { ProductDetail } from '@/pages/admin/products/ProductDetail';
+import { OrdersList } from '@/pages/admin/orders/OrdersList';
+import { OrderDetail } from '@/pages/admin/orders/OrderDetail';
+import { UsersList } from '@/pages/admin/users/UsersList';
+import { UserDetail } from '@/pages/admin/users/UserDetail';
+import { CompaniesList } from '@/pages/admin/companies/CompaniesList';
+import { CompanyDetail } from '@/pages/admin/companies/CompanyDetail';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
 
@@ -165,9 +173,15 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<ProductsList />} />
-            <Route path="orders" element={<div><h1 className="text-2xl font-bold mb-6">Gestión de Pedidos</h1></div>} />
-            <Route path="users" element={<div><h1 className="text-2xl font-bold mb-6">Gestión de Usuarios</h1></div>} />
-            <Route path="companies" element={<div><h1 className="text-2xl font-bold mb-6">Gestión de Empresas</h1></div>} />
+            <Route path="products/new" element={<ProductForm />} />
+            <Route path="products/:id" element={<ProductDetail />} />
+            <Route path="products/:id/edit" element={<ProductForm />} />
+            <Route path="orders" element={<OrdersList />} />
+            <Route path="orders/:id" element={<OrderDetail />} />
+            <Route path="users" element={<UsersList />} />
+            <Route path="users/:id" element={<UserDetail />} />
+            <Route path="companies" element={<CompaniesList />} />
+            <Route path="companies/:id" element={<CompanyDetail />} />
             <Route path="categories" element={<div><h1 className="text-2xl font-bold mb-6">Gestión de Categorías</h1></div>} />
             <Route path="reports" element={<div><h1 className="text-2xl font-bold mb-6">Reportes</h1></div>} />
             <Route path="settings" element={<div><h1 className="text-2xl font-bold mb-6">Configuración</h1></div>} />
