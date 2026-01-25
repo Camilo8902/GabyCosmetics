@@ -26,7 +26,7 @@ export function AdminDashboard() {
   const currentMonthEnd = endOfMonth(now);
 
   // Fetch recent orders
-  const { data: recentOrdersData, isLoading: ordersLoading } = useOrders(
+  const { data: recentOrdersData, isLoading: ordersLoading, error: ordersError } = useOrders(
     {
       startDate: formatISO(currentMonthStart),
       endDate: formatISO(currentMonthEnd),
@@ -36,7 +36,7 @@ export function AdminDashboard() {
   );
 
   // Fetch top products (we'll need to implement this in the service)
-  const { data: productsData, isLoading: productsLoading } = useProducts(
+  const { data: productsData, isLoading: productsLoading, error: productsError } = useProducts(
     { is_active: true, is_visible: true },
     1,
     4
@@ -84,6 +84,26 @@ export function AdminDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="w-12 h-12 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // Show error state if critical data fails
+  if (ordersError || productsError) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+          <h3 className="text-lg font-bold text-red-900 mb-2">Error al cargar datos</h3>
+          <p className="text-red-700">
+            {ordersError?.message || productsError?.message || 'Error desconocido'}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+          >
+            Recargar Página
+          </button>
+        </div>
       </div>
     );
   }

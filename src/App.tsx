@@ -43,7 +43,38 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 1000 * 60 * 5,
-      retry: 1,
+      retry: (failureCount, error: any) => {
+        // Don't retry on auth errors
+        if (error?.message?.includes('Auth') || 
+            error?.message?.includes('session') ||
+            error?.message?.includes('JWT') ||
+            error?.code === 'PGRST301') {
+          return false;
+        }
+        return failureCount < 1;
+      },
+      refetchOnWindowFocus: false, // Prevent refetch when tab becomes active (fixes blank page issue)
+      refetchOnReconnect: true,
+      refetchOnMount: true,
+      onError: (error: any) => {
+        // Handle auth errors globally
+        if (error?.message?.includes('Auth') || 
+            error?.message?.includes('session') ||
+            error?.code === 'PGRST301') {
+          console.warn('⚠️ Error de autenticación en query:', error);
+          // Don't redirect here, let ProtectedRoute handle it
+        }
+      },
+    },
+    mutations: {
+      retry: false,
+      onError: (error: any) => {
+        if (error?.message?.includes('Auth') || 
+            error?.message?.includes('session') ||
+            error?.code === 'PGRST301') {
+          console.warn('⚠️ Error de autenticación en mutation:', error);
+        }
+      },
     },
   },
 });
@@ -124,30 +155,55 @@ function App() {
   const { fetchUser, setLoading } = useAuthStore();
 
   useEffect(() => {
+    let mounted = true;
+
     const checkAuth = async () => {
       try {
         await fetchUser();
       } catch (error) {
         console.error('Auth check failed:', error);
+        if (mounted) {
+          setLoading(false);
+        }
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     checkAuth();
 
+    // Listen to auth state changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await fetchUser();
-      } else if (event === 'SIGNED_OUT') {
-        useAuthStore.getState().logout();
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event);
+      if (mounted) {
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          await fetchUser();
+        } else if (event === 'SIGNED_OUT') {
+          useAuthStore.getState().logout();
+        } else if (event === 'USER_UPDATED' && session) {
+          await fetchUser();
+        }
       }
     });
 
+    // Handle visibility change (when tab becomes active again)
+    const handleVisibilityChange = () => {
+      if (!document.hidden && mounted) {
+        console.log('👁️ Tab became visible, checking auth...');
+        checkAuth();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
+      mounted = false;
       subscription.unsubscribe();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchUser, setLoading]);
 

@@ -56,16 +56,20 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true });
           console.log('👤 Obteniendo usuario autenticado...');
 
-          const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-
-          if (authError) {
-            console.error('❌ Error al obtener usuario de auth:', authError);
+          // First try to get session (more reliable)
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError || !session) {
+            console.log('⚠️ No hay sesión activa');
             set({ user: null, isAuthenticated: false, isLoading: false });
             return;
           }
 
+          // If we have a session, get the user
+          const authUser = session.user;
+
           if (!authUser) {
-            console.log('⚠️ No hay usuario autenticado');
+            console.log('⚠️ No hay usuario en la sesión');
             set({ user: null, isAuthenticated: false, isLoading: false });
             return;
           }
