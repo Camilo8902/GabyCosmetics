@@ -49,21 +49,25 @@ function ProtectedRoute({
   const { isAuthenticated, user, isLoading } = useAuthStore();
 
   // Debug logging
-  if (allowedRoles) {
-    console.log('🔒 ProtectedRoute - Verificando acceso:', {
-      isLoading,
-      isAuthenticated,
-      userRole: user?.role,
-      allowedRoles,
-      hasAccess: user && allowedRoles.includes(user.role),
-    });
-  }
+  useEffect(() => {
+    if (allowedRoles) {
+      console.log('🔒 ProtectedRoute - Verificando acceso:', {
+        isLoading,
+        isAuthenticated,
+        userRole: user?.role,
+        allowedRoles,
+        hasAccess: user && allowedRoles.includes(user.role),
+        userObject: user,
+      });
+    }
+  }, [isLoading, isAuthenticated, user, allowedRoles]);
 
   if (isLoading) {
-    console.log('⏳ ProtectedRoute - Cargando...');
+    console.log('⏳ ProtectedRoute - Cargando autenticación...');
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="w-12 h-12 border-4 border-rose-600 border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="text-gray-600">Verificando acceso...</p>
       </div>
     );
   }
@@ -77,11 +81,22 @@ function ProtectedRoute({
     console.log('❌ ProtectedRoute - Rol no permitido:', {
       userRole: user.role,
       allowedRoles,
+      userEmail: user.email,
     });
-    return <Navigate to="/" replace />;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
+          <p className="text-gray-600 mb-4">
+            Tu rol actual ({user.role}) no tiene acceso a esta sección.
+          </p>
+          <Navigate to="/" replace />
+        </div>
+      </div>
+    );
   }
 
-  console.log('✅ ProtectedRoute - Acceso permitido');
+  console.log('✅ ProtectedRoute - Acceso permitido para:', user?.role);
   return <>{children}</>;
 }
 

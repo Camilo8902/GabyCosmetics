@@ -251,13 +251,20 @@ export function Header() {
                           <Link
                             to={getDashboardLink()}
                             onClick={() => {
-                              console.log('🔗 Navegando a:', getDashboardLink());
+                              const link = getDashboardLink();
+                              console.log('🔗 Navegando a dashboard:', {
+                                link,
+                                userRole: user?.role,
+                                isAdmin: isAdmin(),
+                                isCompany: isCompany(),
+                                isConsultant: isConsultant(),
+                              });
                               setIsUserMenuOpen(false);
                             }}
                             className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50"
                           >
                             <LayoutDashboard className="w-4 h-4" />
-                            {t('nav.dashboard')}
+                            {isAdmin() ? 'Panel Admin' : isCompany() ? 'Panel Empresa' : isConsultant() ? 'Panel Consultor' : t('nav.dashboard')}
                           </Link>
                           <Link
                             to="/account"

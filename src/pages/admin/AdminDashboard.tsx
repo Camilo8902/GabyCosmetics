@@ -10,74 +10,84 @@ import {
   Eye,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-
-const stats = [
-  {
-    label: 'Total Productos',
-    value: '256',
-    change: '+12%',
-    trend: 'up',
-    icon: Package,
-    color: 'bg-blue-500',
-  },
-  {
-    label: 'Pedidos del Mes',
-    value: '1,429',
-    change: '+8%',
-    trend: 'up',
-    icon: ShoppingCart,
-    color: 'bg-rose-500',
-  },
-  {
-    label: 'Clientes Activos',
-    value: '8,234',
-    change: '+23%',
-    trend: 'up',
-    icon: Users,
-    color: 'bg-emerald-500',
-  },
-  {
-    label: 'Ingresos',
-    value: '$89,432',
-    change: '-3%',
-    trend: 'down',
-    icon: DollarSign,
-    color: 'bg-amber-500',
-  },
-];
-
-const recentOrders = [
-  { id: 'GC-20250124-001', customer: 'María García', total: 549, status: 'pending' },
-  { id: 'GC-20250124-002', customer: 'Laura Martínez', total: 299, status: 'processing' },
-  { id: 'GC-20250124-003', customer: 'Ana López', total: 899, status: 'shipped' },
-  { id: 'GC-20250124-004', customer: 'Carmen Rodríguez', total: 199, status: 'delivered' },
-  { id: 'GC-20250124-005', customer: 'Patricia Sánchez', total: 449, status: 'pending' },
-];
-
-const topProducts = [
-  { name: 'Kit Completo Cabello', sales: 234, revenue: 186966 },
-  { name: 'Shampoo Reparador', sales: 189, revenue: 56511 },
-  { name: 'Aceite de Argán', sales: 156, revenue: 62244 },
-  { name: 'Mascarilla Premium', sales: 134, revenue: 60066 },
-];
-
-const statusColors: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700',
-  processing: 'bg-blue-100 text-blue-700',
-  shipped: 'bg-purple-100 text-purple-700',
-  delivered: 'bg-green-100 text-green-700',
-  cancelled: 'bg-red-100 text-red-700',
-};
-
-const statusLabels: Record<string, string> = {
-  pending: 'Pendiente',
-  processing: 'Procesando',
-  shipped: 'Enviado',
-  delivered: 'Entregado',
-  cancelled: 'Cancelado',
-};
+import { useAdminMetrics } from '@/hooks/useAdminMetrics';
+import { useOrders } from '@/hooks/useOrders';
+import { useProducts } from '@/hooks/useProducts';
+import { formatCurrency } from '@/utils/formatters';
+import { startOfMonth, endOfMonth, formatISO } from 'date-fns';
+import { ORDER_STATUS_LABELS, ORDER_STATUS_COLORS } from '@/utils/constants';
+import { useTranslation } from 'react-i18next';
 
 export function AdminDashboard() {
+  const { i18n } = useTranslation();
+  const metrics = useAdminMetrics();
+  const now = new Date();
+  const currentMonthStart = startOfMonth(now);
+  const currentMonthEnd = endOfMonth(now);
+
+  // Fetch recent orders
+  const { data: recentOrdersData, isLoading: ordersLoading } = useOrders(
+    {
+      startDate: formatISO(currentMonthStart),
+      endDate: formatISO(currentMonthEnd),
+    },
+    1,
+    5
+  );
+
+  // Fetch top products (we'll need to implement this in the service)
+  const { data: productsData, isLoading: productsLoading } = useProducts(
+    { is_active: true, is_visible: true },
+    1,
+    4
+  );
+
+  const recentOrders = recentOrdersData?.data || [];
+  const topProducts = productsData?.data || [];
+
+  const stats = [
+    {
+      label: 'Total Productos',
+      value: metrics.totalProducts.toLocaleString(),
+      change: metrics.productsTrend >= 0 ? `+${metrics.productsTrend.toFixed(1)}%` : `${metrics.productsTrend.toFixed(1)}%`,
+      trend: metrics.productsTrend >= 0 ? 'up' : 'down',
+      icon: Package,
+      color: 'bg-blue-500',
+    },
+    {
+      label: 'Pedidos del Mes',
+      value: metrics.totalOrders.toLocaleString(),
+      change: metrics.ordersTrend >= 0 ? `+${metrics.ordersTrend.toFixed(1)}%` : `${metrics.ordersTrend.toFixed(1)}%`,
+      trend: metrics.ordersTrend >= 0 ? 'up' : 'down',
+      icon: ShoppingCart,
+      color: 'bg-rose-500',
+    },
+    {
+      label: 'Clientes Activos',
+      value: metrics.totalUsers.toLocaleString(),
+      change: metrics.usersTrend >= 0 ? `+${metrics.usersTrend.toFixed(1)}%` : `${metrics.usersTrend.toFixed(1)}%`,
+      trend: metrics.usersTrend >= 0 ? 'up' : 'down',
+      icon: Users,
+      color: 'bg-emerald-500',
+    },
+    {
+      label: 'Ingresos',
+      value: formatCurrency(metrics.totalRevenue),
+      change: metrics.revenueTrend >= 0 ? `+${metrics.revenueTrend.toFixed(1)}%` : `${metrics.revenueTrend.toFixed(1)}%`,
+      trend: metrics.revenueTrend >= 0 ? 'up' : 'down',
+      icon: DollarSign,
+      color: 'bg-amber-500',
+    },
+  ];
+
+  if (metrics.isLoading || ordersLoading || productsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="w-12 h-12 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
@@ -131,29 +141,37 @@ export function AdminDashboard() {
             </Link>
           </div>
 
-          <div className="space-y-4">
-            {recentOrders.map((order) => (
-              <div
-                key={order.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{order.id}</p>
-                  <p className="text-sm text-gray-500">{order.customer}</p>
+          {recentOrders.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No hay pedidos recientes</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentOrders.map((order) => (
+                <div
+                  key={order.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                >
+                  <div>
+                    <p className="font-medium text-gray-900">{order.order_number || order.id}</p>
+                    <p className="text-sm text-gray-500">
+                      {order.user?.full_name || order.user?.email || 'Cliente'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-gray-900">{formatCurrency(order.total || 0)}</p>
+                    <span
+                      className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
+                        ORDER_STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {ORDER_STATUS_LABELS[order.status]?.[i18n.language as 'es' | 'en'] || order.status}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-bold text-gray-900">${order.total}</p>
-                  <span
-                    className={`inline-block px-2 py-1 text-xs font-medium rounded-full ${
-                      statusColors[order.status]
-                    }`}
-                  >
-                    {statusLabels[order.status]}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </motion.div>
 
         {/* Top Products */}
@@ -164,7 +182,7 @@ export function AdminDashboard() {
           className="bg-white rounded-2xl p-6 shadow-sm"
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-900">Productos Más Vendidos</h2>
+            <h2 className="text-lg font-bold text-gray-900">Productos Destacados</h2>
             <Link
               to="/admin/products"
               className="text-sm text-rose-600 hover:underline flex items-center gap-1"
@@ -173,27 +191,32 @@ export function AdminDashboard() {
             </Link>
           </div>
 
-          <div className="space-y-4">
-            {topProducts.map((product, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-rose-100 to-amber-100 rounded-lg flex items-center justify-center font-bold text-rose-600">
-                    {index + 1}
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">{product.name}</p>
-                    <p className="text-sm text-gray-500">{product.sales} ventas</p>
+          {topProducts.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <p>No hay productos disponibles</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {topProducts.slice(0, 4).map((product, index) => (
+                <div
+                  key={product.id}
+                  className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gradient-to-br from-rose-100 to-amber-100 rounded-lg flex items-center justify-center font-bold text-rose-600">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">{product.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {formatCurrency(product.price)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <p className="font-bold text-gray-900">
-                  ${product.revenue.toLocaleString()}
-                </p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </div>
 

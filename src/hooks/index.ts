@@ -7,3 +7,4 @@ export * from './useCategories';
 export * from './useOrders';
 export * from './useUsers';
 export * from './useCompanies';
+export * from './useAdminMetrics';
