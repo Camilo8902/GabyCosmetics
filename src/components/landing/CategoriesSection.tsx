@@ -103,77 +103,97 @@ export function CategoriesSection() {
         </motion.div>
 
         {/* Categories Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="grid md:grid-cols-2 gap-8"
-        >
-          {categories.map((category) => (
+        {isLoading ? (
+          <div className="flex justify-center items-center h-96">
             <motion.div
-              key={category.id}
-              variants={itemVariants}
-              whileHover={{ y: -10 }}
-              className="group"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
             >
-              <Link to={`/shop?category=${category.slug}`}>
-                <div className="relative h-96 rounded-3xl overflow-hidden shadow-xl">
-                  {/* Background Image */}
-                  <div className="absolute inset-0">
-                    <motion.img
-                      src={category.image}
-                      alt={t(category.nameKey)}
-                      className="w-full h-full object-cover"
-                      whileHover={{ scale: 1.1 }}
-                      transition={{ duration: 0.6 }}
-                    />
-                    <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-60 mix-blend-multiply`} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                  </div>
-
-                  {/* Content */}
-                  <div className="absolute inset-0 p-8 flex flex-col justify-end">
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.2 }}
-                    >
-                      <span className="text-white/80 text-sm">
-                        {category.products}+ productos
-                      </span>
-                      <h3 className="text-3xl md:text-4xl font-serif font-bold text-white mt-2">
-                        {t(category.nameKey)}
-                      </h3>
-                      <motion.div
-                        className="mt-4 flex items-center gap-2 text-white font-medium"
-                        whileHover={{ x: 5 }}
-                      >
-                        <span>{t('categories.view_all')}</span>
-                        <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
-                      </motion.div>
-                    </motion.div>
-                  </div>
-
-                  {/* Decorative elements */}
-                  <motion.div
-                    className="absolute top-6 right-6 w-16 h-16 border-2 border-white/30 rounded-full"
-                    animate={{
-                      rotate: 360,
-                    }}
-                    transition={{
-                      duration: 20,
-                      repeat: Infinity,
-                      ease: 'linear',
-                    }}
-                  />
-                  <div className="absolute top-8 right-8 w-12 h-12 border-2 border-white/20 rounded-full" />
-                </div>
-              </Link>
+              <Loader className="w-8 h-8 text-rose-600" />
             </motion.div>
-          ))}
-        </motion.div>
+          </div>
+        ) : displayCategories.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-gray-500">{t('categories.no_categories')}</p>
+          </div>
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid md:grid-cols-2 gap-8"
+          >
+            {displayCategories.map((category) => (
+              <motion.div
+                key={category.id}
+                variants={itemVariants}
+                whileHover={{ y: -10 }}
+                className="group"
+              >
+                <Link to={`/shop?category=${category.slug}`}>
+                  <div className="relative h-96 rounded-3xl overflow-hidden shadow-xl">
+                    {/* Background Image */}
+                    <div className="absolute inset-0">
+                      <motion.img
+                        src={category.image}
+                        alt={category.name}
+                        className="w-full h-full object-cover"
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.6 }}
+                      />
+                      <div className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-60 mix-blend-multiply`} />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                    </div>
+
+                    {/* Content */}
+                    <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <span className="text-white/80 text-sm">
+                          {category.products} {category.products === 1 ? 'producto' : 'productos'}
+                        </span>
+                        <h3 className="text-3xl md:text-4xl font-serif font-bold text-white mt-2">
+                          {category.name}
+                        </h3>
+                        {category.description && (
+                          <p className="text-white/80 text-sm mt-2 line-clamp-2">
+                            {category.description}
+                          </p>
+                        )}
+                        <motion.div
+                          className="mt-4 flex items-center gap-2 text-white font-medium"
+                          whileHover={{ x: 5 }}
+                        >
+                          <span>{t('categories.view_all')}</span>
+                          <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
+                        </motion.div>
+                      </motion.div>
+                    </div>
+
+                    {/* Decorative elements */}
+                    <motion.div
+                      className="absolute top-6 right-6 w-16 h-16 border-2 border-white/30 rounded-full"
+                      animate={{
+                        rotate: 360,
+                      }}
+                      transition={{
+                        duration: 20,
+                        repeat: Infinity,
+                        ease: 'linear',
+                      }}
+                    />
+                    <div className="absolute top-8 right-8 w-12 h-12 border-2 border-white/20 rounded-full" />
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
 
         {/* View All Button */}
         <motion.div
