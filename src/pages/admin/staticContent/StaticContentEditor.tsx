@@ -51,85 +51,71 @@ export function StaticContentEditor() {
   );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isReady, setIsReady] = useState(false);
 
-  // Hero Form - use empty strings as fallback
+  // Wait for store to be fully initialized
+  useEffect(() => {
+    if (store?.hero?.badge && store?.promise?.title && store?.footer?.contact?.email) {
+      setIsReady(true);
+    }
+  }, [store]);
+
+  if (!isReady) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+          className="w-8 h-8 border-4 border-rose-600 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
+  // Hero Form
   const heroForm = useForm<HeroFormData>({
     resolver: zodResolver(heroSchema),
     defaultValues: {
-      badge: store?.hero?.badge || '',
-      title: store?.hero?.title || '',
-      description: store?.hero?.description || '',
-      cta: store?.hero?.cta || '',
+      badge: store.hero.badge,
+      title: store.hero.title,
+      description: store.hero.description,
+      cta: store.hero.cta,
     },
     mode: 'onBlur',
   });
 
-  // Promise Form - use empty strings as fallback
+  // Promise Form
   const promiseForm = useForm<PromiseFormData>({
     resolver: zodResolver(promiseSchema),
     defaultValues: {
-      subtitle: store?.promise?.subtitle || '',
-      title: store?.promise?.title || '',
+      subtitle: store.promise.subtitle,
+      title: store.promise.title,
     },
     mode: 'onBlur',
   });
 
-  // Testimonials Form - use empty strings as fallback
+  // Testimonials Form
   const testimonialsForm = useForm<TestimonialsFormData>({
     resolver: zodResolver(testimonialsSchema),
     defaultValues: {
-      subtitle: store?.testimonials?.subtitle || '',
-      title: store?.testimonials?.title || '',
+      subtitle: store.testimonials.subtitle,
+      title: store.testimonials.title,
     },
     mode: 'onBlur',
   });
 
-  // Footer Form - use empty strings as fallback
+  // Footer Form
   const footerForm = useForm<FooterFormData>({
     resolver: zodResolver(footerSchema),
     defaultValues: {
-      company_name: store?.footer?.company?.name || '',
-      company_description: store?.footer?.company?.description || '',
-      email: store?.footer?.contact?.email || '',
-      phone: store?.footer?.contact?.phone || '',
-      address: store?.footer?.contact?.address || '',
+      company_name: store.footer.company.name,
+      company_description: store.footer.company.description,
+      email: store.footer.contact.email,
+      phone: store.footer.contact.phone,
+      address: store.footer.contact.address,
     },
     mode: 'onBlur',
   });
-
-  // Reset forms when store data changes
-  useEffect(() => {
-    heroForm.reset({
-      badge: store?.hero?.badge || '',
-      title: store?.hero?.title || '',
-      description: store?.hero?.description || '',
-      cta: store?.hero?.cta || '',
-    });
-  }, [store?.hero, heroForm]);
-
-  useEffect(() => {
-    promiseForm.reset({
-      subtitle: store?.promise?.subtitle || '',
-      title: store?.promise?.title || '',
-    });
-  }, [store?.promise, promiseForm]);
-
-  useEffect(() => {
-    testimonialsForm.reset({
-      subtitle: store?.testimonials?.subtitle || '',
-      title: store?.testimonials?.title || '',
-    });
-  }, [store?.testimonials, testimonialsForm]);
-
-  useEffect(() => {
-    footerForm.reset({
-      company_name: store?.footer?.company?.name || '',
-      company_description: store?.footer?.company?.description || '',
-      email: store?.footer?.contact?.email || '',
-      phone: store?.footer?.contact?.phone || '',
-      address: store?.footer?.contact?.address || '',
-    });
-  }, [store?.footer, footerForm]);
 
   const handleHeroSubmit = async (data: HeroFormData) => {
     try {

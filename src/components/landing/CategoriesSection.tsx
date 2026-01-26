@@ -4,13 +4,14 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Loader } from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
 import { useProducts } from '@/hooks/useProducts';
+import { useMemo } from 'react';
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.2,
+      staggerChildren: 0.15,
     },
   },
 };
@@ -26,29 +27,36 @@ export function CategoriesSection() {
   const { data: productsData, isLoading: productsLoading } = useProducts();
   const allProducts = productsData?.data || [];
 
-  // Count products per category
-  const productCountByCategory = (realCategories || []).reduce((acc, category) => {
-    const count = allProducts.filter(
-      (p) => p.categories && p.categories.some((c) => c.category?.id === category.id)
-    ).length;
-    acc[category.id] = count || 0;
-    return acc;
-  }, {} as Record<string, number>);
+  // Only wait for categories, not products
+  const isLoading = categoriesLoading;
 
-  // Transform real categories to display format
-  const displayCategories = (realCategories || [])
-    .filter((cat) => cat.image_url)
-    .map((cat, index) => ({
-      id: cat.id,
-      slug: cat.slug,
-      name: cat.name,
-      description: cat.description,
-      image: cat.image_url,
-      color: index % 2 === 0 ? 'from-rose-400 to-pink-500' : 'from-amber-400 to-orange-500',
-      products: productCountByCategory[cat.id] || 0,
-    }));
+  // Count products per category - memoized
+  const productCountByCategory = useMemo(() => {
+    if (!realCategories) return {};
+    return (realCategories || []).reduce((acc, category) => {
+      const count = allProducts.filter(
+        (p) => p.categories && p.categories.some((c) => c.category?.id === category.id)
+      ).length;
+      acc[category.id] = count || 0;
+      return acc;
+    }, {} as Record<string, number>);
+  }, [realCategories, allProducts]);
 
-  const isLoading = categoriesLoading || productsLoading;
+  // Transform real categories to display format - memoized
+  const displayCategories = useMemo(() => {
+    if (!realCategories) return [];
+    return (realCategories || [])
+      .filter((cat) => cat.image_url)
+      .map((cat, index) => ({
+        id: cat.id,
+        slug: cat.slug,
+        name: cat.name,
+        description: cat.description,
+        image: cat.image_url,
+        color: index % 2 === 0 ? 'from-rose-400 to-pink-500' : 'from-amber-400 to-orange-500',
+        products: productCountByCategory[cat.id] || 0,
+      }));
+  }, [realCategories, productCountByCategory]);
 
   return (
     <section className="py-24 bg-white">
@@ -108,16 +116,15 @@ export function CategoriesSection() {
                 <Link to={`/shop?category=${category.slug}`}>
                   <motion.div
                     whileHover={{ y: -10 }}
-                    className="group relative h-96 rounded-3xl overflow-hidden shadow-xl"
+                    className="group relative h-96 rounded-3xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-200 to-gray-300"
                   >
                     {/* Background Image */}
                     <div className="absolute inset-0">
-                      <motion.img
+                      <img
                         src={category.image}
                         alt={category.name}
                         className="w-full h-full object-cover"
-                        whileHover={{ scale: 1.1 }}
-                        transition={{ duration: 0.4 }}
+                        loading="lazy"
                       />
                       <div
                         className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-60 mix-blend-multiply`}
