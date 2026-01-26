@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { 
   useProduct, 
@@ -17,6 +17,13 @@ import { ImageUploader } from '@/components/ui/ImageUploader';
 import { useCategories } from '@/hooks/useCategories';
 import type { Product } from '@/types';
 import toast from 'react-hot-toast';
+
+// Función para generar SKU aleatorio
+function generateRandomSKU(): string {
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substr(2, 9).toUpperCase();
+  return `SKU-${timestamp}-${random}`;
+}
 
 type ProductFormData = {
   name: string;
@@ -116,11 +123,22 @@ export function ProductForm() {
 
   const onSubmit = async (data: ProductFormData) => {
     try {
+      // Convert string numbers to actual numbers
+      const processedData = {
+        ...data,
+        price: Number(data.price),
+        compare_at_price: data.compare_at_price ? Number(data.compare_at_price) : undefined,
+        cost_price: data.cost_price ? Number(data.cost_price) : undefined,
+        weight: data.weight ? Number(data.weight) : undefined,
+        // Generate SKU if not provided and creating new product
+        sku: !isEditing && !data.sku ? generateRandomSKU() : data.sku,
+      };
+
       if (isEditing && id) {
         // Update existing product
         await updateProduct.mutateAsync({
           id,
-          updates: data,
+          updates: processedData,
         });
         // Note: Hook already shows success toast
 
@@ -155,7 +173,7 @@ export function ProductForm() {
         navigate('/admin/products');
       } else {
         // Create new product
-        const newProduct = await createProduct.mutateAsync(data);
+        const newProduct = await createProduct.mutateAsync(processedData);
         // Note: Hook already shows success toast
         
         // Upload image if provided
@@ -318,11 +336,23 @@ export function ProductForm() {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Inventario</h2>
               <div className="grid md:grid-cols-2 gap-4">
-                <FormField
-                  label="SKU"
-                  name="sku"
-                  helperText="Código único del producto"
-                />
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <FormField
+                      label="SKU"
+                      name="sku"
+                      helperText="Código único del producto (se genera automáticamente)"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setValue('sku', generateRandomSKU())}
+                    className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center gap-2"
+                    title="Generar nuevo SKU"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
                 <FormField
                   label="Código de Barras"
                   name="barcode"
