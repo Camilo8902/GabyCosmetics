@@ -50,13 +50,7 @@ export function ProductForm() {
   const uploadProductImage = useUploadProductImage();
   const setProductCategories = useSetProductCategories();
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-    setValue,
-    watch,
-  } = useForm<ProductFormData>({
+  const methods = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
     defaultValues: {
       is_active: true,
@@ -64,6 +58,14 @@ export function ProductForm() {
       is_visible: true,
     },
   });
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setValue,
+    watch,
+  } = methods;
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
