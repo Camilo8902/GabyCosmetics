@@ -22,7 +22,7 @@ export function CategoriesList() {
   // Count products per category
   const getProductCount = (categoryId: string) => {
     return (allProducts || []).filter(
-      (p) => p.categories && p.categories.some((c) => c.id === categoryId)
+      (p) => p.categories && p.categories.some((c) => c.category?.id === categoryId)
     ).length;
   };
 

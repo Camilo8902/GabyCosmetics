@@ -302,7 +302,7 @@ export function ProductsList() {
       key: 'category',
       header: 'Categoría',
       render: (product: Product) => {
-        const category = product.categories?.[0];
+        const category = product.categories?.[0]?.category;
         return category ? (
           <span className="text-sm text-gray-600">{category.name}</span>
         ) : (
