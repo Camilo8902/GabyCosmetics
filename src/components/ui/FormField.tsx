@@ -24,7 +24,12 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
       if (context && name) {
         const { register, formState: { errors } } = context;
         error = (errors[name]?.message as string) || errorProp;
-        registerProps = register(name);
+        // For number inputs, use valueAsNumber to convert strings to numbers automatically
+        if (type === 'number') {
+          registerProps = register(name, { valueAsNumber: true });
+        } else {
+          registerProps = register(name);
+        }
       }
     } catch {
       // Component not inside FormProvider, use errorProp only

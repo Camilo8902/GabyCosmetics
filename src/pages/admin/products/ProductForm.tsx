@@ -123,22 +123,16 @@ export function ProductForm() {
 
   const onSubmit = async (data: ProductFormData) => {
     try {
-      // Convert string numbers to actual numbers
-      const processedData = {
-        ...data,
-        price: Number(data.price),
-        compare_at_price: data.compare_at_price ? Number(data.compare_at_price) : undefined,
-        cost_price: data.cost_price ? Number(data.cost_price) : undefined,
-        weight: data.weight ? Number(data.weight) : undefined,
-        // Generate SKU if not provided and creating new product
-        sku: !isEditing && !data.sku ? generateRandomSKU() : data.sku,
-      };
+      // Generate SKU if not provided and creating new product
+      if (!isEditing && !data.sku) {
+        data.sku = generateRandomSKU();
+      }
 
       if (isEditing && id) {
         // Update existing product
         await updateProduct.mutateAsync({
           id,
-          updates: processedData,
+          updates: data,
         });
         // Note: Hook already shows success toast
 
@@ -173,7 +167,7 @@ export function ProductForm() {
         navigate('/admin/products');
       } else {
         // Create new product
-        const newProduct = await createProduct.mutateAsync(processedData);
+        const newProduct = await createProduct.mutateAsync(data);
         // Note: Hook already shows success toast
         
         // Upload image if provided
