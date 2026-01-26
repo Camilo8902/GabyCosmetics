@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Loader } from 'lucide-react';
 import { useCategories } from '@/hooks/useCategories';
-import { useProducts } from '@/hooks/useProducts';
 import { useMemo } from 'react';
 
 const containerVariants = {
@@ -24,23 +23,9 @@ const itemVariants = {
 export function CategoriesSection() {
   const { t } = useTranslation();
   const { data: realCategories, isLoading: categoriesLoading } = useCategories();
-  const { data: productsData, isLoading: productsLoading } = useProducts();
-  const allProducts = productsData?.data || [];
 
-  // Only wait for categories, not products
+  // Only wait for categories
   const isLoading = categoriesLoading;
-
-  // Count products per category - memoized
-  const productCountByCategory = useMemo(() => {
-    if (!realCategories) return {};
-    return (realCategories || []).reduce((acc, category) => {
-      const count = allProducts.filter(
-        (p) => p.categories && p.categories.some((c) => c.category?.id === category.id)
-      ).length;
-      acc[category.id] = count || 0;
-      return acc;
-    }, {} as Record<string, number>);
-  }, [realCategories, allProducts]);
 
   // Transform real categories to display format - memoized
   const displayCategories = useMemo(() => {
@@ -54,9 +39,8 @@ export function CategoriesSection() {
         description: cat.description,
         image: cat.image_url,
         color: index % 2 === 0 ? 'from-rose-400 to-pink-500' : 'from-amber-400 to-orange-500',
-        products: productCountByCategory[cat.id] || 0,
       }));
-  }, [realCategories, productCountByCategory]);
+  }, [realCategories]);
 
   return (
     <section className="py-24 bg-white">
@@ -139,10 +123,7 @@ export function CategoriesSection() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                       >
-                        <span className="text-white/80 text-sm">
-                          {category.products} {category.products === 1 ? 'producto' : 'productos'}
-                        </span>
-                        <h3 className="text-lg sm:text-2xl md:text-3xl font-serif font-bold text-white mt-2">
+                        <h3 className="text-lg sm:text-2xl md:text-3xl font-serif font-bold text-white">
                           {category.name}
                         </h3>
                         {category.description && (

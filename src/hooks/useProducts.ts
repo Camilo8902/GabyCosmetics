@@ -67,7 +67,8 @@ export function useFeaturedProducts(limit = 8) {
   return useQuery<Product[]>({
     queryKey: ['products', 'featured', limit],
     queryFn: () => productService.getFeaturedProducts(limit),
-    staleTime: 1000 * 60 * 15, // 15 minutes
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 60, // Keep cache for 1 hour
   });
 }
 
@@ -78,7 +79,8 @@ export function useBestSellers(limit = 8) {
   return useQuery<Product[]>({
     queryKey: ['products', 'best-sellers', limit],
     queryFn: () => productService.getBestSellers(limit),
-    staleTime: 1000 * 60 * 15,
+    staleTime: 1000 * 60 * 30, // 30 minutes
+    gcTime: 1000 * 60 * 60, // Keep cache for 1 hour
   });
 }
 

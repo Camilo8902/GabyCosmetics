@@ -186,16 +186,21 @@ export const productService = {
   },
 
   /**
-   * Get featured products
+   * Get featured products - optimized for landing page (minimal data)
    */
   async getFeaturedProducts(limit = 8): Promise<Product[]> {
     try {
       const { data, error } = await supabase
         .from('products')
         .select(`
-          *,
-          images:product_images(*),
-          company:companies(*)
+          id,
+          name,
+          name_en,
+          slug,
+          price,
+          compare_at_price,
+          images:product_images(id, url, alt_text),
+          compare_at_price
         `)
         .eq('is_featured', true)
         .eq('is_active', true)
@@ -212,16 +217,21 @@ export const productService = {
   },
 
   /**
-   * Get best sellers
+   * Get best sellers - optimized for landing page (minimal data)
    */
   async getBestSellers(limit = 8): Promise<Product[]> {
     try {
       const { data, error } = await supabase
         .from('products')
         .select(`
-          *,
-          images:product_images(*),
-          company:companies(*)
+          id,
+          name,
+          name_en,
+          slug,
+          price,
+          compare_at_price,
+          images:product_images(id, url, alt_text),
+          compare_at_price
         `)
         .eq('is_active', true)
         .eq('is_visible', true)

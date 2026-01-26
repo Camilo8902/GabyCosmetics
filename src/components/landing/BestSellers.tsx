@@ -101,10 +101,10 @@ export function BestSellers() {
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => toggleItem(product)}
-                      className={`p-3 rounded-full shadow-lg transition-colors ${
+                      className={`p-3 rounded-full shadow-lg transition-all duration-300 ${
                         isWishlisted
                           ? 'bg-rose-600 text-white'
-                          : 'bg-white hover:bg-rose-600 hover:text-white'
+                          : 'bg-white text-gray-900 hover:bg-rose-600 hover:text-white'
                       }`}
                       title={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
                     >
@@ -114,7 +114,7 @@ export function BestSellers() {
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
-                        className="p-3 bg-white rounded-full shadow-lg hover:bg-rose-600 hover:text-white transition-colors"
+                        className="p-3 bg-white text-gray-900 rounded-full shadow-lg hover:bg-rose-600 hover:text-white transition-all duration-300"
                         title="Ver detalles"
                       >
                         <Eye className="w-5 h-5" />
