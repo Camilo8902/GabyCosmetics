@@ -2,44 +2,11 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
-
-const testimonials = [
-  {
-    id: 1,
-    name: 'María García',
-    role: 'Cliente Frecuente',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop',
-    rating: 5,
-    text: 'Increíble la calidad de los productos. Mi cabello nunca había lucido tan brillante y saludable. El shampoo reparador es simplemente mágico.',
-  },
-  {
-    id: 2,
-    name: 'Laura Martínez',
-    role: 'Estilista Profesional',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop',
-    rating: 5,
-    text: 'Como profesional, recomiendo Gaby Cosmetics a todos mis clientes. Los resultados hablan por sí solos. Productos de calidad a precios accesibles.',
-  },
-  {
-    id: 3,
-    name: 'Ana López',
-    role: 'Influencer de Belleza',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop',
-    rating: 5,
-    text: 'Llevo más de un año usando sus productos y la diferencia es notable. El servicio al cliente es excepcional y el envío siempre llega a tiempo.',
-  },
-  {
-    id: 4,
-    name: 'Carmen Rodríguez',
-    role: 'Cliente desde 2022',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop',
-    rating: 5,
-    text: 'Los tratamientos capilares son espectaculares. Mi cabello teñido se veía muy maltratado y después de usar la mascarilla premium, quedó como nuevo.',
-  },
-];
+import { useStaticTextStore } from '@/store/staticTextStore';
 
 export function Testimonials() {
   const { t } = useTranslation();
+  const { testimonials } = useStaticTextStore();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextTestimonial = () => {
@@ -61,10 +28,10 @@ export function Testimonials() {
           className="text-center mb-16"
         >
           <span className="text-rose-600 font-medium tracking-wider uppercase text-sm">
-            Testimonios
+            {testimonials.subtitle}
           </span>
           <h2 className="mt-2 text-4xl md:text-5xl font-serif font-bold text-gray-900">
-            {t('testimonials.title')}
+            {testimonials.title}
           </h2>
           <motion.div
             initial={{ width: 0 }}
@@ -100,7 +67,7 @@ export function Testimonials() {
               >
                 {/* Rating */}
                 <div className="flex justify-center gap-1 mb-6">
-                  {[...Array(testimonials[currentIndex].rating)].map((_, i) => (
+                  {[...Array(testimonials.testimonials[currentIndex].rating)].map((_, i) => (
                     <motion.div
                       key={i}
                       initial={{ opacity: 0, scale: 0 }}
@@ -114,23 +81,23 @@ export function Testimonials() {
 
                 {/* Text */}
                 <p className="text-xl md:text-2xl text-gray-700 leading-relaxed italic mb-8">
-                  "{testimonials[currentIndex].text}"
+                  "{testimonials.testimonials[currentIndex].text}"
                 </p>
 
                 {/* Author */}
                 <div className="flex items-center justify-center gap-4">
                   <motion.img
-                    src={testimonials[currentIndex].image}
-                    alt={testimonials[currentIndex].name}
+                    src={testimonials.testimonials[currentIndex].image}
+                    alt={testimonials.testimonials[currentIndex].name}
                     className="w-16 h-16 rounded-full object-cover border-4 border-rose-100"
                     whileHover={{ scale: 1.1 }}
                   />
                   <div className="text-left">
                     <p className="font-bold text-gray-900 text-lg">
-                      {testimonials[currentIndex].name}
+                      {testimonials.testimonials[currentIndex].name}
                     </p>
                     <p className="text-rose-600 text-sm">
-                      {testimonials[currentIndex].role}
+                      {testimonials.testimonials[currentIndex].role}
                     </p>
                   </div>
                 </div>
@@ -160,7 +127,7 @@ export function Testimonials() {
 
           {/* Dots Indicator */}
           <div className="flex justify-center gap-2 mt-8">
-            {testimonials.map((_, index) => (
+            {testimonials.testimonials.map((_, index) => (
               <motion.button
                 key={index}
                 onClick={() => setCurrentIndex(index)}

@@ -1,40 +1,18 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Award, Truck, Clock, Shield } from 'lucide-react';
+import { useStaticTextStore } from '@/store/staticTextStore';
 
-const features = [
-  {
-    icon: Award,
-    titleKey: 'why_us.quality',
-    descKey: 'why_us.quality_desc',
-    color: 'from-rose-500 to-pink-500',
-    bgColor: 'bg-rose-50',
-  },
-  {
-    icon: Truck,
-    titleKey: 'why_us.shipping',
-    descKey: 'why_us.shipping_desc',
-    color: 'from-amber-500 to-orange-500',
-    bgColor: 'bg-amber-50',
-  },
-  {
-    icon: Clock,
-    titleKey: 'why_us.support',
-    descKey: 'why_us.support_desc',
-    color: 'from-emerald-500 to-teal-500',
-    bgColor: 'bg-emerald-50',
-  },
-  {
-    icon: Shield,
-    titleKey: 'why_us.secure',
-    descKey: 'why_us.secure_desc',
-    color: 'from-blue-500 to-indigo-500',
-    bgColor: 'bg-blue-50',
-  },
-];
+const featureIcons: Record<string, React.FC<any>> = {
+  quality: Award,
+  shipping: Truck,
+  support: Clock,
+  secure: Shield,
+};
 
 export function WhyChooseUs() {
   const { t } = useTranslation();
+  const { promise } = useStaticTextStore();
 
   return (
     <section className="py-24 bg-white">
@@ -47,10 +25,10 @@ export function WhyChooseUs() {
           className="text-center mb-16"
         >
           <span className="text-rose-600 font-medium tracking-wider uppercase text-sm">
-            Nuestra Promesa
+            {promise.subtitle}
           </span>
           <h2 className="mt-2 text-4xl md:text-5xl font-serif font-bold text-gray-900">
-            {t('why_us.title')}
+            {promise.title}
           </h2>
           <motion.div
             initial={{ width: 0 }}
@@ -63,47 +41,58 @@ export function WhyChooseUs() {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ y: -10 }}
-              className="group"
-            >
-              <div className="text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300">
-                {/* Icon */}
-                <motion.div
-                  whileHover={{ rotate: 360, scale: 1.1 }}
-                  transition={{ duration: 0.5 }}
-                  className={`w-20 h-20 mx-auto rounded-2xl ${feature.bgColor} flex items-center justify-center mb-6`}
-                >
-                  <div className={`p-3 rounded-xl bg-gradient-to-br ${feature.color}`}>
-                    <feature.icon className="w-8 h-8 text-white" />
-                  </div>
-                </motion.div>
+          {promise.items.map((item, index) => {
+            const colors = [
+              { color: 'from-rose-500 to-pink-500', bgColor: 'bg-rose-50' },
+              { color: 'from-amber-500 to-orange-500', bgColor: 'bg-amber-50' },
+              { color: 'from-emerald-500 to-teal-500', bgColor: 'bg-emerald-50' },
+              { color: 'from-blue-500 to-indigo-500', bgColor: 'bg-blue-50' },
+            ];
+            const colorSet = colors[index % colors.length];
+            const IconComponent = Object.values(featureIcons)[index % Object.keys(featureIcons).length];
 
-                {/* Content */}
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
-                  {t(feature.titleKey)}
-                </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {t(feature.descKey)}
-                </p>
+            return (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                whileHover={{ y: -10 }}
+                className="group"
+              >
+                <div className="text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300">
+                  {/* Icon */}
+                  <motion.div
+                    whileHover={{ rotate: 360, scale: 1.1 }}
+                    transition={{ duration: 0.5 }}
+                    className={`w-20 h-20 mx-auto rounded-2xl ${colorSet.bgColor} flex items-center justify-center mb-6`}
+                  >
+                    <div className={`p-3 rounded-xl bg-gradient-to-br ${colorSet.color}`}>
+                      <IconComponent className="w-8 h-8 text-white" />
+                    </div>
+                  </motion.div>
 
-                {/* Decorative line */}
-                <motion.div
-                  initial={{ width: 0 }}
-                  whileInView={{ width: '3rem' }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.5 + index * 0.1 }}
-                  className={`h-1 bg-gradient-to-r ${feature.color} mx-auto mt-6 rounded-full`}
-                />
-              </div>
-            </motion.div>
-          ))}
+                  {/* Content */}
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">
+                    {item.description}
+                  </p>
+
+                  {/* Decorative line */}
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: '3rem' }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5 + index * 0.1 }}
+                    className={`h-1 bg-gradient-to-r ${colorSet.color} mx-auto mt-6 rounded-full`}
+                  />
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
 
         {/* Trust Badges */}

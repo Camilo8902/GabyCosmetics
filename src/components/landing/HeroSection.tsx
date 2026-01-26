@@ -2,9 +2,11 @@ import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { useStaticTextStore } from '@/store/staticTextStore';
 
 export function HeroSection() {
   const { t } = useTranslation();
+  const { hero } = useStaticTextStore();
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-rose-50 via-white to-amber-50">
@@ -85,7 +87,7 @@ export function HeroSection() {
               className="inline-flex items-center gap-2 bg-rose-100 text-rose-700 px-4 py-2 rounded-full text-sm font-medium mb-6"
             >
               <Sparkles className="w-4 h-4" />
-              <span>Nueva Colección 2025</span>
+              <span>{hero.badge}</span>
             </motion.div>
 
             {/* Title */}
@@ -95,7 +97,7 @@ export function HeroSection() {
               transition={{ delay: 0.3 }}
               className="text-5xl md:text-6xl lg:text-7xl font-serif font-bold text-gray-900 leading-tight mb-6"
             >
-              {t('hero.title').split(' ').map((word, index) => (
+              {hero.title.split(' ').map((word, index) => (
                 <motion.span
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -115,7 +117,7 @@ export function HeroSection() {
               transition={{ delay: 0.5 }}
               className="text-lg md:text-xl text-gray-600 mb-8 max-w-xl mx-auto lg:mx-0"
             >
-              {t('hero.subtitle')}
+              {hero.description}
             </motion.p>
 
             {/* CTA Buttons */}
@@ -131,22 +133,13 @@ export function HeroSection() {
                   whileTap={{ scale: 0.95 }}
                   className="group px-8 py-4 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
                 >
-                  {t('hero.cta')}
+                  {hero.cta}
                   <motion.span
                     animate={{ x: [0, 5, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
                     <ArrowRight className="w-5 h-5" />
                   </motion.span>
-                </motion.button>
-              </Link>
-              <Link to="/shop?featured=true">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-gray-900 hover:text-white transition-all"
-                >
-                  {t('hero.secondary_cta')}
                 </motion.button>
               </Link>
             </motion.div>

@@ -14,9 +14,11 @@ import {
   CreditCard,
   Truck,
 } from 'lucide-react';
+import { useStaticTextStore } from '@/store/staticTextStore';
 
 export function Footer() {
   const { t } = useTranslation();
+  const { footer } = useStaticTextStore();
 
   const footerLinks = {
     quickLinks: [
@@ -60,11 +62,11 @@ export function Footer() {
             <Link to="/" className="flex items-center gap-3 mb-6">
               <img src="/logo.png" alt="Gaby Cosmetics" className="h-12 w-auto invert" />
               <span className="font-serif text-xl font-bold tracking-wider">
-                GABY COSMETICS
+                {footer.company.name.toUpperCase()}
               </span>
             </Link>
             <p className="text-gray-400 mb-6 leading-relaxed">
-              {t('footer.about_text')}
+              {footer.company.description}
             </p>
 
             {/* Social Links */}
@@ -155,25 +157,24 @@ export function Footer() {
             viewport={{ once: true }}
             transition={{ delay: 0.3 }}
           >
-            <h3 className="text-lg font-bold mb-6">{t('footer.contact_us')}</h3>
+            <h3 className="text-lg font-bold mb-6">Contacto</h3>
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
                 <span className="text-gray-400">
-                  Av. Principal #123<br />
-                  Ciudad, CP 12345
+                  {footer.contact.address}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-rose-400" />
-                <a href="tel:+521234567890" className="text-gray-400 hover:text-rose-400 transition-colors">
-                  +52 (123) 456-7890
+                <a href={`tel:${footer.contact.phone}`} className="text-gray-400 hover:text-rose-400 transition-colors">
+                  {footer.contact.phone}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-rose-400" />
-                <a href="mailto:info@gabycosmetics.com" className="text-gray-400 hover:text-rose-400 transition-colors">
-                  info@gabycosmetics.com
+                <a href={`mailto:${footer.contact.email}`} className="text-gray-400 hover:text-rose-400 transition-colors">
+                  {footer.contact.email}
                 </a>
               </li>
               <li className="flex items-center gap-3">

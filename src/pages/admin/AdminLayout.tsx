@@ -16,6 +16,7 @@ import {
   X,
   Bell,
   ChevronDown,
+  FileText,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
@@ -27,6 +28,7 @@ const adminNavItems = [
   { icon: Users, label: 'Usuarios', href: '/admin/users' },
   { icon: Building2, label: 'Empresas', href: '/admin/companies' },
   { icon: FolderTree, label: 'Categorías', href: '/admin/categories' },
+  { icon: FileText, label: 'Contenido', href: '/admin/content' },
   { icon: BarChart3, label: 'Reportes', href: '/admin/reports' },
   { icon: Settings, label: 'Configuración', href: '/admin/settings' },
 ];
