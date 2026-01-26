@@ -1,0 +1,227 @@
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { ArrowLeft, Star, ShoppingBag, Heart, Share2, Truck, Shield, RefreshCw } from 'lucide-react';
+import { useProducts } from '@/hooks';
+import { useCartStore } from '@/store/cartStore';
+import { Loader } from 'lucide-react';
+
+export function ProductDetailPage() {
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { t } = useTranslation();
+  const { addItem } = useCartStore();
+  const { data: productsData, isLoading } = useProducts();
+
+  const products = productsData?.data || [];
+  const product = products.find((p: any) => p.slug === slug);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader className="animate-spin text-pink-500" size={48} />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <h1 className="text-4xl font-bold text-gray-900 mb-4">Producto no encontrado</h1>
+        <button
+          onClick={() => navigate('/shop')}
+          className="flex items-center gap-2 px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700"
+        >
+          <ArrowLeft size={20} />
+          Volver a la tienda
+        </button>
+      </div>
+    );
+  }
+
+  const images = product.images || [];
+  const mainImage = images[0]?.url;
+  const secondaryImages = images.slice(1);
+
+  const handleAddToCart = () => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      image: mainImage,
+      slug: product.slug,
+    });
+  };
+
+  return (
+    <div className="min-h-screen bg-white">
+      {/* Header Navigation */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <button
+          onClick={() => navigate('/shop')}
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
+        >
+          <ArrowLeft size={20} />
+          <span>Volver a la tienda</span>
+        </button>
+      </div>
+
+      {/* Product Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          {/* Images */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-4"
+          >
+            {/* Main Image */}
+            {mainImage && (
+              <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden group">
+                <img
+                  src={mainImage}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                />
+
+                {/* Discount Badge */}
+                {product.compare_at_price && product.price < product.compare_at_price && (
+                  <div className="absolute top-6 right-6 bg-rose-600 text-white px-4 py-2 rounded-full font-bold text-lg">
+                    -{Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)}%
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Thumbnail Images */}
+            {secondaryImages.length > 0 && (
+              <div className="grid grid-cols-4 gap-3">
+                {secondaryImages.map((img: any, index: number) => (
+                  <div
+                    key={index}
+                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-rose-600 transition"
+                  >
+                    <img
+                      src={img.url}
+                      alt={`${product.name} ${index + 2}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+
+          {/* Details */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="space-y-8"
+          >
+            {/* Title and Rating */}
+            <div>
+              <h1 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
+                {product.name}
+              </h1>
+
+              {/* Rating */}
+              <div className="flex items-center gap-2 mb-6">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-5 h-5 ${
+                        i < 4 ? 'text-amber-400 fill-amber-400' : 'text-gray-300'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-gray-600">4.0 (120 reseñas)</span>
+              </div>
+            </div>
+
+            {/* Price */}
+            <div className="space-y-2">
+              <div className="flex items-baseline gap-4">
+                <span className="text-4xl font-bold text-gray-900">
+                  ${product.price.toFixed(2)}
+                </span>
+                {product.compare_at_price && (
+                  <span className="text-xl text-gray-500 line-through">
+                    ${product.compare_at_price.toFixed(2)}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-green-600 font-medium">En stock: {product.stock || 10} unidades</p>
+            </div>
+
+            {/* Description */}
+            {product.description && (
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-3">Descripción</h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {product.description}
+                </p>
+              </div>
+            )}
+
+            {/* Add to Cart */}
+            <div className="space-y-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleAddToCart}
+                className="w-full py-4 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition flex items-center justify-center gap-2"
+              >
+                <ShoppingBag size={20} />
+                Agregar al carrito
+              </motion.button>
+
+              <div className="grid grid-cols-2 gap-3">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="py-3 border-2 border-gray-900 text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2"
+                >
+                  <Heart size={20} />
+                  Favoritos
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="py-3 border-2 border-gray-900 text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2"
+                >
+                  <Share2 size={20} />
+                  Compartir
+                </motion.button>
+              </div>
+            </div>
+
+            {/* Trust Badges */}
+            <div className="grid grid-cols-3 gap-4 pt-6 border-t">
+              <div className="text-center space-y-2">
+                <Truck className="w-8 h-8 text-rose-600 mx-auto" />
+                <p className="text-sm font-medium text-gray-900">Envío rápido</p>
+              </div>
+              <div className="text-center space-y-2">
+                <Shield className="w-8 h-8 text-rose-600 mx-auto" />
+                <p className="text-sm font-medium text-gray-900">Compra segura</p>
+              </div>
+              <div className="text-center space-y-2">
+                <RefreshCw className="w-8 h-8 text-rose-600 mx-auto" />
+                <p className="text-sm font-medium text-gray-900">30 días retorno</p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Related Products */}
+        <div className="mt-20 pt-12 border-t">
+          <h2 className="text-3xl font-serif font-bold text-gray-900 mb-8">Productos Relacionados</h2>
+          {/* This can be extended with similar products */}
+        </div>
+      </div>
+    </div>
+  );
+}

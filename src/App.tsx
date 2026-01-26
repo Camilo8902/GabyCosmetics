@@ -39,6 +39,7 @@ import { CompanyDetail } from '@/pages/admin/companies/CompanyDetail';
 import { CategoriesList, CategoryForm } from '@/pages/admin/categories';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
+import { ProductDetailPage } from '@/pages/shop/ProductDetailPage';
 
 // Lazy load StaticContentEditor to avoid module resolution issues
 const StaticContentEditor = lazy(() => import('@/pages/admin/staticContent/StaticContentEditor').then(m => ({ default: m.StaticContentEditor })));
@@ -266,7 +267,7 @@ function App() {
           <Route path="/" element={<PublicLayout><HomePage /></PublicLayout>} />
           <Route path="/shop" element={<PublicLayout><ShopPage /></PublicLayout>} />
           <Route path="/categories" element={<PublicLayout><ShopPage /></PublicLayout>} />
-          <Route path="/product/:slug" element={<PublicLayout><ShopPage /></PublicLayout>} />
+          <Route path="/product/:slug" element={<PublicLayout><ProductDetailPage /></PublicLayout>} />
           <Route path="/about" element={<PublicLayout><div className="min-h-screen pt-24 flex items-center justify-center"><h1 className="text-4xl font-bold">Sobre Nosotros</h1></div></PublicLayout>} />
           <Route path="/contact" element={<PublicLayout><div className="min-h-screen pt-24 flex items-center justify-center"><h1 className="text-4xl font-bold">Contacto</h1></div></PublicLayout>} />
           <Route path="/wishlist" element={<PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Lista de Deseos</h1></div></PublicLayout>} />
