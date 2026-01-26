@@ -104,12 +104,13 @@ export function ProductForm() {
       setValue('description_en', product.description_en);
       setValue('short_description', product.short_description);
       setValue('short_description_en', product.short_description_en);
-      setValue('price', product.price);
-      setValue('compare_at_price', product.compare_at_price);
-      setValue('cost_price', product.cost_price);
+      // Convert numeric values to numbers in case they come as strings
+      setValue('price', typeof product.price === 'string' ? parseFloat(product.price) : product.price);
+      setValue('compare_at_price', product.compare_at_price ? (typeof product.compare_at_price === 'string' ? parseFloat(product.compare_at_price) : product.compare_at_price) : undefined);
+      setValue('cost_price', product.cost_price ? (typeof product.cost_price === 'string' ? parseFloat(product.cost_price) : product.cost_price) : undefined);
       setValue('sku', product.sku);
       setValue('barcode', product.barcode);
-      setValue('weight', product.weight);
+      setValue('weight', product.weight ? (typeof product.weight === 'string' ? parseFloat(product.weight) : product.weight) : undefined);
       setValue('is_active', product.is_active);
       setValue('is_featured', product.is_featured);
       setValue('is_visible', product.is_visible);
