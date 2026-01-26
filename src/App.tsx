@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
@@ -8,6 +8,9 @@ import '@/i18n';
 
 // Stores
 import { useAuthStore } from '@/store/authStore';
+
+// Components
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 // Layouts
 import { Header } from '@/components/layout/Header';
@@ -275,9 +278,21 @@ function App() {
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
             <Route path="products" element={<ProductsList />} />
-            <Route path="products/new" element={<ProductForm />} />
+            <Route path="products/new" element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando formulario...</div>}>
+                  <ProductForm />
+                </Suspense>
+              </ErrorBoundary>
+            } />
             <Route path="products/:id" element={<ProductDetail />} />
-            <Route path="products/:id/edit" element={<ProductForm />} />
+            <Route path="products/:id/edit" element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando formulario...</div>}>
+                  <ProductForm />
+                </Suspense>
+              </ErrorBoundary>
+            } />
             <Route path="orders" element={<OrdersList />} />
             <Route path="orders/:id" element={<OrderDetail />} />
             <Route path="users" element={<UsersList />} />
@@ -285,9 +300,27 @@ function App() {
             <Route path="companies" element={<CompaniesList />} />
             <Route path="companies/:id" element={<CompanyDetail />} />
             <Route path="categories" element={<CategoriesList />} />
-            <Route path="categories/new" element={<CategoryForm />} />
-            <Route path="categories/:id/edit" element={<CategoryForm />} />
-            <Route path="categories/:id" element={<CategoryForm />} />
+            <Route path="categories/new" element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando formulario...</div>}>
+                  <CategoryForm />
+                </Suspense>
+              </ErrorBoundary>
+            } />
+            <Route path="categories/:id/edit" element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando formulario...</div>}>
+                  <CategoryForm />
+                </Suspense>
+              </ErrorBoundary>
+            } />
+            <Route path="categories/:id" element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando formulario...</div>}>
+                  <CategoryForm />
+                </Suspense>
+              </ErrorBoundary>
+            } />
             <Route path="reports" element={<div><h1 className="text-2xl font-bold mb-6">Reportes</h1></div>} />
             <Route path="settings" element={<div><h1 className="text-2xl font-bold mb-6">Configuración</h1></div>} />
           </Route>
