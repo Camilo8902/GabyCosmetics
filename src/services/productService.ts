@@ -291,11 +291,12 @@ export const productService = {
   },
 
   /**
-   * Delete a product (soft delete by setting is_active = false)
+   * Delete a product (real delete with cascade)
    */
   async deleteProduct(id: string): Promise<void> {
     try {
       console.log('🗑️ [productService] Eliminando producto ID:', id);
+      
       // First delete related records
       // Delete product categories
       console.log('🗑️ [productService] Eliminando categorías del producto...');
@@ -303,7 +304,11 @@ export const productService = {
         .from('product_categories')
         .delete()
         .eq('product_id', id);
-      if (catError) console.error('Warning: Error deleting product categories:', catError);
+      if (catError) {
+        console.error('❌ [productService] Error eliminando categorías:', catError);
+        throw catError;
+      }
+      console.log('✅ [productService] Categorías eliminadas');
 
       // Delete product images
       console.log('🗑️ [productService] Eliminando imágenes del producto...');
@@ -311,7 +316,11 @@ export const productService = {
         .from('product_images')
         .delete()
         .eq('product_id', id);
-      if (imgError) console.error('Warning: Error deleting product images:', imgError);
+      if (imgError) {
+        console.error('❌ [productService] Error eliminando imágenes:', imgError);
+        throw imgError;
+      }
+      console.log('✅ [productService] Imágenes eliminadas');
 
       // Delete inventory
       console.log('🗑️ [productService] Eliminando inventario del producto...');
@@ -319,7 +328,11 @@ export const productService = {
         .from('inventory')
         .delete()
         .eq('product_id', id);
-      if (invError) console.error('Warning: Error deleting product inventory:', invError);
+      if (invError) {
+        console.error('❌ [productService] Error eliminando inventario:', invError);
+        throw invError;
+      }
+      console.log('✅ [productService] Inventario eliminado');
 
       // Delete product attributes
       console.log('🗑️ [productService] Eliminando atributos del producto...');
@@ -327,7 +340,11 @@ export const productService = {
         .from('product_attributes')
         .delete()
         .eq('product_id', id);
-      if (attrError) console.error('Warning: Error deleting product attributes:', attrError);
+      if (attrError) {
+        console.error('❌ [productService] Error eliminando atributos:', attrError);
+        throw attrError;
+      }
+      console.log('✅ [productService] Atributos eliminados');
 
       // Finally delete the product itself
       console.log('🗑️ [productService] Eliminando registro del producto...');
@@ -342,7 +359,7 @@ export const productService = {
       }
       console.log('✅ [productService] Producto eliminado exitosamente');
     } catch (error) {
-      console.error('❌ [productService] Error deleting product:', error);
+      console.error('❌ [productService] Error en deleteProduct:', error);
       throw error;
     }
   },

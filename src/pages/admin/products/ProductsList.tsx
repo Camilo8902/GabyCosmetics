@@ -95,10 +95,13 @@ export function ProductsList() {
 
   const handleDelete = async (id: string) => {
     try {
+      console.log('🗑️ [ProductsList] Iniciando eliminación de producto:', id);
       await deleteProduct.mutateAsync(id);
+      console.log('✅ [ProductsList] Producto eliminado exitosamente');
       setDeleteDialogOpen(false);
       setProductToDelete(null);
     } catch (error) {
+      console.error('❌ [ProductsList] Error al eliminar producto:', error);
       // Error is handled by the hook
     }
   };
