@@ -53,6 +53,49 @@ export function StaticContentEditor() {
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isReady, setIsReady] = useState(false);
 
+  // IMPORTANT: Create all forms BEFORE any conditional logic
+  // React hooks must be called in the same order every render
+  const heroForm = useForm<HeroFormData>({
+    resolver: zodResolver(heroSchema),
+    defaultValues: {
+      badge: store?.hero?.badge || '',
+      title: store?.hero?.title || '',
+      description: store?.hero?.description || '',
+      cta: store?.hero?.cta || '',
+    },
+    mode: 'onBlur',
+  });
+
+  const promiseForm = useForm<PromiseFormData>({
+    resolver: zodResolver(promiseSchema),
+    defaultValues: {
+      subtitle: store?.promise?.subtitle || '',
+      title: store?.promise?.title || '',
+    },
+    mode: 'onBlur',
+  });
+
+  const testimonialsForm = useForm<TestimonialsFormData>({
+    resolver: zodResolver(testimonialsSchema),
+    defaultValues: {
+      subtitle: store?.testimonials?.subtitle || '',
+      title: store?.testimonials?.title || '',
+    },
+    mode: 'onBlur',
+  });
+
+  const footerForm = useForm<FooterFormData>({
+    resolver: zodResolver(footerSchema),
+    defaultValues: {
+      company_name: store?.footer?.company?.name || '',
+      company_description: store?.footer?.company?.description || '',
+      email: store?.footer?.contact?.email || '',
+      phone: store?.footer?.contact?.phone || '',
+      address: store?.footer?.contact?.address || '',
+    },
+    mode: 'onBlur',
+  });
+
   // Wait for store to be fully initialized
   useEffect(() => {
     if (store?.hero?.badge && store?.promise?.title && store?.footer?.contact?.email) {
@@ -60,6 +103,7 @@ export function StaticContentEditor() {
     }
   }, [store]);
 
+  // Conditionally render - NOW this is safe because hooks are created above
   if (!isReady) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -72,50 +116,43 @@ export function StaticContentEditor() {
     );
   }
 
-  // Hero Form
-  const heroForm = useForm<HeroFormData>({
-    resolver: zodResolver(heroSchema),
-    defaultValues: {
-      badge: store.hero.badge,
-      title: store.hero.title,
-      description: store.hero.description,
-      cta: store.hero.cta,
-    },
-    mode: 'onBlur',
-  });
+  // Reset forms when store data changes - only after isReady
+  useEffect(() => {
+    if (!isReady) return;
+    heroForm.reset({
+      badge: store?.hero?.badge || '',
+      title: store?.hero?.title || '',
+      description: store?.hero?.description || '',
+      cta: store?.hero?.cta || '',
+    });
+  }, [store?.hero?.badge, heroForm, isReady]);
 
-  // Promise Form
-  const promiseForm = useForm<PromiseFormData>({
-    resolver: zodResolver(promiseSchema),
-    defaultValues: {
-      subtitle: store.promise.subtitle,
-      title: store.promise.title,
-    },
-    mode: 'onBlur',
-  });
+  useEffect(() => {
+    if (!isReady) return;
+    promiseForm.reset({
+      subtitle: store?.promise?.subtitle || '',
+      title: store?.promise?.title || '',
+    });
+  }, [store?.promise?.title, promiseForm, isReady]);
 
-  // Testimonials Form
-  const testimonialsForm = useForm<TestimonialsFormData>({
-    resolver: zodResolver(testimonialsSchema),
-    defaultValues: {
-      subtitle: store.testimonials.subtitle,
-      title: store.testimonials.title,
-    },
-    mode: 'onBlur',
-  });
+  useEffect(() => {
+    if (!isReady) return;
+    testimonialsForm.reset({
+      subtitle: store?.testimonials?.subtitle || '',
+      title: store?.testimonials?.title || '',
+    });
+  }, [store?.testimonials?.title, testimonialsForm, isReady]);
 
-  // Footer Form
-  const footerForm = useForm<FooterFormData>({
-    resolver: zodResolver(footerSchema),
-    defaultValues: {
-      company_name: store.footer.company.name,
-      company_description: store.footer.company.description,
-      email: store.footer.contact.email,
-      phone: store.footer.contact.phone,
-      address: store.footer.contact.address,
-    },
-    mode: 'onBlur',
-  });
+  useEffect(() => {
+    if (!isReady) return;
+    footerForm.reset({
+      company_name: store?.footer?.company?.name || '',
+      company_description: store?.footer?.company?.description || '',
+      email: store?.footer?.contact?.email || '',
+      phone: store?.footer?.contact?.phone || '',
+      address: store?.footer?.contact?.address || '',
+    });
+  }, [store?.footer?.contact?.email, footerForm, isReady]);
 
   const handleHeroSubmit = async (data: HeroFormData) => {
     try {
