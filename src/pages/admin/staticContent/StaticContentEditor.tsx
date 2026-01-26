@@ -96,6 +96,9 @@ export function StaticContentEditor() {
     mode: 'onBlur',
   });
 
+  // CRITICAL: ALL useEffect hooks MUST be called BEFORE any conditional returns
+  // This ensures hooks are called in the same order every render
+  
   // Wait for store to be fully initialized
   useEffect(() => {
     if (store?.hero?.badge && store?.promise?.title && store?.footer?.contact?.email) {
@@ -103,7 +106,48 @@ export function StaticContentEditor() {
     }
   }, [store]);
 
-  // Conditionally render - NOW this is safe because hooks are created above
+  // Reset hero form when store data changes
+  useEffect(() => {
+    if (!isReady) return;
+    heroForm.reset({
+      badge: store?.hero?.badge || '',
+      title: store?.hero?.title || '',
+      description: store?.hero?.description || '',
+      cta: store?.hero?.cta || '',
+    });
+  }, [store?.hero?.badge, store?.hero?.title, store?.hero?.description, store?.hero?.cta, heroForm, isReady]);
+
+  // Reset promise form when store data changes
+  useEffect(() => {
+    if (!isReady) return;
+    promiseForm.reset({
+      subtitle: store?.promise?.subtitle || '',
+      title: store?.promise?.title || '',
+    });
+  }, [store?.promise?.subtitle, store?.promise?.title, promiseForm, isReady]);
+
+  // Reset testimonials form when store data changes
+  useEffect(() => {
+    if (!isReady) return;
+    testimonialsForm.reset({
+      subtitle: store?.testimonials?.subtitle || '',
+      title: store?.testimonials?.title || '',
+    });
+  }, [store?.testimonials?.subtitle, store?.testimonials?.title, testimonialsForm, isReady]);
+
+  // Reset footer form when store data changes
+  useEffect(() => {
+    if (!isReady) return;
+    footerForm.reset({
+      company_name: store?.footer?.company?.name || '',
+      company_description: store?.footer?.company?.description || '',
+      email: store?.footer?.contact?.email || '',
+      phone: store?.footer?.contact?.phone || '',
+      address: store?.footer?.contact?.address || '',
+    });
+  }, [store?.footer?.company?.name, store?.footer?.company?.description, store?.footer?.contact?.email, store?.footer?.contact?.phone, store?.footer?.contact?.address, footerForm, isReady]);
+
+  // NOW it's safe to render conditionally - all hooks have been called
   if (!isReady) {
     return (
       <div className="flex justify-center items-center h-96">
@@ -115,44 +159,6 @@ export function StaticContentEditor() {
       </div>
     );
   }
-
-  // Reset forms when store data changes - only after isReady
-  useEffect(() => {
-    if (!isReady) return;
-    heroForm.reset({
-      badge: store?.hero?.badge || '',
-      title: store?.hero?.title || '',
-      description: store?.hero?.description || '',
-      cta: store?.hero?.cta || '',
-    });
-  }, [store?.hero?.badge, heroForm, isReady]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    promiseForm.reset({
-      subtitle: store?.promise?.subtitle || '',
-      title: store?.promise?.title || '',
-    });
-  }, [store?.promise?.title, promiseForm, isReady]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    testimonialsForm.reset({
-      subtitle: store?.testimonials?.subtitle || '',
-      title: store?.testimonials?.title || '',
-    });
-  }, [store?.testimonials?.title, testimonialsForm, isReady]);
-
-  useEffect(() => {
-    if (!isReady) return;
-    footerForm.reset({
-      company_name: store?.footer?.company?.name || '',
-      company_description: store?.footer?.company?.description || '',
-      email: store?.footer?.contact?.email || '',
-      phone: store?.footer?.contact?.phone || '',
-      address: store?.footer?.contact?.address || '',
-    });
-  }, [store?.footer?.contact?.email, footerForm, isReady]);
 
   const handleHeroSubmit = async (data: HeroFormData) => {
     try {
