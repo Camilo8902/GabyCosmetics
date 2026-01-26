@@ -292,7 +292,11 @@ export function ProductForm() {
       </div>
 
       <FormProvider {...methods}>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={(e) => {
+          console.log('🟡 [ProductForm] Evento submit del form disparado');
+          console.log('🟡 [ProductForm] Errores de validación:', Object.keys(errors));
+          handleSubmit(onSubmit)(e);
+        }} className="space-y-6">
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
@@ -488,6 +492,13 @@ export function ProductForm() {
               <button
                     type="submit"
                     disabled={isLoading}
+                    onClick={(e) => {
+                      console.log('🖱️ [ProductForm] Click en botón submit');
+                      console.log('🖱️ [ProductForm] isLoading:', isLoading);
+                      console.log('🖱️ [ProductForm] isSubmitting:', methods.formState.isSubmitting);
+                      console.log('🖱️ [ProductForm] Hay errores:', Object.keys(errors).length > 0);
+                      console.log('🖱️ [ProductForm] Errores:', errors);
+                    }}
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     <Save className="w-5 h-5" />

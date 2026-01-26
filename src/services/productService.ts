@@ -295,14 +295,54 @@ export const productService = {
    */
   async deleteProduct(id: string): Promise<void> {
     try {
+      console.log('🗑️ [productService] Eliminando producto ID:', id);
+      // First delete related records
+      // Delete product categories
+      console.log('🗑️ [productService] Eliminando categorías del producto...');
+      const { error: catError } = await supabase
+        .from('product_categories')
+        .delete()
+        .eq('product_id', id);
+      if (catError) console.error('Warning: Error deleting product categories:', catError);
+
+      // Delete product images
+      console.log('🗑️ [productService] Eliminando imágenes del producto...');
+      const { error: imgError } = await supabase
+        .from('product_images')
+        .delete()
+        .eq('product_id', id);
+      if (imgError) console.error('Warning: Error deleting product images:', imgError);
+
+      // Delete inventory
+      console.log('🗑️ [productService] Eliminando inventario del producto...');
+      const { error: invError } = await supabase
+        .from('inventory')
+        .delete()
+        .eq('product_id', id);
+      if (invError) console.error('Warning: Error deleting product inventory:', invError);
+
+      // Delete product attributes
+      console.log('🗑️ [productService] Eliminando atributos del producto...');
+      const { error: attrError } = await supabase
+        .from('product_attributes')
+        .delete()
+        .eq('product_id', id);
+      if (attrError) console.error('Warning: Error deleting product attributes:', attrError);
+
+      // Finally delete the product itself
+      console.log('🗑️ [productService] Eliminando registro del producto...');
       const { error } = await supabase
         .from('products')
-        .update({ is_active: false })
+        .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [productService] Error al eliminar producto:', error);
+        throw error;
+      }
+      console.log('✅ [productService] Producto eliminado exitosamente');
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error('❌ [productService] Error deleting product:', error);
       throw error;
     }
   },
