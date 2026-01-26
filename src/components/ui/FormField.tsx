@@ -1,5 +1,5 @@
 import { forwardRef } from 'react';
-import { useFormContext, Controller } from 'react-hook-form';
+import { useFormContext } from 'react-hook-form';
 import { cn } from '@/lib/utils';
 
 interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -8,14 +8,27 @@ interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ReactNode;
   name: string;
   type?: string;
+  error?: string;
 }
 
 export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
-  ({ label, helperText, icon, name, type = 'text', className, ...props }, ref) => {
-    const { register, formState: { errors } } = useFormContext();
-    const error = errors[name]?.message as string | undefined;
-    
+  ({ label, helperText, icon, name, type = 'text', className, error: errorProp, ...props }, ref) => {
     const isTextarea = type === 'textarea';
+
+    // Safely try to get form context
+    let error: string | undefined = errorProp;
+    let registerProps: any = {};
+    
+    try {
+      const context = useFormContext();
+      if (context && name) {
+        const { register, formState: { errors } } = context;
+        error = (errors[name]?.message as string) || errorProp;
+        registerProps = register(name);
+      }
+    } catch {
+      // Component not inside FormProvider, use errorProp only
+    }
 
     return (
       <div className="w-full">
@@ -41,7 +54,7 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
                   : 'border-gray-200 focus:ring-rose-500 focus:border-rose-500',
                 className
               )}
-              {...register(name)}
+              {...registerProps}
               {...(props as any)}
               rows={4}
             />
@@ -58,7 +71,7 @@ export const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
                   : 'border-gray-200 focus:ring-rose-500 focus:border-rose-500',
                 className
               )}
-              {...register(name)}
+              {...registerProps}
               {...props}
             />
           )}
