@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Award, Truck, Clock, Shield } from 'lucide-react';
+import { useStaticContent } from '@/hooks/useStaticContent';
 
 const features = [
   {
@@ -35,6 +36,7 @@ const features = [
 
 export function WhyChooseUs() {
   const { t } = useTranslation();
+  const { data: staticContent } = useStaticContent();
 
   return (
     <section className="py-24 bg-white">
@@ -47,10 +49,10 @@ export function WhyChooseUs() {
           className="text-center mb-16"
         >
           <span className="text-rose-600 font-medium tracking-wider uppercase text-sm">
-            Nuestra Promesa
+            {staticContent.promise.subtitle || 'Nuestra Promesa'}
           </span>
           <h2 className="mt-2 text-4xl md:text-5xl font-serif font-bold text-gray-900">
-            {t('why_us.title')}
+            {staticContent.promise.title || t('why_us.title')}
           </h2>
           <motion.div
             initial={{ width: 0 }}

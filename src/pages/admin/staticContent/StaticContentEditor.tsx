@@ -1,245 +1,235 @@
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useStaticTextStore } from '@/store/staticTextStore';
-import {
-  updateHero,
-  updatePromise,
-  updateTestimonials,
-  updateFooter,
-} from '@/services/staticTextService';
-import { FormField } from '@/components/ui/FormField';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Save, AlertCircle, CheckCircle } from 'lucide-react';
+import { Save, AlertCircle, CheckCircle, Loader } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
-// Validation schemas
-const heroSchema = z.object({
-  badge: z.string().trim().min(1, 'Badge es requerido'),
-  title: z.string().trim().min(1, 'Título es requerido'),
-  description: z.string().trim().min(1, 'Descripción es requerida'),
-  cta: z.string().trim().min(1, 'CTA es requerido'),
-});
+// Tipos
+interface HeroContent {
+  badge: string;
+  title: string;
+  description: string;
+  cta: string;
+}
 
-const promiseSchema = z.object({
-  subtitle: z.string().trim().min(1, 'Subtítulo es requerido'),
-  title: z.string().trim().min(1, 'Título es requerido'),
-});
+interface PromiseContent {
+  subtitle: string;
+  title: string;
+}
 
-const testimonialsSchema = z.object({
-  subtitle: z.string().trim().min(1, 'Subtítulo es requerido'),
-  title: z.string().trim().min(1, 'Título es requerido'),
-});
+interface TestimonialsContent {
+  subtitle: string;
+  title: string;
+}
 
-const footerSchema = z.object({
-  company_name: z.string().trim().min(1, 'Nombre de empresa es requerido'),
-  company_description: z.string().trim().min(1, 'Descripción es requerida'),
-  email: z.string().email('Email inválido'),
-  phone: z.string().trim().min(1, 'Teléfono es requerido'),
-  address: z.string().trim().min(1, 'Dirección es requerida'),
-});
+interface FooterContent {
+  company: {
+    name: string;
+    description: string;
+  };
+  contact: {
+    email: string;
+    phone: string;
+    address: string;
+  };
+}
 
-type HeroFormData = z.infer<typeof heroSchema>;
-type PromiseFormData = z.infer<typeof promiseSchema>;
-type TestimonialsFormData = z.infer<typeof testimonialsSchema>;
-type FooterFormData = z.infer<typeof footerSchema>;
+// Defaults
+const DEFAULT_HERO: HeroContent = {
+  badge: 'Belleza Natural',
+  title: 'Descubre tu Belleza Natural',
+  description: 'Productos cosméticos de alta calidad',
+  cta: 'Explorar Colección',
+};
 
-// Separate component for the form content - only renders when store is ready
-function StaticContentEditorForm() {
-  const store = useStaticTextStore();
+const DEFAULT_PROMISE: PromiseContent = {
+  subtitle: 'Por Qué Elegirnos',
+  title: 'Calidad Premium',
+};
+
+const DEFAULT_TESTIMONIALS: TestimonialsContent = {
+  subtitle: 'Lo Que Dicen',
+  title: 'Testimonios',
+};
+
+const DEFAULT_FOOTER: FooterContent = {
+  company: {
+    name: 'Gaby Cosmetics',
+    description: 'Productos de belleza premium',
+  },
+  contact: {
+    email: 'info@gabycosmetics.com',
+    phone: '+1234567890',
+    address: 'Dirección aquí',
+  },
+};
+
+export function StaticContentEditor() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [contentId, setContentId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'hero' | 'promise' | 'testimonials' | 'footer'>(
     'hero'
   );
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Create forms with definite values from store
-  const heroForm = useForm<HeroFormData>({
-    resolver: zodResolver(heroSchema),
-    defaultValues: {
-      badge: store.hero.badge,
-      title: store.hero.title,
-      description: store.hero.description,
-      cta: store.hero.cta,
-    },
-    mode: 'onBlur',
-  });
+  // Hero state
+  const [hero, setHero] = useState<HeroContent>(DEFAULT_HERO);
+  // Promise state
+  const [promise, setPromise] = useState<PromiseContent>(DEFAULT_PROMISE);
+  // Testimonials state
+  const [testimonials, setTestimonials] = useState<TestimonialsContent>(DEFAULT_TESTIMONIALS);
+  // Footer state
+  const [footer, setFooter] = useState<FooterContent>(DEFAULT_FOOTER);
 
-  const promiseForm = useForm<PromiseFormData>({
-    resolver: zodResolver(promiseSchema),
-    defaultValues: {
-      subtitle: store.promise.subtitle,
-      title: store.promise.title,
-    },
-    mode: 'onBlur',
-  });
+  // Load content on mount (ONLY ONCE)
+  useEffect(() => {
+    const loadContent = async () => {
+      try {
+        const { data, error } = await supabase.from('static_content').select('*').single();
 
-  const testimonialsForm = useForm<TestimonialsFormData>({
-    resolver: zodResolver(testimonialsSchema),
-    defaultValues: {
-      subtitle: store.testimonials.subtitle,
-      title: store.testimonials.title,
-    },
-    mode: 'onBlur',
-  });
+        if (error && error.code !== 'PGRST116') {
+          // PGRST116 = no rows
+          throw error;
+        }
 
-  const footerForm = useForm<FooterFormData>({
-    resolver: zodResolver(footerSchema),
-    defaultValues: {
-      company_name: store.footer.company.name,
-      company_description: store.footer.company.description,
-      email: store.footer.contact.email,
-      phone: store.footer.contact.phone,
-      address: store.footer.contact.address,
-    },
-    mode: 'onBlur',
-  });
+        if (data) {
+          setContentId(data.id);
+          setHero(data.hero || DEFAULT_HERO);
+          setPromise(data.promise || DEFAULT_PROMISE);
+          setTestimonials(data.testimonials || DEFAULT_TESTIMONIALS);
+          setFooter(data.footer || DEFAULT_FOOTER);
+        }
+      } catch (err) {
+        console.error('Error loading content:', err);
+        setMessage({ type: 'error', text: 'Error al cargar contenido' });
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleHeroSubmit = async (data: HeroFormData) => {
+    loadContent();
+  }, []); // Dependencies vacío = solo al montar
+
+  // Validación básica
+  const validateHero = () => {
+    if (!hero.badge.trim()) return 'Badge es requerido';
+    if (!hero.title.trim()) return 'Título es requerido';
+    if (!hero.description.trim()) return 'Descripción es requerida';
+    if (!hero.cta.trim()) return 'CTA es requerido';
+    return null;
+  };
+
+  const validatePromise = () => {
+    if (!promise.subtitle.trim()) return 'Subtítulo es requerido';
+    if (!promise.title.trim()) return 'Título es requerido';
+    return null;
+  };
+
+  const validateTestimonials = () => {
+    if (!testimonials.subtitle.trim()) return 'Subtítulo es requerido';
+    if (!testimonials.title.trim()) return 'Título es requerido';
+    return null;
+  };
+
+  const validateFooter = () => {
+    if (!footer.company.name.trim()) return 'Nombre de empresa es requerido';
+    if (!footer.company.description.trim()) return 'Descripción es requerida';
+    if (!footer.contact.email.trim()) return 'Email es requerido';
+    if (!footer.contact.phone.trim()) return 'Teléfono es requerido';
+    if (!footer.contact.address.trim()) return 'Dirección es requerida';
+    return null;
+  };
+
+  // Guardar una sección
+  const handleSave = async (section: 'hero' | 'promise' | 'testimonials' | 'footer') => {
+    let error = null;
+    if (section === 'hero') error = validateHero();
+    else if (section === 'promise') error = validatePromise();
+    else if (section === 'testimonials') error = validateTestimonials();
+    else if (section === 'footer') error = validateFooter();
+
+    if (error) {
+      setMessage({ type: 'error', text: `❌ ${error}` });
+      return;
+    }
+
     try {
       setSaving(true);
       setMessage(null);
 
-      await updateHero({
-        ...store.hero,
-        ...data,
+      const payload: Record<string, unknown> = {};
+      if (section === 'hero') payload.hero = hero;
+      if (section === 'promise') payload.promise = promise;
+      if (section === 'testimonials') payload.testimonials = testimonials;
+      if (section === 'footer') payload.footer = footer;
+
+      if (contentId) {
+        // Actualizar existente
+        const { error: err } = await supabase
+          .from('static_content')
+          .update(payload)
+          .eq('id', contentId);
+
+        if (err) throw err;
+      } else {
+        // Crear nuevo
+        const { data, error: err } = await supabase
+          .from('static_content')
+          .insert({
+            hero: DEFAULT_HERO,
+            promise: DEFAULT_PROMISE,
+            testimonials: DEFAULT_TESTIMONIALS,
+            footer: DEFAULT_FOOTER,
+            ...payload,
+          })
+          .select()
+          .single();
+
+        if (err) throw err;
+        if (data) setContentId(data.id);
+      }
+
+      setMessage({
+        type: 'success',
+        text: `✅ ${section.charAt(0).toUpperCase() + section.slice(1)} actualizado`,
       });
 
-      store.updateHero(data);
-      setMessage({ type: 'success', text: '✅ Sección Hero actualizada' });
-    } catch (error) {
-      console.error('❌ Error updating hero:', error);
-      setMessage({ type: 'error', text: '❌ Error al actualizar Hero' });
+      // Evento para que landing recargue
+      window.dispatchEvent(new Event('staticContentUpdated'));
+    } catch (err) {
+      console.error('Error saving:', err);
+      setMessage({ type: 'error', text: '❌ Error al guardar' });
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePromiseSubmit = async (data: PromiseFormData) => {
-    try {
-      setSaving(true);
-      setMessage(null);
-
-      await updatePromise({
-        ...store.promise,
-        ...data,
-      });
-
-      store.updatePromise(data);
-      setMessage({ type: 'success', text: '✅ Sección Promesa actualizada' });
-    } catch (error) {
-      console.error('❌ Error updating promise:', error);
-      setMessage({ type: 'error', text: '❌ Error al actualizar Promesa' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleTestimonialsSubmit = async (data: TestimonialsFormData) => {
-    try {
-      setSaving(true);
-      setMessage(null);
-
-      await updateTestimonials({
-        ...store.testimonials,
-        ...data,
-      });
-
-      store.updateTestimonials(data);
-      setMessage({ type: 'success', text: '✅ Sección Testimonios actualizada' });
-    } catch (error) {
-      console.error('❌ Error updating testimonials:', error);
-      setMessage({ type: 'error', text: '❌ Error al actualizar Testimonios' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleFooterSubmit = async (data: FooterFormData) => {
-    try {
-      setSaving(true);
-      setMessage(null);
-
-      await updateFooter({
-        ...store.footer,
-        company: {
-          name: data.company_name,
-          description: data.company_description,
-        },
-        contact: {
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-        },
-      });
-
-      store.updateFooter({
-        company: {
-          name: data.company_name,
-          description: data.company_description,
-        },
-        contact: {
-          email: data.email,
-          phone: data.phone,
-          address: data.address,
-        },
-      });
-      setMessage({ type: 'success', text: '✅ Sección Footer actualizada' });
-    } catch (error) {
-      console.error('❌ Error updating footer:', error);
-      setMessage({ type: 'error', text: '❌ Error al actualizar Footer' });
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const tabs = [
-    { id: 'hero', label: '🏠 Hero', icon: '🏠' },
-    { id: 'promise', label: '⭐ Nuestra Promesa', icon: '⭐' },
-    { id: 'testimonials', label: '💬 Testimonios', icon: '💬' },
-    { id: 'footer', label: '👣 Footer', icon: '👣' },
-  ];
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader className="animate-spin text-pink-500" size={32} />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="text-4xl font-serif font-bold text-gray-900">Contenido Estático</h1>
-        <p className="text-gray-600 mt-2">
-          Edita los textos estáticos del landing page sin cambiar la estructura
-        </p>
-      </motion.div>
-
-      {/* Message Alert */}
-      {message && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={`p-4 rounded-lg flex items-center gap-3 ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}
-        >
-          {message.type === 'success' ? (
-            <CheckCircle className="w-5 h-5" />
-          ) : (
-            <AlertCircle className="w-5 h-5" />
-          )}
-          {message.text}
-        </motion.div>
-      )}
+    <div className="max-w-4xl mx-auto p-6">
+      <h1 className="text-3xl font-bold mb-6">📝 Gestor de Contenido Estático</h1>
 
       {/* Tabs */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-200">
-        {tabs.map((tab) => (
+      <div className="flex gap-2 mb-6 border-b">
+        {[
+          { id: 'hero', label: '🏠 Hero' },
+          { id: 'promise', label: '⭐ Promesa' },
+          { id: 'testimonials', label: '💬 Testimonios' },
+          { id: 'footer', label: '👣 Footer' },
+        ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`px-4 py-3 font-medium border-b-2 transition-colors ${
+            className={`px-4 py-2 font-medium transition ${
               activeTab === tab.id
-                ? 'border-rose-600 text-rose-600'
-                : 'border-transparent text-gray-600 hover:text-gray-900'
+                ? 'border-b-2 border-pink-500 text-pink-500'
+                : 'text-gray-600 hover:text-gray-900'
             }`}
           >
             {tab.label}
@@ -247,298 +237,247 @@ function StaticContentEditorForm() {
         ))}
       </div>
 
-      {/* Content */}
-      <motion.div
-        key={activeTab}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="bg-white rounded-2xl p-8 shadow-sm"
-      >
-        {/* Hero Section */}
-        {activeTab === 'hero' && (
-          <form onSubmit={heroForm.handleSubmit(handleHeroSubmit)} className="space-y-6">
-            <div className="bg-rose-50 p-6 rounded-xl border border-rose-200">
-              <h3 className="font-semibold text-gray-900 mb-4">Sección Hero</h3>
-              <p className="text-sm text-gray-600">
-                Estos textos aparecen en el banner principal de la página
-              </p>
-            </div>
+      {/* Message */}
+      {message && (
+        <div
+          className={`p-4 mb-6 rounded-lg flex items-center gap-2 ${
+            message.type === 'success'
+              ? 'bg-green-100 text-green-700 border border-green-300'
+              : 'bg-red-100 text-red-700 border border-red-300'
+          }`}
+        >
+          {message.type === 'success' ? (
+            <CheckCircle size={20} />
+          ) : (
+            <AlertCircle size={20} />
+          )}
+          {message.text}
+        </div>
+      )}
 
-            <FormField
-              label="Badge (Etiqueta pequeña)"
-              error={heroForm.formState.errors.badge?.message}
-            >
-              <input
-                {...heroForm.register('badge')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                placeholder="ej: ✨ Belleza Natural"
-              />
-            </FormField>
+      {/* Hero Tab */}
+      {activeTab === 'hero' && (
+        <div className="space-y-4 pb-6">
+          <div>
+            <label className="block text-sm font-medium mb-1">Badge</label>
+            <input
+              type="text"
+              value={hero.badge}
+              onChange={(e) => setHero({ ...hero, badge: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Belleza Natural"
+            />
+          </div>
 
-            <FormField
-              label="Título Principal"
-              error={heroForm.formState.errors.title?.message}
-            >
-              <textarea
-                {...heroForm.register('title')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                rows={2}
-                placeholder="ej: Transforma Tu Belleza Natural"
-              />
-            </FormField>
+          <div>
+            <label className="block text-sm font-medium mb-1">Título</label>
+            <input
+              type="text"
+              value={hero.title}
+              onChange={(e) => setHero({ ...hero, title: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Descubre tu Belleza Natural"
+            />
+          </div>
 
-            <FormField
-              label="Descripción"
-              error={heroForm.formState.errors.description?.message}
-            >
-              <textarea
-                {...heroForm.register('description')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                rows={3}
-                placeholder="Descripción del hero"
-              />
-            </FormField>
+          <div>
+            <label className="block text-sm font-medium mb-1">Descripción</label>
+            <textarea
+              value={hero.description}
+              onChange={(e) => setHero({ ...hero, description: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              rows={3}
+              placeholder="ej. Productos cosméticos de alta calidad"
+            />
+          </div>
 
-            <FormField
-              label="Botón CTA (Call To Action)"
-              error={heroForm.formState.errors.cta?.message}
-            >
-              <input
-                {...heroForm.register('cta')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                placeholder="ej: Explorar Colección"
-              />
-            </FormField>
+          <div>
+            <label className="block text-sm font-medium mb-1">CTA (Call To Action)</label>
+            <input
+              type="text"
+              value={hero.cta}
+              onChange={(e) => setHero({ ...hero, cta: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Explorar Colección"
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
-            >
-              <Save className="w-5 h-5" />
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </form>
-        )}
-
-        {/* Promise Section */}
-        {activeTab === 'promise' && (
-          <form onSubmit={promiseForm.handleSubmit(handlePromiseSubmit)} className="space-y-6">
-            <div className="bg-amber-50 p-6 rounded-xl border border-amber-200">
-              <h3 className="font-semibold text-gray-900 mb-4">Sección Nuestra Promesa</h3>
-              <p className="text-sm text-gray-600">
-                Edita el título y subtítulo de la sección (los items de características se
-                editan en otro módulo)
-              </p>
-            </div>
-
-            <FormField
-              label="Subtítulo"
-              error={promiseForm.formState.errors.subtitle?.message}
-            >
-              <input
-                {...promiseForm.register('subtitle')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                placeholder="ej: Nuestra Promesa"
-              />
-            </FormField>
-
-            <FormField
-              label="Título Principal"
-              error={promiseForm.formState.errors.title?.message}
-            >
-              <textarea
-                {...promiseForm.register('title')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                rows={2}
-                placeholder="ej: ¿Por qué elegir Gaby Cosmetics?"
-              />
-            </FormField>
-
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
-            >
-              <Save className="w-5 h-5" />
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </form>
-        )}
-
-        {/* Testimonials Section */}
-        {activeTab === 'testimonials' && (
-          <form
-            onSubmit={testimonialsForm.handleSubmit(handleTestimonialsSubmit)}
-            className="space-y-6"
+          <button
+            onClick={() => handleSave('hero')}
+            disabled={saving}
+            className="mt-4 bg-pink-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-pink-600 disabled:opacity-50"
           >
-            <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
-              <h3 className="font-semibold text-gray-900 mb-4">Sección Testimonios</h3>
-              <p className="text-sm text-gray-600">
-                Edita el título y subtítulo (los testimonios individuales se editan en otro
-                módulo)
-              </p>
-            </div>
+            <Save size={18} />
+            {saving ? 'Guardando...' : 'Guardar Hero'}
+          </button>
+        </div>
+      )}
 
-            <FormField
-              label="Subtítulo"
-              error={testimonialsForm.formState.errors.subtitle?.message}
-            >
-              <input
-                {...testimonialsForm.register('subtitle')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                placeholder="ej: Testimonios"
-              />
-            </FormField>
+      {/* Promise Tab */}
+      {activeTab === 'promise' && (
+        <div className="space-y-4 pb-6">
+          <div>
+            <label className="block text-sm font-medium mb-1">Subtítulo</label>
+            <input
+              type="text"
+              value={promise.subtitle}
+              onChange={(e) => setPromise({ ...promise, subtitle: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Por Qué Elegirnos"
+            />
+          </div>
 
-            <FormField
-              label="Título Principal"
-              error={testimonialsForm.formState.errors.title?.message}
-            >
-              <textarea
-                {...testimonialsForm.register('title')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                rows={2}
-                placeholder="ej: Lo que dicen nuestros clientes"
-              />
-            </FormField>
+          <div>
+            <label className="block text-sm font-medium mb-1">Título</label>
+            <input
+              type="text"
+              value={promise.title}
+              onChange={(e) => setPromise({ ...promise, title: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Calidad Premium"
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
-            >
-              <Save className="w-5 h-5" />
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </form>
-        )}
+          <button
+            onClick={() => handleSave('promise')}
+            disabled={saving}
+            className="mt-4 bg-pink-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-pink-600 disabled:opacity-50"
+          >
+            <Save size={18} />
+            {saving ? 'Guardando...' : 'Guardar Promesa'}
+          </button>
+        </div>
+      )}
 
-        {/* Footer Section */}
-        {activeTab === 'footer' && (
-          <form onSubmit={footerForm.handleSubmit(handleFooterSubmit)} className="space-y-6">
-            <div className="bg-slate-50 p-6 rounded-xl border border-slate-200">
-              <h3 className="font-semibold text-gray-900 mb-4">Sección Footer</h3>
-              <p className="text-sm text-gray-600">Edita la información de contacto y empresa</p>
-            </div>
+      {/* Testimonials Tab */}
+      {activeTab === 'testimonials' && (
+        <div className="space-y-4 pb-6">
+          <div>
+            <label className="block text-sm font-medium mb-1">Subtítulo</label>
+            <input
+              type="text"
+              value={testimonials.subtitle}
+              onChange={(e) => setTestimonials({ ...testimonials, subtitle: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Lo Que Dicen"
+            />
+          </div>
 
-            <div className="border-b pb-6">
-              <h4 className="font-medium text-gray-900 mb-4">Empresa</h4>
+          <div>
+            <label className="block text-sm font-medium mb-1">Título</label>
+            <input
+              type="text"
+              value={testimonials.title}
+              onChange={(e) => setTestimonials({ ...testimonials, title: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Testimonios"
+            />
+          </div>
 
-              <FormField
-                label="Nombre de Empresa"
-                error={footerForm.formState.errors.company_name?.message}
-              >
-                <input
-                  {...footerForm.register('company_name')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  placeholder="ej: Gaby Cosmetics"
-                />
-              </FormField>
+          <button
+            onClick={() => handleSave('testimonials')}
+            disabled={saving}
+            className="mt-4 bg-pink-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-pink-600 disabled:opacity-50"
+          >
+            <Save size={18} />
+            {saving ? 'Guardando...' : 'Guardar Testimonios'}
+          </button>
+        </div>
+      )}
 
-              <FormField
-                label="Descripción"
-                error={footerForm.formState.errors.company_description?.message}
-              >
-                <textarea
-                  {...footerForm.register('company_description')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  rows={2}
-                  placeholder="Descripción corta de la empresa"
-                />
-              </FormField>
-            </div>
+      {/* Footer Tab */}
+      {activeTab === 'footer' && (
+        <div className="space-y-4 pb-6">
+          <div>
+            <label className="block text-sm font-medium mb-1">Nombre Empresa</label>
+            <input
+              type="text"
+              value={footer.company.name}
+              onChange={(e) =>
+                setFooter({
+                  ...footer,
+                  company: { ...footer.company, name: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Gaby Cosmetics"
+            />
+          </div>
 
-            <div>
-              <h4 className="font-medium text-gray-900 mb-4">Contacto</h4>
+          <div>
+            <label className="block text-sm font-medium mb-1">Descripción Empresa</label>
+            <textarea
+              value={footer.company.description}
+              onChange={(e) =>
+                setFooter({
+                  ...footer,
+                  company: { ...footer.company, description: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              rows={2}
+              placeholder="ej. Productos de belleza premium"
+            />
+          </div>
 
-              <FormField
-                label="Email"
-                error={footerForm.formState.errors.email?.message}
-              >
-                <input
-                  {...footerForm.register('email')}
-                  type="email"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  placeholder="info@example.com"
-                />
-              </FormField>
+          <div>
+            <label className="block text-sm font-medium mb-1">Email</label>
+            <input
+              type="email"
+              value={footer.contact.email}
+              onChange={(e) =>
+                setFooter({
+                  ...footer,
+                  contact: { ...footer.contact, email: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. info@gabycosmetics.com"
+            />
+          </div>
 
-              <FormField
-                label="Teléfono"
-                error={footerForm.formState.errors.phone?.message}
-              >
-                <input
-                  {...footerForm.register('phone')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  placeholder="+34 912 345 678"
-                />
-              </FormField>
+          <div>
+            <label className="block text-sm font-medium mb-1">Teléfono</label>
+            <input
+              type="tel"
+              value={footer.contact.phone}
+              onChange={(e) =>
+                setFooter({
+                  ...footer,
+                  contact: { ...footer.contact, phone: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. +1234567890"
+            />
+          </div>
 
-              <FormField
-                label="Dirección"
-                error={footerForm.formState.errors.address?.message}
-              >
-                <textarea
-                  {...footerForm.register('address')}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                  rows={2}
-                  placeholder="Calle Principal 123, Madrid, España"
-                />
-              </FormField>
-            </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Dirección</label>
+            <input
+              type="text"
+              value={footer.contact.address}
+              onChange={(e) =>
+                setFooter({
+                  ...footer,
+                  contact: { ...footer.contact, address: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              placeholder="ej. Calle Principal 123"
+            />
+          </div>
 
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full px-6 py-3 bg-rose-600 text-white rounded-lg hover:bg-rose-700 disabled:opacity-50 flex items-center justify-center gap-2 font-medium"
-            >
-              <Save className="w-5 h-5" />
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </form>
-        )}
-      </motion.div>
-
-      {/* Info Box */}
-      <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
-        <h4 className="font-semibold text-gray-900 mb-2">💡 Nota Importante</h4>
-        <p className="text-sm text-gray-700">
-          Los cambios se guardan en la base de datos de Supabase. Los cambios se reflejarán
-          inmediatamente en el landing page sin necesidad de recargar la página.
-        </p>
-      </div>
+          <button
+            onClick={() => handleSave('footer')}
+            disabled={saving}
+            className="mt-4 bg-pink-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-pink-600 disabled:opacity-50"
+          >
+            <Save size={18} />
+            {saving ? 'Guardando...' : 'Guardar Footer'}
+          </button>
+        </div>
+      )}
     </div>
   );
-}
-
-// Main wrapper component - handles loading and validation
-export function StaticContentEditor() {
-  const store = useStaticTextStore();
-
-  // Check if store is fully initialized with actual values
-  const isStoreReady = !!(
-    store?.hero?.badge && 
-    store?.promise?.title && 
-    store?.footer?.contact?.email &&
-    typeof store.hero.badge === 'string' &&
-    typeof store.promise.title === 'string' &&
-    typeof store.footer.contact.email === 'string'
-  );
-
-  if (!isStoreReady) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 border-4 border-rose-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
-
-  // Only render the form when store is ready - use key to force remount
-  return <StaticContentEditorForm key="form-ready" />;
 }

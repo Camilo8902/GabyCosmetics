@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
+import { useStaticContent } from '@/hooks/useStaticContent';
 
 const testimonials = [
   {
@@ -40,6 +41,7 @@ const testimonials = [
 
 export function Testimonials() {
   const { t } = useTranslation();
+  const { data: staticContent } = useStaticContent();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const nextTestimonial = () => {
@@ -61,10 +63,10 @@ export function Testimonials() {
           className="text-center mb-16"
         >
           <span className="text-rose-600 font-medium tracking-wider uppercase text-sm">
-            Testimonios
+            {staticContent.testimonials.subtitle || 'Testimonios'}
           </span>
           <h2 className="mt-2 text-4xl md:text-5xl font-serif font-bold text-gray-900">
-            {t('testimonials.title')}
+            {staticContent.testimonials.title || t('testimonials.title')}
           </h2>
           <motion.div
             initial={{ width: 0 }}

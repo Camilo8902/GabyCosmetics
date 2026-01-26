@@ -14,9 +14,11 @@ import {
   CreditCard,
   Truck,
 } from 'lucide-react';
+import { useStaticContent } from '@/hooks/useStaticContent';
 
 export function Footer() {
   const { t } = useTranslation();
+  const { data: staticContent } = useStaticContent();
 
   const footerLinks = {
     quickLinks: [
@@ -160,19 +162,19 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
                 <span className="text-gray-400">
-                  Calle Principal 123, Madrid, España
+                  {staticContent.footer.contact.address || 'Calle Principal 123, Madrid, España'}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-rose-400" />
-                <a href="tel:+34912345678" className="text-gray-400 hover:text-rose-400 transition-colors">
-                  +34 91 234 5678
+                <a href={`tel:${staticContent.footer.contact.phone}`} className="text-gray-400 hover:text-rose-400 transition-colors">
+                  {staticContent.footer.contact.phone}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-rose-400" />
-                <a href="mailto:info@gabycosmetics.com" className="text-gray-400 hover:text-rose-400 transition-colors">
-                  info@gabycosmetics.com
+                <a href={`mailto:${staticContent.footer.contact.email}`} className="text-gray-400 hover:text-rose-400 transition-colors">
+                  {staticContent.footer.contact.email}
                 </a>
               </li>
               <li className="flex items-center gap-3">
