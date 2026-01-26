@@ -14,11 +14,9 @@ import {
   CreditCard,
   Truck,
 } from 'lucide-react';
-import { useStaticTextStore } from '@/store/staticTextStore';
 
 export function Footer() {
   const { t } = useTranslation();
-  const { footer } = useStaticTextStore();
 
   const footerLinks = {
     quickLinks: [
@@ -62,11 +60,11 @@ export function Footer() {
             <Link to="/" className="flex items-center gap-3 mb-6">
               <img src="/logo.png" alt="Gaby Cosmetics" className="h-12 w-auto invert" />
               <span className="font-serif text-xl font-bold tracking-wider">
-                {footer.company.name.toUpperCase()}
+                GABY COSMETICS
               </span>
             </Link>
             <p className="text-gray-400 mb-6 leading-relaxed">
-              {footer.company.description}
+              Descubre cosméticos premium con ingredientes naturales. Belleza consciente para la mujer moderna.
             </p>
 
             {/* Social Links */}
@@ -162,19 +160,19 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-rose-400 flex-shrink-0 mt-0.5" />
                 <span className="text-gray-400">
-                  {footer.contact.address}
+                  Calle Principal 123, Madrid, España
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-rose-400" />
-                <a href={`tel:${footer.contact.phone}`} className="text-gray-400 hover:text-rose-400 transition-colors">
-                  {footer.contact.phone}
+                <a href="tel:+34912345678" className="text-gray-400 hover:text-rose-400 transition-colors">
+                  +34 91 234 5678
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-rose-400" />
-                <a href={`mailto:${footer.contact.email}`} className="text-gray-400 hover:text-rose-400 transition-colors">
-                  {footer.contact.email}
+                <a href="mailto:info@gabycosmetics.com" className="text-gray-400 hover:text-rose-400 transition-colors">
+                  info@gabycosmetics.com
                 </a>
               </li>
               <li className="flex items-center gap-3">

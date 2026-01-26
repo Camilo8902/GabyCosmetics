@@ -37,9 +37,11 @@ import { UserDetail } from '@/pages/admin/users/UserDetail';
 import { CompaniesList } from '@/pages/admin/companies/CompaniesList';
 import { CompanyDetail } from '@/pages/admin/companies/CompanyDetail';
 import { CategoriesList, CategoryForm } from '@/pages/admin/categories';
-import { StaticContentEditor } from '@/pages/admin/staticContent/StaticContentEditor';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
+
+// Lazy load StaticContentEditor to avoid module resolution issues
+const StaticContentEditor = lazy(() => import('@/pages/admin/staticContent/StaticContentEditor').then(m => ({ default: m.StaticContentEditor })));
 
 // Supabase
 import { supabase } from '@/lib/supabase';
@@ -322,7 +324,13 @@ function App() {
                 </Suspense>
               </ErrorBoundary>
             } />
-            <Route path="content" element={<StaticContentEditor />} />
+            <Route path="content" element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando editor de contenido...</div>}>
+                  <StaticContentEditor />
+                </Suspense>
+              </ErrorBoundary>
+            } />
             <Route path="reports" element={<div><h1 className="text-2xl font-bold mb-6">Reportes</h1></div>} />
             <Route path="settings" element={<div><h1 className="text-2xl font-bold mb-6">Configuración</h1></div>} />
           </Route>
