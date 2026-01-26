@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useStaticTextStore } from '@/store/staticTextStore';
 import {
@@ -15,28 +15,28 @@ import { Save, AlertCircle, CheckCircle } from 'lucide-react';
 
 // Validation schemas
 const heroSchema = z.object({
-  badge: z.string().min(1, 'Badge es requerido'),
-  title: z.string().min(1, 'Título es requerido'),
-  description: z.string().min(1, 'Descripción es requerida'),
-  cta: z.string().min(1, 'CTA es requerido'),
+  badge: z.string().trim().min(1, 'Badge es requerido'),
+  title: z.string().trim().min(1, 'Título es requerido'),
+  description: z.string().trim().min(1, 'Descripción es requerida'),
+  cta: z.string().trim().min(1, 'CTA es requerido'),
 });
 
 const promiseSchema = z.object({
-  subtitle: z.string().min(1, 'Subtítulo es requerido'),
-  title: z.string().min(1, 'Título es requerido'),
+  subtitle: z.string().trim().min(1, 'Subtítulo es requerido'),
+  title: z.string().trim().min(1, 'Título es requerido'),
 });
 
 const testimonialsSchema = z.object({
-  subtitle: z.string().min(1, 'Subtítulo es requerido'),
-  title: z.string().min(1, 'Título es requerido'),
+  subtitle: z.string().trim().min(1, 'Subtítulo es requerido'),
+  title: z.string().trim().min(1, 'Título es requerido'),
 });
 
 const footerSchema = z.object({
-  company_name: z.string().min(1, 'Nombre de empresa es requerido'),
-  company_description: z.string().min(1, 'Descripción es requerida'),
+  company_name: z.string().trim().min(1, 'Nombre de empresa es requerido'),
+  company_description: z.string().trim().min(1, 'Descripción es requerida'),
   email: z.string().email('Email inválido'),
-  phone: z.string().min(1, 'Teléfono es requerido'),
-  address: z.string().min(1, 'Dirección es requerida'),
+  phone: z.string().trim().min(1, 'Teléfono es requerido'),
+  address: z.string().trim().min(1, 'Dirección es requerida'),
 });
 
 type HeroFormData = z.infer<typeof heroSchema>;
@@ -96,6 +96,40 @@ export function StaticContentEditor() {
     },
     mode: 'onBlur',
   });
+
+  // Reset forms when store data changes
+  useEffect(() => {
+    heroForm.reset({
+      badge: store?.hero?.badge || '',
+      title: store?.hero?.title || '',
+      description: store?.hero?.description || '',
+      cta: store?.hero?.cta || '',
+    });
+  }, [store?.hero, heroForm]);
+
+  useEffect(() => {
+    promiseForm.reset({
+      subtitle: store?.promise?.subtitle || '',
+      title: store?.promise?.title || '',
+    });
+  }, [store?.promise, promiseForm]);
+
+  useEffect(() => {
+    testimonialsForm.reset({
+      subtitle: store?.testimonials?.subtitle || '',
+      title: store?.testimonials?.title || '',
+    });
+  }, [store?.testimonials, testimonialsForm]);
+
+  useEffect(() => {
+    footerForm.reset({
+      company_name: store?.footer?.company?.name || '',
+      company_description: store?.footer?.company?.description || '',
+      email: store?.footer?.contact?.email || '',
+      phone: store?.footer?.contact?.phone || '',
+      address: store?.footer?.contact?.address || '',
+    });
+  }, [store?.footer, footerForm]);
 
   const handleHeroSubmit = async (data: HeroFormData) => {
     try {
