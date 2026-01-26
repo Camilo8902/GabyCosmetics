@@ -98,8 +98,8 @@ export const productSchema = z.object({
   slug: slugSchema,
   description: descriptionSchema,
   description_en: descriptionSchema,
-  short_description: z.string().max(500).optional(),
-  short_description_en: z.string().max(500).optional(),
+  short_description: z.string().max(500).optional().or(z.literal('')),
+  short_description_en: z.string().max(500).optional().or(z.literal('')),
   price: priceSchema,
   compare_at_price: priceSchema.optional(),
   cost_price: priceSchema.optional(),
@@ -109,7 +109,7 @@ export const productSchema = z.object({
   is_active: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_visible: z.boolean().default(true),
-  company_id: z.string().uuid().optional(),
+  company_id: z.string().uuid().optional().or(z.literal('')),
 });
 
 // Category schema

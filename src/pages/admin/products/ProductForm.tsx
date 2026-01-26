@@ -104,19 +104,19 @@ export function ProductForm() {
       setValue('slug', product.slug);
       setValue('description', product.description);
       setValue('description_en', product.description_en);
-      setValue('short_description', product.short_description);
-      setValue('short_description_en', product.short_description_en);
+      setValue('short_description', product.short_description || undefined);
+      setValue('short_description_en', product.short_description_en || undefined);
       // Convert numeric values to numbers in case they come as strings
       setValue('price', typeof product.price === 'string' ? parseFloat(product.price) : product.price);
       setValue('compare_at_price', product.compare_at_price ? (typeof product.compare_at_price === 'string' ? parseFloat(product.compare_at_price) : product.compare_at_price) : undefined);
       setValue('cost_price', product.cost_price ? (typeof product.cost_price === 'string' ? parseFloat(product.cost_price) : product.cost_price) : undefined);
-      setValue('sku', product.sku);
-      setValue('barcode', product.barcode);
+      setValue('sku', product.sku || undefined);
+      setValue('barcode', product.barcode || undefined);
       setValue('weight', product.weight ? (typeof product.weight === 'string' ? parseFloat(product.weight) : product.weight) : undefined);
       setValue('is_active', product.is_active);
       setValue('is_featured', product.is_featured);
       setValue('is_visible', product.is_visible);
-      setValue('company_id', product.company_id);
+      setValue('company_id', product.company_id || undefined);
 
       if (product.categories) {
         setSelectedCategories(product.categories.map((c: any) => c.id || c.category?.id));
@@ -130,6 +130,16 @@ export function ProductForm() {
       console.log('🔵 [ProductForm] isEditing:', isEditing);
       console.log('🔵 [ProductForm] Datos del formulario:', data);
 
+      // Clean up optional fields - convert empty strings to undefined
+      const cleanData = {
+        ...data,
+        short_description: data.short_description || undefined,
+        short_description_en: data.short_description_en || undefined,
+        sku: data.sku || undefined,
+        barcode: data.barcode || undefined,
+        company_id: data.company_id || undefined,
+      };
+
       // If editing, check if there are actual changes
       if (isEditing && product) {
         console.log('🔵 [ProductForm] Comparando cambios...');
@@ -137,22 +147,22 @@ export function ProductForm() {
         
         // Check if any field has changed (excluding SKU which can be regenerated)
         const hasChanges = 
-          product.name !== data.name ||
-          product.name_en !== data.name_en ||
-          product.slug !== data.slug ||
-          product.description !== data.description ||
-          product.description_en !== data.description_en ||
-          product.short_description !== data.short_description ||
-          product.short_description_en !== data.short_description_en ||
-          product.price !== data.price ||
-          product.compare_at_price !== data.compare_at_price ||
-          product.cost_price !== data.cost_price ||
-          (data.sku && product.sku !== data.sku) ||
-          product.barcode !== data.barcode ||
-          product.weight !== data.weight ||
-          product.is_active !== data.is_active ||
-          product.is_featured !== data.is_featured ||
-          product.is_visible !== data.is_visible ||
+          product.name !== cleanData.name ||
+          product.name_en !== cleanData.name_en ||
+          product.slug !== cleanData.slug ||
+          product.description !== cleanData.description ||
+          product.description_en !== cleanData.description_en ||
+          product.short_description !== cleanData.short_description ||
+          product.short_description_en !== cleanData.short_description_en ||
+          product.price !== cleanData.price ||
+          product.compare_at_price !== cleanData.compare_at_price ||
+          product.cost_price !== cleanData.cost_price ||
+          (cleanData.sku && product.sku !== cleanData.sku) ||
+          product.barcode !== cleanData.barcode ||
+          product.weight !== cleanData.weight ||
+          product.is_active !== cleanData.is_active ||
+          product.is_featured !== cleanData.is_featured ||
+          product.is_visible !== cleanData.is_visible ||
           selectedCategories.length > 0 ||
           imageFile !== null;
 
@@ -166,9 +176,9 @@ export function ProductForm() {
       }
 
       // Generate SKU if not provided and creating new product
-      if (!isEditing && !data.sku) {
-        data.sku = generateRandomSKU();
-        console.log('🔵 [ProductForm] SKU generado:', data.sku);
+      if (!isEditing && !cleanData.sku) {
+        cleanData.sku = generateRandomSKU();
+        console.log('🔵 [ProductForm] SKU generado:', cleanData.sku);
       }
 
       if (isEditing && id) {
@@ -176,7 +186,7 @@ export function ProductForm() {
         // Update existing product
         await updateProduct.mutateAsync({
           id,
-          updates: data,
+          updates: cleanData,
         });
         console.log('✅ [ProductForm] Producto actualizado exitosamente');
         // Note: Hook already shows success toast
@@ -218,7 +228,7 @@ export function ProductForm() {
       } else {
         console.log('🟢 [ProductForm] Creando nuevo producto');
         // Create new product
-        const newProduct = await createProduct.mutateAsync(data);
+        const newProduct = await createProduct.mutateAsync(cleanData);
         console.log('✅ [ProductForm] Producto creado exitosamente, ID:', newProduct.id);
         // Note: Hook already shows success toast
         
