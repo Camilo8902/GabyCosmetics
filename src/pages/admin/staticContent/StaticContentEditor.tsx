@@ -44,7 +44,8 @@ type PromiseFormData = z.infer<typeof promiseSchema>;
 type TestimonialsFormData = z.infer<typeof testimonialsSchema>;
 type FooterFormData = z.infer<typeof footerSchema>;
 
-export function StaticContentEditor() {
+// Separate component for the form content - only renders when store is ready
+function StaticContentEditorForm() {
   const store = useStaticTextStore();
   const [activeTab, setActiveTab] = useState<'hero' | 'promise' | 'testimonials' | 'footer'>(
     'hero'
@@ -52,17 +53,14 @@ export function StaticContentEditor() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Simple check: if store has hero badge, it's initialized
-  const isStoreReady = !!(store?.hero?.badge && store?.promise?.title && store?.footer?.contact?.email);
-
-  // Create forms with safe defaults - only once
+  // Create forms with definite values from store
   const heroForm = useForm<HeroFormData>({
     resolver: zodResolver(heroSchema),
     defaultValues: {
-      badge: store?.hero?.badge || '',
-      title: store?.hero?.title || '',
-      description: store?.hero?.description || '',
-      cta: store?.hero?.cta || '',
+      badge: store.hero.badge,
+      title: store.hero.title,
+      description: store.hero.description,
+      cta: store.hero.cta,
     },
     mode: 'onBlur',
   });
@@ -70,8 +68,8 @@ export function StaticContentEditor() {
   const promiseForm = useForm<PromiseFormData>({
     resolver: zodResolver(promiseSchema),
     defaultValues: {
-      subtitle: store?.promise?.subtitle || '',
-      title: store?.promise?.title || '',
+      subtitle: store.promise.subtitle,
+      title: store.promise.title,
     },
     mode: 'onBlur',
   });
@@ -79,8 +77,8 @@ export function StaticContentEditor() {
   const testimonialsForm = useForm<TestimonialsFormData>({
     resolver: zodResolver(testimonialsSchema),
     defaultValues: {
-      subtitle: store?.testimonials?.subtitle || '',
-      title: store?.testimonials?.title || '',
+      subtitle: store.testimonials.subtitle,
+      title: store.testimonials.title,
     },
     mode: 'onBlur',
   });
@@ -88,29 +86,15 @@ export function StaticContentEditor() {
   const footerForm = useForm<FooterFormData>({
     resolver: zodResolver(footerSchema),
     defaultValues: {
-      company_name: store?.footer?.company?.name || '',
-      company_description: store?.footer?.company?.description || '',
-      email: store?.footer?.contact?.email || '',
-      phone: store?.footer?.contact?.phone || '',
-      address: store?.footer?.contact?.address || '',
+      company_name: store.footer.company.name,
+      company_description: store.footer.company.description,
+      email: store.footer.contact.email,
+      phone: store.footer.contact.phone,
+      address: store.footer.contact.address,
     },
     mode: 'onBlur',
   });
 
-  // Loading state
-  if (!isStoreReady) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
-          className="w-8 h-8 border-4 border-rose-600 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
-
-  // Now we're safe - store is ready, forms are created with correct values
   const handleHeroSubmit = async (data: HeroFormData) => {
     try {
       setSaving(true);
@@ -527,4 +511,34 @@ export function StaticContentEditor() {
       </div>
     </div>
   );
+}
+
+// Main wrapper component - handles loading and validation
+export function StaticContentEditor() {
+  const store = useStaticTextStore();
+
+  // Check if store is fully initialized with actual values
+  const isStoreReady = !!(
+    store?.hero?.badge && 
+    store?.promise?.title && 
+    store?.footer?.contact?.email &&
+    typeof store.hero.badge === 'string' &&
+    typeof store.promise.title === 'string' &&
+    typeof store.footer.contact.email === 'string'
+  );
+
+  if (!isStoreReady) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+          className="w-8 h-8 border-4 border-rose-600 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
+  // Only render the form when store is ready - use key to force remount
+  return <StaticContentEditorForm key="form-ready" />;
 }
