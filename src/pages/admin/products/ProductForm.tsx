@@ -59,6 +59,8 @@ export function ProductForm() {
 
   const methods = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
     defaultValues: {
       is_active: true,
       is_featured: false,
