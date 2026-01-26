@@ -116,7 +116,7 @@ export function CategoriesSection() {
                 <Link to={`/shop?category=${category.slug}`}>
                   <motion.div
                     whileHover={{ y: -10 }}
-                    className="group relative h-96 rounded-3xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-200 to-gray-300"
+                    className="group relative h-48 sm:h-72 md:h-96 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-200 to-gray-300"
                   >
                     {/* Background Image */}
                     <div className="absolute inset-0">
@@ -142,7 +142,7 @@ export function CategoriesSection() {
                         <span className="text-white/80 text-sm">
                           {category.products} {category.products === 1 ? 'producto' : 'productos'}
                         </span>
-                        <h3 className="text-2xl md:text-3xl font-serif font-bold text-white mt-2">
+                        <h3 className="text-lg sm:text-2xl md:text-3xl font-serif font-bold text-white mt-2">
                           {category.name}
                         </h3>
                         {category.description && (

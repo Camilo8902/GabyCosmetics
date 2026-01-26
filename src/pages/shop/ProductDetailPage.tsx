@@ -56,12 +56,12 @@ export function ProductDetailPage() {
   return (
     <div className="min-h-screen bg-white pt-24">
       {/* Header Navigation */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <button
           onClick={() => navigate('/shop')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition"
+          className="flex items-center gap-2 text-sm sm:text-base text-gray-600 hover:text-gray-900 transition"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
           <span>Volver a la tienda</span>
         </button>
       </div>
@@ -95,7 +95,7 @@ export function ProductDetailPage() {
 
             {/* Thumbnail Images */}
             {secondaryImages.length > 0 && (
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
                 {secondaryImages.map((img: any, index: number) => (
                   <div
                     key={index}
@@ -120,7 +120,7 @@ export function ProductDetailPage() {
           >
             {/* Title and Rating */}
             <div>
-              <h1 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
                 {product.name}
               </h1>
 
@@ -142,12 +142,12 @@ export function ProductDetailPage() {
 
             {/* Price */}
             <div className="space-y-2">
-              <div className="flex items-baseline gap-4">
-                <span className="text-4xl font-bold text-gray-900">
+              <div className="flex items-baseline gap-3 sm:gap-4 flex-wrap">
+                <span className="text-3xl sm:text-4xl font-bold text-gray-900">
                   ${product.price.toFixed(2)}
                 </span>
                 {product.compare_at_price && (
-                  <span className="text-xl text-gray-500 line-through">
+                  <span className="text-lg sm:text-xl text-gray-500 line-through">
                     ${product.compare_at_price.toFixed(2)}
                   </span>
                 )}
@@ -166,51 +166,51 @@ export function ProductDetailPage() {
             )}
 
             {/* Add to Cart */}
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleAddToCart}
-                className="w-full py-4 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800 transition flex items-center justify-center gap-2"
+                className="w-full py-3 sm:py-4 bg-gray-900 text-white text-sm sm:text-base rounded-lg font-semibold hover:bg-gray-800 transition flex items-center justify-center gap-2"
               >
-                <ShoppingBag size={20} />
+                <ShoppingBag size={18} />
                 Agregar al carrito
               </motion.button>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="py-3 border-2 border-gray-900 text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2"
+                  className="py-2 sm:py-3 border-2 border-gray-900 text-gray-900 text-sm sm:text-base rounded-lg font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-1 sm:gap-2"
                 >
-                  <Heart size={20} />
-                  Favoritos
+                  <Heart size={18} />
+                  <span className="hidden sm:inline">Favoritos</span>
                 </motion.button>
 
                 <motion.button
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  className="py-3 border-2 border-gray-900 text-gray-900 rounded-lg font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-2"
+                  className="py-2 sm:py-3 border-2 border-gray-900 text-gray-900 text-sm sm:text-base rounded-lg font-semibold hover:bg-gray-100 transition flex items-center justify-center gap-1 sm:gap-2"
                 >
-                  <Share2 size={20} />
-                  Compartir
+                  <Share2 size={18} />
+                  <span className="hidden sm:inline">Compartir</span>
                 </motion.button>
               </div>
             </div>
 
             {/* Trust Badges */}
-            <div className="grid grid-cols-3 gap-4 pt-6 border-t">
-              <div className="text-center space-y-2">
-                <Truck className="w-8 h-8 text-rose-600 mx-auto" />
-                <p className="text-sm font-medium text-gray-900">Envío rápido</p>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 pt-4 sm:pt-6 border-t">
+              <div className="text-center space-y-1 sm:space-y-2">
+                <Truck className="w-6 sm:w-8 h-6 sm:h-8 text-rose-600 mx-auto" />
+                <p className="text-xs sm:text-sm font-medium text-gray-900">Envío rápido</p>
               </div>
-              <div className="text-center space-y-2">
-                <Shield className="w-8 h-8 text-rose-600 mx-auto" />
-                <p className="text-sm font-medium text-gray-900">Compra segura</p>
+              <div className="text-center space-y-1 sm:space-y-2">
+                <Shield className="w-6 sm:w-8 h-6 sm:h-8 text-rose-600 mx-auto" />
+                <p className="text-xs sm:text-sm font-medium text-gray-900">Compra segura</p>
               </div>
-              <div className="text-center space-y-2">
-                <RefreshCw className="w-8 h-8 text-rose-600 mx-auto" />
-                <p className="text-sm font-medium text-gray-900">30 días retorno</p>
+              <div className="text-center space-y-1 sm:space-y-2">
+                <RefreshCw className="w-6 sm:w-8 h-6 sm:h-8 text-rose-600 mx-auto" />
+                <p className="text-xs sm:text-sm font-medium text-gray-900">30 días retorno</p>
               </div>
             </div>
           </motion.div>
