@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Edit2, Trash2, Loader } from 'lucide-react';
-import { useCategories, useDeleteCategory } from '@/hooks/useCategories';
+import { Plus, Edit2, Trash2, Loader, ToggleRight, ToggleLeft } from 'lucide-react';
+import { useCategories, useDeleteCategory, useUpdateCategoryStatus } from '@/hooks/useCategories';
 import { useProducts } from '@/hooks/useProducts';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import toast from 'react-hot-toast';
@@ -17,6 +17,7 @@ export function CategoriesList() {
   const { data: productsData } = useProducts();
   const allProducts = productsData?.data || [];
   const { mutate: deleteCategory, isPending: isDeleting } = useDeleteCategory();
+  const { mutate: updateCategoryStatus, isPending: isUpdatingStatus } = useUpdateCategoryStatus();
 
   // Count products per category
   const getProductCount = (categoryId: string) => {
@@ -35,13 +36,33 @@ export function CategoriesList() {
     setShowDeleteConfirm(true);
   };
 
+  const handleToggleStatus = (category: Category) => {
+    console.log('🔄 [CategoriesList] Toggle status de categoría:', category.id);
+    updateCategoryStatus(
+      { id: category.id, is_active: !category.is_active },
+      {
+        onSuccess: () => {
+          console.log('✅ [CategoriesList] Estado actualizado');
+        },
+        onError: (error) => {
+          console.error('❌ [CategoriesList] Error:', error);
+        },
+      }
+    );
+  };
+
   const confirmDelete = () => {
     if (selectedCategory) {
+      console.log('🗑️ [CategoriesList] Confirmando eliminación:', selectedCategory.id);
       deleteCategory(selectedCategory.id, {
         onSuccess: () => {
+          console.log('✅ [CategoriesList] Categoría eliminada');
           toast.success('Categoría eliminada exitosamente');
           setShowDeleteConfirm(false);
           setSelectedCategory(null);
+        },
+        onError: (error) => {
+          console.error('❌ [CategoriesList] Error en eliminación:', error);
         },
       });
     }
@@ -146,8 +167,25 @@ export function CategoriesList() {
                         whileTap={{ scale: 0.95 }}
                         onClick={() => navigate(`/admin/categories/${category.id}/edit`)}
                         className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors"
+                        title="Editar"
                       >
                         <Edit2 className="w-5 h-5" />
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handleToggleStatus(category)}
+                        disabled={isUpdatingStatus}
+                        className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={category.is_active ? 'Desactivar' : 'Activar'}
+                      >
+                        {isUpdatingStatus ? (
+                          <Loader className="w-5 h-5 animate-spin" />
+                        ) : category.is_active ? (
+                          <ToggleRight className="w-5 h-5" />
+                        ) : (
+                          <ToggleLeft className="w-5 h-5" />
+                        )}
                       </motion.button>
                       <motion.button
                         whileHover={{ scale: 1.1 }}
@@ -155,6 +193,7 @@ export function CategoriesList() {
                         onClick={() => handleDelete(category)}
                         disabled={isDeleting || getProductCount(category.id) > 0}
                         className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={getProductCount(category.id) > 0 ? `No se puede eliminar: ${getProductCount(category.id)} producto(s)` : 'Eliminar'}
                       >
                         {isDeleting ? (
                           <Loader className="w-5 h-5 animate-spin" />

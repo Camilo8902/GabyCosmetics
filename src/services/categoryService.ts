@@ -137,14 +137,42 @@ export const categoryService = {
    */
   async deleteCategory(id: string): Promise<void> {
     try {
+      console.log('🗑️ [categoryService] Eliminando categoría ID:', id);
+      
+      // Delete category
+      console.log('🗑️ [categoryService] Eliminando registro de categoría...');
       const { error } = await supabase
         .from('categories')
-        .update({ is_active: false })
+        .delete()
         .eq('id', id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [categoryService] Error al eliminar categoría:', error);
+        throw error;
+      }
+      console.log('✅ [categoryService] Categoría eliminada exitosamente');
     } catch (error) {
-      console.error('Error deleting category:', error);
+      console.error('❌ [categoryService] Error en deleteCategory:', error);
+      throw error;
+    }
+  },
+
+  async updateCategoryStatus(id: string, is_active: boolean): Promise<void> {
+    try {
+      console.log('🔄 [categoryService] Actualizando estado de categoría ID:', id, '→', is_active ? 'Activa' : 'Inactiva');
+      
+      const { error } = await supabase
+        .from('categories')
+        .update({ is_active })
+        .eq('id', id);
+
+      if (error) {
+        console.error('❌ [categoryService] Error al actualizar estado:', error);
+        throw error;
+      }
+      console.log('✅ [categoryService] Estado actualizado exitosamente');
+    } catch (error) {
+      console.error('❌ [categoryService] Error en updateCategoryStatus:', error);
       throw error;
     }
   },

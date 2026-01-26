@@ -93,3 +93,23 @@ export function useDeleteCategory() {
     },
   });
 }
+
+/**
+ * Hook for toggling category status (activate/deactivate)
+ */
+export function useUpdateCategoryStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
+      categoryService.updateCategoryStatus(id, is_active),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['category', variables.id] });
+      toast.success(variables.is_active ? 'Categoría activada' : 'Categoría desactivada');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al actualizar la categoría');
+    },
+  });
+}
