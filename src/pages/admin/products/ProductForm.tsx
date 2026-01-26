@@ -124,27 +124,71 @@ export function ProductForm() {
 
   const onSubmit = async (data: ProductFormData) => {
     try {
+      console.log('🔵 [ProductForm] onSubmit iniciado');
+      console.log('🔵 [ProductForm] isEditing:', isEditing);
+      console.log('🔵 [ProductForm] Datos del formulario:', data);
+
+      // If editing, check if there are actual changes
+      if (isEditing && product) {
+        console.log('🔵 [ProductForm] Comparando cambios...');
+        console.log('🔵 [ProductForm] Producto original:', product);
+        
+        // Check if any field has changed (excluding SKU which can be regenerated)
+        const hasChanges = 
+          product.name !== data.name ||
+          product.name_en !== data.name_en ||
+          product.slug !== data.slug ||
+          product.description !== data.description ||
+          product.description_en !== data.description_en ||
+          product.short_description !== data.short_description ||
+          product.short_description_en !== data.short_description_en ||
+          product.price !== data.price ||
+          product.compare_at_price !== data.compare_at_price ||
+          product.cost_price !== data.cost_price ||
+          (data.sku && product.sku !== data.sku) ||
+          product.barcode !== data.barcode ||
+          product.weight !== data.weight ||
+          product.is_active !== data.is_active ||
+          product.is_featured !== data.is_featured ||
+          product.is_visible !== data.is_visible ||
+          selectedCategories.length > 0 ||
+          imageFile !== null;
+
+        console.log('🔵 [ProductForm] ¿Hay cambios?:', hasChanges);
+
+        if (!hasChanges) {
+          console.log('⚠️ [ProductForm] No se realizaron cambios');
+          toast.error('No se realizaron cambios en el producto');
+          return;
+        }
+      }
+
       // Generate SKU if not provided and creating new product
       if (!isEditing && !data.sku) {
         data.sku = generateRandomSKU();
+        console.log('🔵 [ProductForm] SKU generado:', data.sku);
       }
 
       if (isEditing && id) {
+        console.log('🟢 [ProductForm] Actualizando producto existente, ID:', id);
         // Update existing product
         await updateProduct.mutateAsync({
           id,
           updates: data,
         });
+        console.log('✅ [ProductForm] Producto actualizado exitosamente');
         // Note: Hook already shows success toast
 
         // Update image if provided
         if (imageFile) {
           try {
+            console.log('🔵 [ProductForm] Subiendo imagen...');
             await uploadProductImage.mutateAsync({
               productId: id,
               file: imageFile,
               isPrimary: true,
             });
+            console.log('✅ [ProductForm] Imagen subida exitosamente');
           } catch (imageError) {
             console.error('Warning: Image upload failed but product was saved:', imageError);
             toast.error('Producto actualizado, pero la imagen no se pudo cargar');
@@ -154,10 +198,12 @@ export function ProductForm() {
         // Update categories
         try {
           if (selectedCategories.length > 0) {
+            console.log('🔵 [ProductForm] Actualizando categorías:', selectedCategories);
             await setProductCategories.mutateAsync({
               productId: id,
               categoryIds: selectedCategories,
             });
+            console.log('✅ [ProductForm] Categorías actualizadas exitosamente');
           }
         } catch (categoryError) {
           console.error('Warning: Category update failed:', categoryError);
@@ -165,20 +211,25 @@ export function ProductForm() {
         }
 
         // Navigate back to products list after successful update
+        console.log('🔵 [ProductForm] Navegando a lista de productos');
         navigate('/admin/products');
       } else {
+        console.log('🟢 [ProductForm] Creando nuevo producto');
         // Create new product
         const newProduct = await createProduct.mutateAsync(data);
+        console.log('✅ [ProductForm] Producto creado exitosamente, ID:', newProduct.id);
         // Note: Hook already shows success toast
         
         // Upload image if provided
         if (imageFile) {
           try {
+            console.log('🔵 [ProductForm] Subiendo imagen para producto nuevo...');
             await uploadProductImage.mutateAsync({
               productId: newProduct.id,
               file: imageFile,
               isPrimary: true,
             });
+            console.log('✅ [ProductForm] Imagen subida exitosamente');
           } catch (imageError) {
             console.error('Warning: Image upload failed but product was created:', imageError);
             toast.error('Producto creado, pero la imagen no se pudo cargar');
@@ -188,20 +239,23 @@ export function ProductForm() {
         // Set categories
         try {
           if (selectedCategories.length > 0) {
+            console.log('🔵 [ProductForm] Asignando categorías:', selectedCategories);
             await setProductCategories.mutateAsync({
               productId: newProduct.id,
               categoryIds: selectedCategories,
             });
+            console.log('✅ [ProductForm] Categorías asignadas exitosamente');
           }
         } catch (categoryError) {
           console.error('Warning: Category assignment failed:', categoryError);
           toast.error('Producto creado, pero las categorías no se pudieron asignar');
         }
 
+        console.log('🔵 [ProductForm] Navegando a página de edición del producto nuevo');
         navigate(`/admin/products/${newProduct.id}/edit`);
       }
     } catch (error) {
-      console.error('Error saving product:', error);
+      console.error('❌ [ProductForm] Error saving product:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       toast.error(`Error al guardar el producto: ${errorMessage}`);
     }
