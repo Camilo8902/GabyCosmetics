@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Heart, Star, Eye } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import { useFeaturedProducts } from '@/hooks';
 import type { Product } from '@/types';
 
@@ -14,6 +15,8 @@ interface ProductCardProps {
 function ProductCard({ product, index }: ProductCardProps) {
   const { t, i18n } = useTranslation();
   const { addItem } = useCartStore();
+  const { toggleItem, isInWishlist } = useWishlistStore();
+  const isWishlisted = isInWishlist(product.id);
 
   // Get image from product.images array or fallback to demo image
   const productImage = product.images?.[0]?.url || product.image || 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop';
@@ -48,21 +51,29 @@ function ProductCard({ product, index }: ProductCardProps) {
               whileTap={{ scale: 0.9 }}
               onClick={() => addItem(product)}
               className="p-3 bg-white rounded-full shadow-lg hover:bg-rose-600 hover:text-white transition-colors"
+              title="Agregar al carrito"
             >
               <ShoppingBag className="w-5 h-5" />
             </motion.button>
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className="p-3 bg-white rounded-full shadow-lg hover:bg-rose-600 hover:text-white transition-colors"
+              onClick={() => toggleItem(product)}
+              className={`p-3 rounded-full shadow-lg transition-colors ${
+                isWishlisted
+                  ? 'bg-rose-600 text-white'
+                  : 'bg-white hover:bg-rose-600 hover:text-white'
+              }`}
+              title={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
             >
-              <Heart className="w-5 h-5" />
+              <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
             </motion.button>
             <Link to={`/product/${product.slug}`}>
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 className="p-3 bg-white rounded-full shadow-lg hover:bg-rose-600 hover:text-white transition-colors"
+                title="Ver detalles"
               >
                 <Eye className="w-5 h-5" />
               </motion.button>

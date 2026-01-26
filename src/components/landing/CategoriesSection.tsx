@@ -32,7 +32,7 @@ export function CategoriesSection() {
   // Count products per category
   const productCountByCategory = (realCategories || []).reduce((acc, category) => {
     const count = allProducts.filter(
-      (p) => p.categories && p.categories.some((c) => c.id === category.id)
+      (p) => p.categories && p.categories.some((c) => c.category?.id === category.id)
     ).length;
     acc[category.id] = count || 0;
     return acc;

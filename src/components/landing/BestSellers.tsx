@@ -1,14 +1,16 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, TrendingUp, Flame } from 'lucide-react';
+import { ShoppingBag, TrendingUp, Flame, Heart, Eye } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
 import { useBestSellers } from '@/hooks';
 import type { Product } from '@/types';
 
 export function BestSellers() {
   const { t, i18n } = useTranslation();
   const { addItem } = useCartStore();
+  const { toggleItem, isInWishlist } = useWishlistStore();
   const { data: products = [] } = useBestSellers(4);
 
   // Only display real products from database
@@ -57,6 +59,7 @@ export function BestSellers() {
           {displayProducts.map((product, index) => {
             const productImage = (product as any).images?.[0]?.url || (product as any).image || 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400&h=400&fit=crop';
             const badge = (product as any).badge || `TOP ${index + 1}`;
+            const isWishlisted = isInWishlist(product.id);
             
             return (
             <motion.div
@@ -91,6 +94,33 @@ export function BestSellers() {
                   >
                     {badge}
                   </motion.div>
+
+                  {/* Overlay Actions */}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => toggleItem(product)}
+                      className={`p-3 rounded-full shadow-lg transition-colors ${
+                        isWishlisted
+                          ? 'bg-rose-600 text-white'
+                          : 'bg-white hover:bg-rose-600 hover:text-white'
+                      }`}
+                      title={isWishlisted ? 'Quitar de favoritos' : 'Agregar a favoritos'}
+                    >
+                      <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
+                    </motion.button>
+                    <Link to={`/product/${product.slug}`}>
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="p-3 bg-white rounded-full shadow-lg hover:bg-rose-600 hover:text-white transition-colors"
+                        title="Ver detalles"
+                      >
+                        <Eye className="w-5 h-5" />
+                      </motion.button>
+                    </Link>
+                  </div>
                 </div>
 
                 {/* Content */}
