@@ -52,45 +52,49 @@ export function StaticContentEditor() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  // Hero Form
+  // Hero Form - use empty strings as fallback
   const heroForm = useForm<HeroFormData>({
     resolver: zodResolver(heroSchema),
     defaultValues: {
-      badge: store.hero.badge,
-      title: store.hero.title,
-      description: store.hero.description,
-      cta: store.hero.cta,
+      badge: store?.hero?.badge || '',
+      title: store?.hero?.title || '',
+      description: store?.hero?.description || '',
+      cta: store?.hero?.cta || '',
     },
+    mode: 'onBlur',
   });
 
-  // Promise Form
+  // Promise Form - use empty strings as fallback
   const promiseForm = useForm<PromiseFormData>({
     resolver: zodResolver(promiseSchema),
     defaultValues: {
-      subtitle: store.promise.subtitle,
-      title: store.promise.title,
+      subtitle: store?.promise?.subtitle || '',
+      title: store?.promise?.title || '',
     },
+    mode: 'onBlur',
   });
 
-  // Testimonials Form
+  // Testimonials Form - use empty strings as fallback
   const testimonialsForm = useForm<TestimonialsFormData>({
     resolver: zodResolver(testimonialsSchema),
     defaultValues: {
-      subtitle: store.testimonials.subtitle,
-      title: store.testimonials.title,
+      subtitle: store?.testimonials?.subtitle || '',
+      title: store?.testimonials?.title || '',
     },
+    mode: 'onBlur',
   });
 
-  // Footer Form
+  // Footer Form - use empty strings as fallback
   const footerForm = useForm<FooterFormData>({
     resolver: zodResolver(footerSchema),
     defaultValues: {
-      company_name: store.footer.company.name,
-      company_description: store.footer.company.description,
-      email: store.footer.contact.email,
-      phone: store.footer.contact.phone,
-      address: store.footer.contact.address,
+      company_name: store?.footer?.company?.name || '',
+      company_description: store?.footer?.company?.description || '',
+      email: store?.footer?.contact?.email || '',
+      phone: store?.footer?.contact?.phone || '',
+      address: store?.footer?.contact?.address || '',
     },
+    mode: 'onBlur',
   });
 
   const handleHeroSubmit = async (data: HeroFormData) => {
