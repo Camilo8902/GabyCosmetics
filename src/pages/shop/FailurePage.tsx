@@ -1,5 +1,4 @@
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { AlertCircle, Home, RotateCcw } from 'lucide-react';
 
 export function FailurePage() {
@@ -14,24 +13,21 @@ export function FailurePage() {
           <p className="text-gray-600 mb-6">No pudimos procesar tu pago. Por favor intenta de nuevo.</p>
           
           <div className="space-y-3">
-            <Button
+            <button
               onClick={() => navigate('/checkout')}
-              className="w-full"
-              size="lg"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
             >
-              <RotateCcw className="h-4 w-4 mr-2" />
+              <RotateCcw className="h-4 w-4" />
               Reintentar Pago
-            </Button>
+            </button>
             
-            <Button
+            <button
               onClick={() => navigate('/')}
-              variant="outline"
-              className="w-full"
-              size="lg"
+              className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
             >
-              <Home className="h-4 w-4 mr-2" />
+              <Home className="h-4 w-4" />
               Volver al inicio
-            </Button>
+            </button>
           </div>
         </div>
       </div>

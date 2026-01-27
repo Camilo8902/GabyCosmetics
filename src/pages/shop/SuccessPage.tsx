@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { CheckCircle2, Home } from 'lucide-react';
 
 export function SuccessPage() {
@@ -23,14 +22,13 @@ export function SuccessPage() {
           <p className="text-gray-600 mb-2">Tu orden ha sido creada correctamente</p>
           <p className="text-sm text-gray-500 mb-6">ID: {orderId}</p>
           
-          <Button
+          <button
             onClick={() => navigate('/')}
-            className="w-full"
-            size="lg"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
           >
-            <Home className="h-4 w-4 mr-2" />
+            <Home className="h-4 w-4" />
             Volver al inicio
-          </Button>
+          </button>
         </div>
       </div>
     </div>

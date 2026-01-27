@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
 
 interface PaymentFormProps {
   clientSecret: string;
@@ -47,14 +46,13 @@ export function PaymentForm({
           Monto a pagar: <strong>${(amount * 1.19).toFixed(2)}</strong> (incluido IVA)
         </p>
       </div>
-      <Button
+      <button
         onClick={handlePayment}
         disabled={isLoading}
-        className="w-full"
-        size="lg"
+        className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-3 px-4 rounded-lg transition"
       >
         {isLoading ? 'Processing...' : `Pay $${(amount * 1.19).toFixed(2)}`}
-      </Button>
+      </button>
     </div>
   );
 }

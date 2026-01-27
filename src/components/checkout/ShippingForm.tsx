@@ -1,9 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const shippingSchema = z.object({
   fullName: z.string().min(3, 'Nombre requerido (mínimo 3 caracteres)'),
@@ -46,12 +43,12 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
       <h3 className="text-lg font-semibold mb-4">Dirección de Envío</h3>
 
       <div>
-        <Label htmlFor="fullName">Nombre completo</Label>
-        <Input
+        <label htmlFor="fullName" className="block text-sm font-medium mb-2">Nombre completo</label>
+        <input
           id="fullName"
           placeholder="Juan Pérez"
           {...register('fullName')}
-          className={errors.fullName ? 'border-red-500' : ''}
+          className={`w-full px-3 py-2 border rounded-lg ${errors.fullName ? 'border-red-500' : 'border-gray-300'}`}
         />
         {errors.fullName && (
           <p className="text-red-500 text-sm mt-1">{errors.fullName.message}</p>
@@ -60,13 +57,13 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
+          <label htmlFor="email" className="block text-sm font-medium mb-2">Email</label>
+          <input
             id="email"
             type="email"
             placeholder="juan@example.com"
             {...register('email')}
-            className={errors.email ? 'border-red-500' : ''}
+            className={`w-full px-3 py-2 border rounded-lg ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
           />
           {errors.email && (
             <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
@@ -74,12 +71,12 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="phone">Teléfono</Label>
-          <Input
+          <label htmlFor="phone" className="block text-sm font-medium mb-2">Teléfono</label>
+          <input
             id="phone"
             placeholder="+34 XXX XX XX XX"
             {...register('phone')}
-            className={errors.phone ? 'border-red-500' : ''}
+            className={`w-full px-3 py-2 border rounded-lg ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
           />
           {errors.phone && (
             <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>
@@ -88,12 +85,12 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
       </div>
 
       <div>
-        <Label htmlFor="address">Dirección</Label>
-        <Input
+        <label htmlFor="address" className="block text-sm font-medium mb-2">Dirección</label>
+        <input
           id="address"
           placeholder="Calle Principal 123"
           {...register('address')}
-          className={errors.address ? 'border-red-500' : ''}
+          className={`w-full px-3 py-2 border rounded-lg ${errors.address ? 'border-red-500' : 'border-gray-300'}`}
         />
         {errors.address && (
           <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>
@@ -102,12 +99,12 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="city">Ciudad</Label>
-          <Input
+          <label htmlFor="city" className="block text-sm font-medium mb-2">Ciudad</label>
+          <input
             id="city"
             placeholder="Madrid"
             {...register('city')}
-            className={errors.city ? 'border-red-500' : ''}
+            className={`w-full px-3 py-2 border rounded-lg ${errors.city ? 'border-red-500' : 'border-gray-300'}`}
           />
           {errors.city && (
             <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
@@ -115,12 +112,12 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="zipCode">Código postal</Label>
-          <Input
+          <label htmlFor="zipCode" className="block text-sm font-medium mb-2">Código postal</label>
+          <input
             id="zipCode"
             placeholder="28001"
             {...register('zipCode')}
-            className={errors.zipCode ? 'border-red-500' : ''}
+            className={`w-full px-3 py-2 border rounded-lg ${errors.zipCode ? 'border-red-500' : 'border-gray-300'}`}
           />
           {errors.zipCode && (
             <p className="text-red-500 text-sm mt-1">{errors.zipCode.message}</p>
@@ -128,14 +125,13 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
         </div>
       </div>
 
-      <Button
+      <button
         type="submit"
         disabled={isSubmitting}
-        className="w-full mt-6"
-        size="lg"
+        className="w-full mt-6 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium py-2 px-4 rounded-lg transition"
       >
         {isSubmitting ? 'Guardando...' : 'Continuar al Pago'}
-      </Button>
+      </button>
     </form>
   );
 }
