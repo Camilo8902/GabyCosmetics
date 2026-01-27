@@ -6,7 +6,7 @@ import { ShippingForm, ShippingFormData } from '@/components/checkout/ShippingFo
 import { PaymentForm } from '@/components/checkout/PaymentForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { orderService } from '@/services/orderService';
 

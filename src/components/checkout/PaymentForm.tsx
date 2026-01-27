@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useStripe,
   useElements,
@@ -9,17 +9,19 @@ import { loadStripe } from '@stripe/js';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 
-const stripePromise = loadStripe(
-  import.meta.env.VITE_STRIPE_PUBLIC_KEY
-);
-
 interface PaymentFormProps {
   clientSecret: string;
   amount: number;
   onSuccess: () => void;
 }
 
-function PaymentFormContent({ clientSecret, amount, onSuccess }: PaymentFormProps) {
+interface PaymentFormContentProps {
+  clientSecret: string;
+  amount: number;
+  onSuccess: () => void;
+}
+
+function PaymentFormContent({ clientSecret, amount, onSuccess }: PaymentFormContentProps) {
   const stripe = useStripe();
   const elements = useElements();
   const [isLoading, setIsLoading] = useState(false);
@@ -91,6 +93,29 @@ export function PaymentForm({
   amount,
   onSuccess,
 }: PaymentFormProps) {
+  // Load Stripe inside component to handle missing env vars gracefully
+  const stripePromise = useMemo(
+    () => {
+      const key = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+      if (!key) {
+        console.error('VITE_STRIPE_PUBLIC_KEY not found in environment');
+        toast.error('Stripe no está configurado. Contacta al administrador.');
+        return null;
+      }
+      return loadStripe(key);
+    },
+    []
+  );
+
+  if (!stripePromise) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-red-600 font-semibold">Error de Configuración</p>
+        <p className="text-red-500 text-sm">Stripe no está configurado. Por favor intenta más tarde.</p>
+      </div>
+    );
+  }
+
   return (
     <Elements
       stripe={stripePromise}
