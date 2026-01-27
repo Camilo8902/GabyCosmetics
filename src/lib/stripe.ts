@@ -2,32 +2,49 @@
  * Stripe utilities for handling payments
  */
 
-export async function createPaymentIntent(amount: number, orderId: string) {
+interface PaymentIntentOptions {
+  amount: number;
+  orderId: string;
+  email?: string;
+  metadata?: Record<string, string>;
+}
+
+interface PaymentIntentResponse {
+  success: boolean;
+  clientSecret: string;
+  paymentIntentId: string;
+}
+
+export async function createPaymentIntent(options: PaymentIntentOptions): Promise<string> {
+  const { amount, orderId, email, metadata } = options;
+
   console.log('💳 [Stripe] Creating payment intent for order:', orderId, 'amount:', amount);
 
   try {
-    // In a real application, you would call your backend API
-    // For now, we'll use Stripe's test client secret
-    // In production, replace this with a real API call to your backend
-    
     const response = await fetch('/api/create-payment-intent', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        amount: Math.round(amount * 100), // Convert to cents
+        amount,
         orderId,
+        email,
+        metadata,
       }),
     });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to create payment intent');
+      throw new Error(error.error || 'Failed to create payment intent');
     }
 
-    const data = await response.json();
-    console.log('✅ [Stripe] Payment intent created:', data.clientSecret);
+    const data: PaymentIntentResponse = await response.json();
+    console.log('✅ [Stripe] Payment intent created:', {
+      id: data.paymentIntentId,
+      clientSecret: data.clientSecret,
+    });
+    
     return data.clientSecret;
   } catch (error) {
     console.error('❌ [Stripe] Error creating payment intent:', error);

@@ -3,8 +3,9 @@ import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { ShippingForm, ShippingFormData } from '@/components/checkout/ShippingForm';
 import { PaymentForm } from '@/components/checkout/PaymentForm';
-import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { createPaymentIntent as createStripePaymentIntent } from '@/lib/stripe';
+import { createOrder } from '@/lib/orders';
 
 type CheckoutStep = 'shipping' | 'payment' | 'review';
 
@@ -25,6 +26,7 @@ export function CheckoutPage() {
     const [clientSecret, setClientSecret] = useState<string>('');
     const [isCreatingOrder, setIsCreatingOrder] = useState(false);
     const [orderId, setOrderId] = useState<string>('');
+    const [paymentIntentId, setPaymentIntentId] = useState<string>('');
     console.log('📄 [CheckoutPage] State initialized');
 
   // Si no está autenticado, redirigir a login
@@ -60,50 +62,103 @@ export function CheckoutPage() {
       setIsCreatingOrder(true);
       console.log('🔄 [CheckoutPage] Creating payment intent...');
 
-      // Crear orden con ID único
-      const mockOrderId = `order_${Date.now()}`;
-      setOrderId(mockOrderId);
-      console.log('📝 [CheckoutPage] Order created:', mockOrderId);
+      // Calcular total final con impuesto
+      const TAX_RATE = 0.19;
+      const subtotal = validTotal;
+      const tax = subtotal * TAX_RATE;
+      const finalTotal = subtotal + tax;
 
-      // Crear Payment Intent en Stripe
+      // Crear orden con ID único
+      const newOrderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      setOrderId(newOrderId);
+      console.log('📝 [CheckoutPage] Order ID created:', newOrderId);
+
+      // Guardar orden en Supabase
       try {
-        const secret = await createStripePaymentIntent(total, mockOrderId);
-        setClientSecret(secret);
-        console.log('🔐 [CheckoutPage] Client secret received from Stripe');
-      } catch (stripeError) {
-        console.error('⚠️ [CheckoutPage] Stripe error, using mock:', stripeError);
-        // Fallback: usar un clientSecret mock para testing
-        const mockClientSecret = `pi_test_${mockOrderId}`;
-        setClientSecret(mockClientSecret);
+        if (!user?.id) {
+          throw new Error('Usuario no autenticado');
+        }
+
+        const orderData = {
+          userId: user.id,
+          items: items.map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.price || 0,
+            quantity: item.quantity,
+            image: item.image,
+            sku: item.sku,
+          })),
+          shippingInfo: {
+            name: shipping.name,
+            email: shipping.email,
+            phone: shipping.phone,
+            address: shipping.address,
+            city: shipping.city,
+            zip: shipping.zip,
+            country: shipping.country,
+          },
+          total: finalTotal,
+          orderId: newOrderId,
+        };
+
+        const savedOrder = await createOrder(orderData);
+        console.log('✅ [CheckoutPage] Order saved to Supabase:', savedOrder.id);
+
+        // Crear Payment Intent en Stripe
+        try {
+          const response = await createStripePaymentIntent({
+            amount: finalTotal,
+            orderId: newOrderId,
+            email: shipping.email,
+            metadata: {
+              orderId: newOrderId,
+              customerId: user.id,
+            },
+          });
+
+          setClientSecret(response);
+          console.log('🔐 [CheckoutPage] Client secret received from Stripe');
+          
+          // Guardar en localStorage
+          localStorage.setItem('current_order_id', newOrderId);
+        } catch (stripeError) {
+          console.error('❌ [CheckoutPage] Stripe error:', stripeError);
+          throw new Error('Error al crear el pago con Stripe');
+        }
+        
+        console.log('📊 [CheckoutPage] About to change step from shipping to payment');
+        setStep('payment');
+        console.log('✅ [CheckoutPage] Step changed to payment');
+      } catch (error) {
+        console.error('❌ [CheckoutPage] Error saving order or creating payment intent:', error);
+        alert(error instanceof Error ? error.message : 'Error al procesar tu orden');
       }
-      
-      console.log('📊 [CheckoutPage] About to change step from shipping to payment');
-      setStep('payment');
-      console.log('✅ [CheckoutPage] Step changed to payment');
-    } catch (error) {
-      console.error('❌ [CheckoutPage] Error creando orden:', error);
-      alert('Error al crear la orden. Por favor intenta de nuevo.');
     } finally {
       setIsCreatingOrder(false);
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (paymentId?: string) => {
     console.log('🎉 [CheckoutPage] Payment success handler called');
     console.log('📦 [CheckoutPage] Current orderId:', orderId);
     
     try {
+      if (paymentId) {
+        setPaymentIntentId(paymentId);
+      }
+
       console.log('🧹 [CheckoutPage] Clearing cart...');
       clearCart();
       console.log('✅ [CheckoutPage] Cart cleared');
       
-      console.log('🗑️ [CheckoutPage] Removing checkout_shipping from localStorage...');
+      console.log('🗑️ [CheckoutPage] Removing checkout data from localStorage...');
       localStorage.removeItem('checkout_shipping');
-      console.log('✅ [CheckoutPage] Checkout shipping removed');
+      localStorage.removeItem('current_order_id');
+      console.log('✅ [CheckoutPage] Checkout data removed');
       
-      // Use window.location.href instead of navigate() to avoid Router context issues
-      // This is a hard navigation which is more reliable
-      const successUrl = `/checkout/success?orderId=${orderId}`;
+      // Redirigir a página de éxito con parámetros
+      const successUrl = `/checkout/success?order_id=${orderId}&status=success`;
       console.log('🌐 [CheckoutPage] Navigating to success page:', successUrl);
       window.location.href = successUrl;
       console.log('✅ [CheckoutPage] Navigation complete');
@@ -185,6 +240,7 @@ export function CheckoutPage() {
                 <ShippingForm
                   onNext={handleShippingSubmit}
                   initialData={shippingData || undefined}
+                  isLoading={isCreatingOrder}
                 />
               )}
 
@@ -192,7 +248,8 @@ export function CheckoutPage() {
                 <PaymentForm
                   clientSecret={clientSecret}
                   amount={subtotal}
-                  onSuccess={handlePaymentSuccess}
+                  orderId={orderId}
+                  onSuccess={() => handlePaymentSuccess(paymentIntentId)}
                 />
               )}
 

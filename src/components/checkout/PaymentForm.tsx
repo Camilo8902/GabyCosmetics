@@ -1,18 +1,21 @@
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js';
+import { updateOrderPaymentStatus } from '@/lib/orders';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 
 interface PaymentFormProps {
   clientSecret: string;
   amount: number;
-  onSuccess: () => void;
+  orderId: string;
+  onSuccess: (paymentIntentId?: string) => void;
 }
 
 function PaymentFormContent({
   clientSecret,
   amount,
+  orderId,
   onSuccess,
 }: PaymentFormProps) {
   console.log('💳 [PaymentFormContent] Rendering with clientSecret:', clientSecret);
@@ -53,7 +56,17 @@ function PaymentFormContent({
         setIsLoading(false);
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         console.log('✅ Payment successful:', paymentIntent);
-        onSuccess();
+        
+        // Actualizar orden en Supabase
+        try {
+          await updateOrderPaymentStatus(orderId, 'paid', paymentIntent.id);
+          console.log('✅ Orden actualizada en Supabase:', orderId);
+        } catch (updateError) {
+          console.error('⚠️ Error al actualizar orden:', updateError);
+          // Continuar de todas formas
+        }
+        
+        onSuccess(paymentIntent.id);
       } else if (paymentIntent) {
         console.log('⏳ Payment status:', paymentIntent.status);
         setError(`Payment status: ${paymentIntent.status}`);

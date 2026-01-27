@@ -41,6 +41,7 @@ import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
 import { ProductDetailPage } from '@/pages/shop/ProductDetailPage';
 import { CheckoutPage } from '@/pages/shop/CheckoutPage';
+import PaymentSuccessPage from '@/pages/shop/PaymentSuccessPage';
 import { SuccessPage } from '@/pages/shop/SuccessPage';
 import { FailurePage } from '@/pages/shop/FailurePage';
 
@@ -281,7 +282,7 @@ function App() {
           <Route path="/wishlist" element={<PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Lista de Deseos</h1></div></PublicLayout>} />
 
           <Route path="/checkout" element={<ProtectedRoute><PublicLayout><CheckoutPage /></PublicLayout></ProtectedRoute>} />
-          <Route path="/checkout/success" element={<PublicLayout><SuccessPage /></PublicLayout>} />
+          <Route path="/checkout/success" element={<PublicLayout><PaymentSuccessPage /></PublicLayout>} />
           <Route path="/checkout/failure" element={<PublicLayout><FailurePage /></PublicLayout>} />
 
           <Route path="/auth/login" element={<LoginPage />} />
