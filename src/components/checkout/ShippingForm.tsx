@@ -19,6 +19,8 @@ interface ShippingFormProps {
 }
 
 export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
+  console.log('📦 [ShippingForm] Rendering with initialData:', initialData);
+  
   const {
     register,
     handleSubmit,
@@ -29,12 +31,17 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
   });
 
   const onSubmit = async (data: ShippingFormData) => {
+    console.log('📝 [ShippingForm] Form submitted with data:', data);
     try {
       // Guardar en localStorage para persistencia
       localStorage.setItem('checkout_shipping', JSON.stringify(data));
+      console.log('💾 [ShippingForm] Data saved to localStorage');
+      
+      console.log('📞 [ShippingForm] Calling onNext callback');
       onNext(data);
+      console.log('✅ [ShippingForm] onNext callback completed');
     } catch (error) {
-      console.error('Error al guardar dirección:', error);
+      console.error('❌ [ShippingForm] Error al guardar dirección:', error);
     }
   };
 

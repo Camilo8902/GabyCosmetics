@@ -48,36 +48,54 @@ export function CheckoutPage() {
   const createPaymentIntent = async (shipping: ShippingFormData) => {
     try {
       setIsCreatingOrder(true);
+      console.log('🔄 [CheckoutPage] Creating payment intent...');
 
       // Crear orden simplificada
       const mockOrderId = `order_${Date.now()}`;
       setOrderId(mockOrderId);
+      console.log('📝 [CheckoutPage] Order created:', mockOrderId);
 
       // Simular clientSecret
       const mockClientSecret = `pi_test_${mockOrderId}`;
       setClientSecret(mockClientSecret);
+      console.log('🔐 [CheckoutPage] Client secret set:', mockClientSecret);
+      
+      console.log('📊 [CheckoutPage] About to change step from shipping to payment');
       setStep('payment');
+      console.log('✅ [CheckoutPage] Step changed to payment');
 
       console.log('Orden iniciada, procediendo al pago');
     } catch (error) {
-      console.error('Error creando orden:', error);
+      console.error('❌ [CheckoutPage] Error creando orden:', error);
     } finally {
       setIsCreatingOrder(false);
     }
   };
 
   const handlePaymentSuccess = () => {
+    console.log('🎉 [CheckoutPage] Payment success handler called');
+    console.log('📦 [CheckoutPage] Current orderId:', orderId);
+    
     try {
+      console.log('🧹 [CheckoutPage] Clearing cart...');
       clearCart();
+      console.log('✅ [CheckoutPage] Cart cleared');
+      
+      console.log('🗑️ [CheckoutPage] Removing checkout_shipping from localStorage...');
       localStorage.removeItem('checkout_shipping');
+      console.log('✅ [CheckoutPage] Checkout shipping removed');
+      
       // Use window.location.href instead of navigate() to avoid Router context issues
       // This is a hard navigation which is more reliable
       const successUrl = `/checkout/success?orderId=${orderId}`;
-      console.log('Payment success, redirecting to:', successUrl);
+      console.log('🌐 [CheckoutPage] Navigating to success page:', successUrl);
       window.location.href = successUrl;
+      console.log('✅ [CheckoutPage] Navigation complete');
     } catch (error) {
-      console.error('Error confirmando pago:', error);
+      console.error('❌ [CheckoutPage] Error in payment success handler:', error);
+      console.error('📍 Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
       // Fallback
+      console.log('🚨 [CheckoutPage] Fallback: navigating to failure page');
       window.location.href = '/checkout/failure';
     }
   };

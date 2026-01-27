@@ -23,9 +23,13 @@ import { cn } from '@/lib/utils';
 function HeaderContent() {
   const { t, i18n } = useTranslation();
   
+  console.log('📋 [Header] HeaderContent rendering');
+  
   // Use window.location.pathname instead of useLocation() hook
   // This avoids React Router context issues during state transitions
   const currentPathname = window.location.pathname;
+  
+  console.log('📍 [Header] Current pathname:', currentPathname);
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -432,10 +436,15 @@ function HeaderContent() {
 
 // Export wrapper component that handles Router context safely
 export function Header() {
+  console.log('🎨 [Header] Wrapper Header rendering');
+  
   try {
     return <HeaderContent />;
   } catch (error) {
-    console.error('Header error:', error);
+    console.error('🔴 [Header] Error rendering HeaderContent:', error);
+    console.error('📍 [Header] Error stack:', error instanceof Error ? error.stack : 'No stack');
+    console.error('📋 [Header] Full error object:', error);
+    
     // Fallback - render minimal header without Router hooks
     return (
       <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
