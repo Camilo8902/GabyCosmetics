@@ -109,10 +109,18 @@ export function CheckoutPage() {
     return null;
   }
 
+  console.log('📊 [CheckoutPage] Cart total:', total);
+  
+  // Ensure total is a valid number
+  const validTotal = total && typeof total === 'number' && !isNaN(total) ? total : 0;
+  console.log('📊 [CheckoutPage] Valid total:', validTotal);
+
   const TAX_RATE = 0.19;
-  const subtotal = total;
+  const subtotal = validTotal;
   const tax = subtotal * TAX_RATE;
-    const finalTotal = subtotal + tax;
+  const finalTotal = subtotal + tax;
+
+  console.log('💰 [CheckoutPage] Totals - subtotal:', subtotal, 'tax:', tax, 'final:', finalTotal);
 
     const steps: CheckoutStep[] = ['shipping', 'payment', 'review'];
 
@@ -214,7 +222,11 @@ export function CheckoutPage() {
                     <span className="text-gray-600">
                       {item.name} <span className="text-xs">x{item.quantity}</span>
                     </span>
-                    <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${(
+                        (item.price || 0) * (item.quantity || 0)
+                      ).toFixed(2)}
+                    </span>
                   </div>
                 ))}
               </div>
