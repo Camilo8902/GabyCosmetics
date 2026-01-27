@@ -7,7 +7,6 @@ import {
 } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/button';
-import { toast } from 'react-hot-toast';
 
 interface PaymentFormProps {
   clientSecret: string;
@@ -30,7 +29,7 @@ function PaymentFormContent({ clientSecret, amount, onSuccess }: PaymentFormCont
     e.preventDefault();
 
     if (!stripe || !elements) {
-      toast.error('Error cargando Stripe');
+      console.error('Error cargando Stripe');
       return;
     }
 
@@ -46,13 +45,12 @@ function PaymentFormContent({ clientSecret, amount, onSuccess }: PaymentFormCont
       });
 
       if (error) {
-        toast.error(error.message || 'Error en el pago');
+        console.error('Payment error:', error.message);
       } else {
         onSuccess();
       }
     } catch (err) {
       console.error('Payment error:', err);
-      toast.error('Error procesando pago');
     } finally {
       setIsLoading(false);
     }
@@ -96,10 +94,9 @@ export function PaymentForm({
   // Load Stripe inside component to handle missing env vars gracefully
   const stripePromise = useMemo(
     () => {
-      const key = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+      const key = import.meta.env.VITE_STRIPE_PUBLIC_KEY || process.env.VITE_STRIPE_PUBLIC_KEY;
       if (!key) {
         console.error('VITE_STRIPE_PUBLIC_KEY not found in environment');
-        toast.error('Stripe no está configurado. Contacta al administrador.');
         return null;
       }
       return loadStripe(key);

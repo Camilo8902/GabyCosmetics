@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, Download, Home } from 'lucide-react';
-import { toast } from 'react-hot-toast';
 
 export function SuccessPage() {
   const navigate = useNavigate();
@@ -18,7 +17,7 @@ export function SuccessPage() {
 
   const handleDownloadReceipt = () => {
     // TODO: Implementar descarga de recibo
-    toast.success('Descargando recibo...');
+    console.log('Descargando recibo...');
   };
 
   return (

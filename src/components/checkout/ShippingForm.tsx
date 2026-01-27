@@ -4,7 +4,6 @@ import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { toast } from 'react-hot-toast';
 
 const shippingSchema = z.object({
   fullName: z.string().min(3, 'Nombre requerido (mínimo 3 caracteres)'),
@@ -38,8 +37,7 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
       localStorage.setItem('checkout_shipping', JSON.stringify(data));
       onNext(data);
     } catch (error) {
-      toast.error('Error al guardar dirección');
-      console.error(error);
+      console.error('Error al guardar dirección:', error);
     }
   };
 

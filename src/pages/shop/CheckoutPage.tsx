@@ -6,8 +6,7 @@ import { ShippingForm, ShippingFormData } from '@/components/checkout/ShippingFo
 import { PaymentForm } from '@/components/checkout/PaymentForm';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { toast } from 'react-hot-toast';
+import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 import { orderService } from '@/services/orderService';
 
 type CheckoutStep = 'shipping' | 'payment' | 'review';
@@ -26,7 +25,7 @@ export function CheckoutPage() {
   // Si no está autenticado, redirigir a login
   useEffect(() => {
     if (!user) {
-      toast.error('Debes iniciar sesión para hacer checkout');
+      console.warn('Usuario no autenticado, redirigiendo a login');
       navigate('/login?redirect=/checkout');
     }
   }, [user, navigate]);
@@ -95,10 +94,9 @@ export function CheckoutPage() {
       setClientSecret(mockClientSecret);
       setStep('payment');
 
-      toast.success('Orden creada. Procede al pago');
+      console.log('Orden creada, procediendo al pago');
     } catch (error) {
       console.error('Error creando orden:', error);
-      toast.error('Error al crear orden. Intenta de nuevo');
     } finally {
       setIsCreatingOrder(false);
     }
@@ -114,7 +112,6 @@ export function CheckoutPage() {
       navigate(`/checkout/success?orderId=${orderId}`);
     } catch (error) {
       console.error('Error confirmando pago:', error);
-      toast.error('Error al confirmar pago');
     }
   };
 
