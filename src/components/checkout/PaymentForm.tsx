@@ -159,6 +159,7 @@ export function PaymentForm({
           onSuccess={onSuccess}
         />
       </Elements>
+    );
   } catch (error) {
     console.error('🔴 [PaymentForm] Error rendering PaymentForm:', error);
     console.error('📍 [PaymentForm] Error stack:', error instanceof Error ? error.stack : 'No stack trace');

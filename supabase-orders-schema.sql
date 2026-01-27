@@ -1,5 +1,7 @@
 -- Tabla para órdenes completadas
-CREATE TABLE IF NOT EXISTS orders (
+DROP TABLE IF EXISTS orders CASCADE;
+
+CREATE TABLE orders (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   email VARCHAR(255) NOT NULL,
