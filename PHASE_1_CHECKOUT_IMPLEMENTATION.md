@@ -91,8 +91,8 @@ Added 3 new routes:
 Added Stripe dependencies:
 ```json
 {
-  "@stripe/js": "^4.4.0",
-  "@stripe/react-stripe-js": "^3.1.2"
+  "@stripe/js": "^3.5.0",
+  "@stripe/react-stripe-js": "^2.7.0"
 }
 ```
 
