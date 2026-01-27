@@ -117,6 +117,8 @@ function ProtectedRoute({
 }
 
 function PublicLayout({ children }: { children: React.ReactNode }) {
+  console.log('📄 [PublicLayout] Rendering PublicLayout');
+  
   return (
     <>
       <Header />

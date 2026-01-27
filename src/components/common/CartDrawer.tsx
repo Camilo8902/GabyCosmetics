@@ -1,14 +1,19 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 import { X, Plus, Minus, ShoppingBag, Trash2, ArrowRight } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 
 export function CartDrawer() {
+  console.log('🛒 [CartDrawer] Rendering CartDrawer component');
+  
   const { t, i18n } = useTranslation();
+  console.log('🛒 [CartDrawer] Translation initialized');
+  
   const { items, isOpen, setCartOpen, removeItem, updateQuantity, getSubtotal, clearCart } = useCartStore();
+  console.log('🛒 [CartDrawer] CartStore accessed, isOpen:', isOpen);
 
   const subtotal = getSubtotal();
+  console.log('🛒 [CartDrawer] Subtotal calculated:', subtotal);
 
   return (
     <AnimatePresence>
@@ -63,7 +68,7 @@ export function CartDrawer() {
                     <ShoppingBag className="w-12 h-12 text-gray-400" />
                   </motion.div>
                   <p className="text-gray-500 mb-6">{t('cart.empty')}</p>
-                  <Link to="/shop" onClick={() => setCartOpen(false)}>
+                  <a href="/shop" onClick={() => setCartOpen(false)}>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -71,7 +76,7 @@ export function CartDrawer() {
                     >
                       {t('cart.continue_shopping')}
                     </motion.button>
-                  </Link>
+                  </a>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -100,13 +105,13 @@ export function CartDrawer() {
 
                         {/* Product Info */}
                         <div className="flex-1 min-w-0">
-                          <Link
-                            to={`/product/${item.product.slug}`}
+                          <a
+                            href={`/product/${item.product.slug}`}
                             onClick={() => setCartOpen(false)}
                             className="font-medium text-gray-900 hover:text-rose-600 transition-colors line-clamp-1"
                           >
                             {i18n.language === 'en' ? item.product.name_en : item.product.name}
-                          </Link>
+                          </a>
 
                           <div className="mt-1 flex items-center gap-2">
                             <span className="font-bold text-gray-900">
@@ -182,7 +187,7 @@ export function CartDrawer() {
                 </p>
 
                 {/* Checkout Button */}
-                <Link to="/checkout" onClick={() => setCartOpen(false)}>
+                <a href="/checkout" onClick={() => setCartOpen(false)}>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -191,16 +196,16 @@ export function CartDrawer() {
                     {t('cart.checkout')}
                     <ArrowRight className="w-5 h-5" />
                   </motion.button>
-                </Link>
+                </a>
 
                 {/* Continue Shopping */}
-                <Link
-                  to="/shop"
+                <a
+                  href="/shop"
                   onClick={() => setCartOpen(false)}
                   className="block text-center text-gray-600 hover:text-rose-600 transition-colors"
                 >
                   {t('cart.continue_shopping')}
-                </Link>
+                </a>
               </div>
             )}
           </motion.div>
