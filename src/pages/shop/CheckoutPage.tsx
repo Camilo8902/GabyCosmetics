@@ -249,7 +249,7 @@ export function CheckoutPage() {
                   clientSecret={clientSecret}
                   amount={subtotal}
                   orderId={orderId}
-                  onSuccess={() => handlePaymentSuccess(paymentIntentId)}
+                  onSuccess={handlePaymentSuccess}
                 />
               )}
 
