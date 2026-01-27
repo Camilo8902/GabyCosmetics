@@ -3,12 +3,18 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Home } from 'lucide-react';
 
 export function SuccessPage() {
-  const navigate = useNavigate();
+  let navigate: any = null;
+  try {
+    navigate = useNavigate();
+  } catch (e) {
+    console.error('Router context not available:', e);
+  }
+  
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId');
 
   useEffect(() => {
-    if (!orderId) {
+    if (!orderId && navigate) {
       navigate('/');
     }
   }, [orderId, navigate]);
@@ -23,7 +29,7 @@ export function SuccessPage() {
           <p className="text-sm text-gray-500 mb-6">ID: {orderId}</p>
           
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate && navigate('/')}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
           >
             <Home className="h-4 w-4" />

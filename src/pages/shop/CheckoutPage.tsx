@@ -9,7 +9,13 @@ import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 type CheckoutStep = 'shipping' | 'payment' | 'review';
 
 export function CheckoutPage() {
-  const navigate = useNavigate();
+  let navigate: any = null;
+  try {
+    navigate = useNavigate();
+  } catch (e) {
+    console.error('Router context not available:', e);
+  }
+
   const { user } = useAuthStore();
   const { items, total, clearCart } = useCartStore();
 
@@ -21,7 +27,7 @@ export function CheckoutPage() {
 
   // Si no está autenticado, redirigir a login
   useEffect(() => {
-    if (!user) {
+    if (!user && navigate) {
       console.warn('Usuario no autenticado, redirigiendo a login');
       navigate('/login?redirect=/checkout');
     }
@@ -29,7 +35,7 @@ export function CheckoutPage() {
 
   // Si no hay items en carrito, redirigir a shop
   useEffect(() => {
-    if (items.length === 0 && step === 'shipping') {
+    if (items.length === 0 && step === 'shipping' && navigate) {
       navigate('/shop');
     }
   }, [items, navigate, step]);
@@ -73,7 +79,9 @@ export function CheckoutPage() {
       clearCart();
       localStorage.removeItem('checkout_shipping');
       setStep('review');
-      navigate(`/checkout/success?orderId=${orderId}`);
+      if (navigate) {
+        navigate(`/checkout/success?orderId=${orderId}`);
+      }
     } catch (error) {
       console.error('Error confirmando pago:', error);
     }
@@ -96,7 +104,7 @@ export function CheckoutPage() {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => navigate('/shop')}
+            onClick={() => navigate && navigate('/shop')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -164,7 +172,7 @@ export function CheckoutPage() {
                     Número de orden: <span className="font-mono font-bold">{orderId}</span>
                   </p>
                   <button
-                    onClick={() => navigate('/')}
+                    onClick={() => navigate && navigate('/')}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
                   >
                     Volver al inicio

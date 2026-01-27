@@ -2,7 +2,12 @@ import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Home, RotateCcw } from 'lucide-react';
 
 export function FailurePage() {
-  const navigate = useNavigate();
+  let navigate: any = null;
+  try {
+    navigate = useNavigate();
+  } catch (e) {
+    console.error('Router context not available:', e);
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-12">
@@ -14,7 +19,7 @@ export function FailurePage() {
           
           <div className="space-y-3">
             <button
-              onClick={() => navigate('/checkout')}
+              onClick={() => navigate && navigate('/checkout')}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
             >
               <RotateCcw className="h-4 w-4" />
@@ -22,7 +27,7 @@ export function FailurePage() {
             </button>
             
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate && navigate('/')}
               className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
             >
               <Home className="h-4 w-4" />
