@@ -5,7 +5,7 @@ import {
   PaymentElement,
   Elements,
 } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/js';
+import { loadStripe } from '@stripe/stripe-js';
 import { Button } from '@/components/ui/button';
 import { toast } from 'react-hot-toast';
 
