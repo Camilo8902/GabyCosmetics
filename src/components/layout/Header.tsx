@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import {
@@ -19,9 +19,14 @@ import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
 import { cn } from '@/lib/utils';
 
-export function Header() {
+// Wrapper component that safely handles Router context
+function HeaderContent() {
   const { t, i18n } = useTranslation();
-  const location = useLocation();
+  
+  // Use window.location.pathname instead of useLocation() hook
+  // This avoids React Router context issues during state transitions
+  const currentPathname = window.location.pathname;
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -98,13 +103,13 @@ export function Header() {
                   to={link.href}
                   className={cn(
                     'relative text-sm font-medium transition-colors hover:text-rose-600',
-                    location.pathname === link.href
+                    currentPathname === link.href
                       ? 'text-rose-600'
                       : isScrolled ? 'text-gray-700' : 'text-gray-800'
                   )}
                 >
                   {link.label}
-                  {location.pathname === link.href && (
+                  {currentPathname === link.href && (
                     <motion.div
                       layoutId="underline"
                       className="absolute -bottom-1 left-0 right-0 h-0.5 bg-rose-600"
@@ -344,7 +349,7 @@ export function Header() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={cn(
                       'block py-2 px-4 rounded-lg transition-colors',
-                      location.pathname === link.href
+                      currentPathname === link.href
                         ? 'bg-rose-50 text-rose-600'
                         : 'hover:bg-gray-50'
                     )}
@@ -423,4 +428,25 @@ export function Header() {
       </AnimatePresence>
     </>
   );
+}
+
+// Export wrapper component that handles Router context safely
+export function Header() {
+  try {
+    return <HeaderContent />;
+  } catch (error) {
+    console.error('Header error:', error);
+    // Fallback - render minimal header without Router hooks
+    return (
+      <header className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="text-2xl font-bold text-rose-600">Gaby Cosmetics</div>
+          <nav className="flex gap-6">
+            <a href="/" className="text-gray-600 hover:text-gray-900">Home</a>
+            <a href="/shop" className="text-gray-600 hover:text-gray-900">Shop</a>
+          </nav>
+        </div>
+      </header>
+    );
+  }
 }
