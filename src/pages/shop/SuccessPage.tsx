@@ -1,16 +1,21 @@
 import { useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Home } from 'lucide-react';
 
 export function SuccessPage() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const orderId = searchParams.get('orderId');
 
   useEffect(() => {
     if (!orderId) {
-      window.location.href = '/';
+      navigate('/', { replace: true });
     }
-  }, [orderId]);
+  }, [orderId, navigate]);
+
+  if (!orderId) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-12">
@@ -22,7 +27,7 @@ export function SuccessPage() {
           <p className="text-sm text-gray-500 mb-6">ID: {orderId}</p>
           
           <button
-            onClick={() => window.location.href = '/'}
+            onClick={() => navigate('/')}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
           >
             <Home className="h-4 w-4" />

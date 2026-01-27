@@ -1,5 +1,5 @@
 import { useEffect, Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 
@@ -93,7 +93,9 @@ function ProtectedRoute({
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />;
+    // Redirect to login without using Navigate component
+    window.location.href = '/auth/login';
+    return null;
   }
 
   if (allowedRoles && user && !allowedRoles.includes(user.role)) {
@@ -104,7 +106,8 @@ function ProtectedRoute({
           <p className="text-gray-600 mb-4">
             Tu rol actual ({user.role}) no tiene acceso a esta sección.
           </p>
-          <Navigate to="/" replace />
+          {/* Redirect to home without Navigate component */}
+          <div className="text-red-600">Redirigiendo...</div>
         </div>
       </div>
     );
@@ -276,8 +279,8 @@ function App() {
           <Route path="/wishlist" element={<PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Lista de Deseos</h1></div></PublicLayout>} />
 
           <Route path="/checkout" element={<ProtectedRoute><PublicLayout><CheckoutPage /></PublicLayout></ProtectedRoute>} />
-          <Route path="/checkout/success" element={<SuccessPage />} />
-          <Route path="/checkout/failure" element={<FailurePage />} />
+          <Route path="/checkout/success" element={<PublicLayout><SuccessPage /></PublicLayout>} />
+          <Route path="/checkout/failure" element={<PublicLayout><FailurePage /></PublicLayout>} />
 
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />

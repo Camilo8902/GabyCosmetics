@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { ShippingForm, ShippingFormData } from '@/components/checkout/ShippingForm';
@@ -8,6 +9,7 @@ import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 type CheckoutStep = 'shipping' | 'payment' | 'review';
 
 export function CheckoutPage() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { items, total, clearCart } = useCartStore();
 
@@ -21,16 +23,16 @@ export function CheckoutPage() {
   useEffect(() => {
     if (!user) {
       console.warn('Usuario no autenticado, redirigiendo a login');
-      window.location.href = '/login?redirect=/checkout';
+      navigate('/login?redirect=/checkout', { replace: true });
     }
-  }, [user]);
+  }, [user, navigate]);
 
   // Si no hay items en carrito, redirigir a shop
   useEffect(() => {
     if (items.length === 0 && step === 'shipping') {
-      window.location.href = '/shop';
+      navigate('/shop', { replace: true });
     }
-  }, [items, step]);
+  }, [items, step, navigate]);
 
   // Cargar datos guardados
   useEffect(() => {
@@ -66,14 +68,16 @@ export function CheckoutPage() {
     }
   };
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = () => {
     try {
       clearCart();
       localStorage.removeItem('checkout_shipping');
-      setStep('review');
-      window.location.href = `/checkout/success?orderId=${orderId}`;
+      // Navigate using React Router
+      navigate(`/checkout/success?orderId=${orderId}`);
     } catch (error) {
       console.error('Error confirmando pago:', error);
+      // Fallback
+      navigate('/checkout/failure');
     }
   };
 
@@ -94,7 +98,7 @@ export function CheckoutPage() {
         {/* Header */}
         <div className="mb-8">
           <button
-            onClick={() => window.location.href = '/shop'}
+            onClick={() => navigate('/shop')}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -162,7 +166,7 @@ export function CheckoutPage() {
                     Número de orden: <span className="font-mono font-bold">{orderId}</span>
                   </p>
                   <button
-                    onClick={() => window.location.href = '/'}
+                    onClick={() => navigate('/')}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
                   >
                     Volver al inicio
