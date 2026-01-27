@@ -94,7 +94,7 @@ export function PaymentForm({
   // Load Stripe inside component to handle missing env vars gracefully
   const stripePromise = useMemo(
     () => {
-      const key = import.meta.env.VITE_STRIPE_PUBLIC_KEY || process.env.VITE_STRIPE_PUBLIC_KEY;
+      const key = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
       if (!key) {
         console.error('VITE_STRIPE_PUBLIC_KEY not found in environment');
         return null;
