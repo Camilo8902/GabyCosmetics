@@ -1,23 +1,16 @@
 import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Home } from 'lucide-react';
 
 export function SuccessPage() {
-  let navigate: any = null;
-  try {
-    navigate = useNavigate();
-  } catch (e) {
-    console.error('Router context not available:', e);
-  }
-  
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('orderId');
 
   useEffect(() => {
-    if (!orderId && navigate) {
-      navigate('/');
+    if (!orderId) {
+      window.location.href = '/';
     }
-  }, [orderId, navigate]);
+  }, [orderId]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 py-12">
@@ -29,7 +22,7 @@ export function SuccessPage() {
           <p className="text-sm text-gray-500 mb-6">ID: {orderId}</p>
           
           <button
-            onClick={() => navigate && navigate('/')}
+            onClick={() => window.location.href = '/'}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
           >
             <Home className="h-4 w-4" />
