@@ -1,17 +1,15 @@
 import { useEffect } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle2, Home } from 'lucide-react';
 
 export function SuccessPage() {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const orderId = searchParams.get('orderId');
+  // Get orderId from URL
+  const orderId = new URLSearchParams(window.location.search).get('orderId');
 
   useEffect(() => {
     if (!orderId) {
-      navigate('/', { replace: true });
+      window.location.href = '/';
     }
-  }, [orderId, navigate]);
+  }, [orderId]);
 
   if (!orderId) {
     return null;
@@ -27,7 +25,7 @@ export function SuccessPage() {
           <p className="text-sm text-gray-500 mb-6">ID: {orderId}</p>
           
           <button
-            onClick={() => navigate('/')}
+            onClick={() => window.location.href = '/'}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2"
           >
             <Home className="h-4 w-4" />
