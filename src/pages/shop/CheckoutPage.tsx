@@ -4,6 +4,7 @@ import { useCartStore } from '@/store/cartStore';
 import { ShippingForm, ShippingFormData } from '@/components/checkout/ShippingForm';
 import { PaymentForm } from '@/components/checkout/PaymentForm';
 import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
+import { createPaymentIntent as createStripePaymentIntent } from '@/lib/stripe';
 
 type CheckoutStep = 'shipping' | 'payment' | 'review';
 
@@ -59,23 +60,29 @@ export function CheckoutPage() {
       setIsCreatingOrder(true);
       console.log('🔄 [CheckoutPage] Creating payment intent...');
 
-      // Crear orden simplificada
+      // Crear orden con ID único
       const mockOrderId = `order_${Date.now()}`;
       setOrderId(mockOrderId);
       console.log('📝 [CheckoutPage] Order created:', mockOrderId);
 
-      // Simular clientSecret
-      const mockClientSecret = `pi_test_${mockOrderId}`;
-      setClientSecret(mockClientSecret);
-      console.log('🔐 [CheckoutPage] Client secret set:', mockClientSecret);
+      // Crear Payment Intent en Stripe
+      try {
+        const secret = await createStripePaymentIntent(total, mockOrderId);
+        setClientSecret(secret);
+        console.log('🔐 [CheckoutPage] Client secret received from Stripe');
+      } catch (stripeError) {
+        console.error('⚠️ [CheckoutPage] Stripe error, using mock:', stripeError);
+        // Fallback: usar un clientSecret mock para testing
+        const mockClientSecret = `pi_test_${mockOrderId}`;
+        setClientSecret(mockClientSecret);
+      }
       
       console.log('📊 [CheckoutPage] About to change step from shipping to payment');
       setStep('payment');
       console.log('✅ [CheckoutPage] Step changed to payment');
-
-      console.log('Orden iniciada, procediendo al pago');
     } catch (error) {
       console.error('❌ [CheckoutPage] Error creando orden:', error);
+      alert('Error al crear la orden. Por favor intenta de nuevo.');
     } finally {
       setIsCreatingOrder(false);
     }
