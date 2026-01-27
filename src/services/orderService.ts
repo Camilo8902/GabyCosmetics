@@ -166,9 +166,30 @@ export const orderService = {
    */
   async createOrder(order: Partial<Order>): Promise<Order> {
     try {
+      // Generate a unique order number
+      const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      
+      // Prepare order data with shipping info as JSONB
+      const orderData: any = {
+        ...order,
+        order_number: orderNumber,
+      };
+
+      // If we have shipping data from CheckoutPage, convert it to JSONB format
+      if (order.shipping_address || order.shipping_name) {
+        orderData.shipping_address = {
+          name: order.shipping_name,
+          email: order.shipping_email,
+          phone: order.shipping_phone,
+          address: order.shipping_address,
+          city: order.shipping_city,
+          zip: order.shipping_zip,
+        };
+      }
+
       const { data, error } = await supabase
         .from('orders')
-        .insert(order)
+        .insert(orderData)
         .select()
         .single();
 
@@ -176,6 +197,42 @@ export const orderService = {
       return data as Order;
     } catch (error) {
       console.error('Error creating order:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create order items for an order
+   */
+  async createOrderItems(
+    orderId: string,
+    items: Array<{
+      product_id: string;
+      quantity: number;
+      unit_price: number;
+      total_price: number;
+      product_name: string;
+      product_image?: string;
+      company_id?: string;
+    }>
+  ): Promise<void> {
+    try {
+      const itemsToInsert = items.map((item) => ({
+        order_id: orderId,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+        total_price: item.total_price,
+        product_name: item.product_name,
+        product_image: item.product_image,
+        company_id: item.company_id,
+      }));
+
+      const { error } = await supabase.from('order_items').insert(itemsToInsert);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error creating order items:', error);
       throw error;
     }
   },

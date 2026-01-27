@@ -40,6 +40,9 @@ import { CategoriesList, CategoryForm } from '@/pages/admin/categories';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
 import { ProductDetailPage } from '@/pages/shop/ProductDetailPage';
+import { CheckoutPage } from '@/pages/shop/CheckoutPage';
+import { SuccessPage } from '@/pages/shop/SuccessPage';
+import { FailurePage } from '@/pages/shop/FailurePage';
 
 // Lazy load StaticContentEditor to avoid module resolution issues
 const StaticContentEditor = lazy(() => import('@/pages/admin/staticContent/StaticContentEditor').then(m => ({ default: m.StaticContentEditor })));
@@ -272,12 +275,15 @@ function App() {
           <Route path="/contact" element={<PublicLayout><div className="min-h-screen pt-24 flex items-center justify-center"><h1 className="text-4xl font-bold">Contacto</h1></div></PublicLayout>} />
           <Route path="/wishlist" element={<PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Lista de Deseos</h1></div></PublicLayout>} />
 
+          <Route path="/checkout" element={<ProtectedRoute><PublicLayout><CheckoutPage /></PublicLayout></ProtectedRoute>} />
+          <Route path="/checkout/success" element={<SuccessPage />} />
+          <Route path="/checkout/failure" element={<FailurePage />} />
+
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route path="/account" element={<ProtectedRoute><PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Mi Cuenta</h1></div></PublicLayout></ProtectedRoute>} />
-          <Route path="/checkout" element={<ProtectedRoute><div className="min-h-screen flex items-center justify-center"><h1 className="text-3xl font-bold">Checkout</h1></div></ProtectedRoute>} />
 
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />
