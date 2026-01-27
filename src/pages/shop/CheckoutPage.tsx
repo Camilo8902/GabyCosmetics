@@ -8,14 +8,19 @@ import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 type CheckoutStep = 'shipping' | 'payment' | 'review';
 
 export function CheckoutPage() {
-  const { user } = useAuthStore();
-  const { items, total, clearCart } = useCartStore();
+  console.log('📄 [CheckoutPage] Component rendering');
+  
+  try {
+    const { user } = useAuthStore();
+    const { items, total, clearCart } = useCartStore();
+    console.log('📄 [CheckoutPage] Stores accessed successfully');
 
-  const [step, setStep] = useState<CheckoutStep>('shipping');
-  const [shippingData, setShippingData] = useState<ShippingFormData | null>(null);
-  const [clientSecret, setClientSecret] = useState<string>('');
-  const [isCreatingOrder, setIsCreatingOrder] = useState(false);
-  const [orderId, setOrderId] = useState<string>('');
+    const [step, setStep] = useState<CheckoutStep>('shipping');
+    const [shippingData, setShippingData] = useState<ShippingFormData | null>(null);
+    const [clientSecret, setClientSecret] = useState<string>('');
+    const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+    const [orderId, setOrderId] = useState<string>('');
+    console.log('📄 [CheckoutPage] State initialized');
 
   // Si no está autenticado, redirigir a login
   useEffect(() => {
@@ -107,13 +112,15 @@ export function CheckoutPage() {
   const TAX_RATE = 0.19;
   const subtotal = total;
   const tax = subtotal * TAX_RATE;
-  const finalTotal = subtotal + tax;
+    const finalTotal = subtotal + tax;
 
-  const steps: CheckoutStep[] = ['shipping', 'payment', 'review'];
+    const steps: CheckoutStep[] = ['shipping', 'payment', 'review'];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
-      <div className="mx-auto max-w-6xl px-4">
+    console.log('📄 [CheckoutPage] About to render JSX with step:', step);
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+        <div className="mx-auto max-w-6xl px-4">
         {/* Header */}
         <div className="mb-8">
           <button
@@ -246,5 +253,25 @@ export function CheckoutPage() {
         </div>
       </div>
     </div>
-  );
+    );
+  } catch (error) {
+    console.error('🔴 [CheckoutPage] Error rendering CheckoutPage:', error);
+    console.error('📍 [CheckoutPage] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 py-12">
+        <div className="mx-auto max-w-md px-4">
+          <div className="bg-white rounded-lg shadow-lg p-8 text-center">
+            <h1 className="text-2xl font-bold text-red-600 mb-2">Error en el Checkout</h1>
+            <p className="text-gray-600 mb-6">Ha ocurrido un error al cargar la página de checkout.</p>
+            <button
+              onClick={() => window.location.href = '/shop'}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Volver a la tienda
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 }

@@ -11,8 +11,14 @@ export function PaymentForm({
   amount,
   onSuccess,
 }: PaymentFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+  console.log('💳 [PaymentForm] Component rendering');
+  
+  try {
+    const [isLoading, setIsLoading] = useState(false);
+    console.log('💳 [PaymentForm] useState initialized');
+    
+    const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+    console.log('💳 [PaymentForm] Environment variable accessed');
 
   console.log('💳 [PaymentForm] Rendering with:', {
     clientSecret,
@@ -73,6 +79,15 @@ export function PaymentForm({
         {isLoading ? 'Processing...' : `Pay $${(amount * 1.19).toFixed(2)}`}
       </button>
     </div>
-  );
+    );
+  } catch (error) {
+    console.error('🔴 [PaymentForm] Error rendering PaymentForm:', error);
+    console.error('📍 [PaymentForm] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-red-700 font-semibold">Error al renderizar el formulario de pago</p>
+      </div>
+    );
+  }
 }
 

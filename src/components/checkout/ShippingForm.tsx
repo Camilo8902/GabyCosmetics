@@ -19,18 +19,22 @@ interface ShippingFormProps {
 }
 
 export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
-  console.log('📦 [ShippingForm] Rendering with initialData:', initialData);
+  console.log('📦 [ShippingForm] Component rendering');
   
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<ShippingFormData>({
-    resolver: zodResolver(shippingSchema),
-    defaultValues: initialData,
-  });
+  try {
+    console.log('📦 [ShippingForm] Initializing useForm hook');
+    const {
+      register,
+      handleSubmit,
+      formState: { errors, isSubmitting },
+    } = useForm<ShippingFormData>({
+      resolver: zodResolver(shippingSchema),
+      defaultValues: initialData,
+    });
+    
+    console.log('📦 [ShippingForm] useForm initialized successfully');
 
-  const onSubmit = async (data: ShippingFormData) => {
+    const onSubmit = async (data: ShippingFormData) => {
     console.log('📝 [ShippingForm] Form submitted with data:', data);
     try {
       // Guardar en localStorage para persistencia
@@ -140,5 +144,14 @@ export function ShippingForm({ onNext, initialData }: ShippingFormProps) {
         {isSubmitting ? 'Guardando...' : 'Continuar al Pago'}
       </button>
     </form>
-  );
+    );
+  } catch (error) {
+    console.error('🔴 [ShippingForm] Error rendering ShippingForm:', error);
+    console.error('📍 [ShippingForm] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-red-700 font-semibold">Error al renderizar el formulario de envío</p>
+      </div>
+    );
+  }
 }
