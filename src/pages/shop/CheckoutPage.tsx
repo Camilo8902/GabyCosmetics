@@ -12,8 +12,12 @@ export function CheckoutPage() {
   
   try {
     const { user } = useAuthStore();
-    const { items, total, clearCart } = useCartStore();
+    const { items, getSubtotal, clearCart } = useCartStore();
     console.log('📄 [CheckoutPage] Stores accessed successfully');
+    console.log('📦 [CheckoutPage] Cart items:', items);
+    
+    const total = getSubtotal();
+    console.log('💰 [CheckoutPage] Total from getSubtotal():', total);
 
     const [step, setStep] = useState<CheckoutStep>('shipping');
     const [shippingData, setShippingData] = useState<ShippingFormData | null>(null);
