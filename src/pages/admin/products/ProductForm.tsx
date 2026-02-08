@@ -114,27 +114,35 @@ export function ProductForm() {
   // Load product data when editing
   useEffect(() => {
     if (product && isEditing) {
-      setValue('name', product.name);
-      setValue('name_en', product.name_en);
-      setValue('slug', product.slug);
-      setValue('description', product.description);
-      setValue('description_en', product.description_en);
+      console.log('🔵 [ProductForm] Cargando datos del producto:', product);
+      setValue('name', product.name || '');
+      setValue('name_en', product.name_en || '');
+      setValue('slug', product.slug || '');
+      setValue('description', product.description || '');
+      setValue('description_en', product.description_en || '');
       setValue('short_description', product.short_description || undefined);
       setValue('short_description_en', product.short_description_en || undefined);
       // Convert numeric values to numbers in case they come as strings
-      setValue('price', typeof product.price === 'string' ? parseFloat(product.price) : product.price);
-      setValue('compare_at_price', product.compare_at_price ? (typeof product.compare_at_price === 'string' ? parseFloat(product.compare_at_price) : product.compare_at_price) : undefined);
-      setValue('cost_price', product.cost_price ? (typeof product.cost_price === 'string' ? parseFloat(product.cost_price) : product.cost_price) : undefined);
+      const price = typeof product.price === 'string' ? parseFloat(product.price) : (product.price || 0);
+      setValue('price', price);
+      const compareAtPrice = product.compare_at_price ? (typeof product.compare_at_price === 'string' ? parseFloat(product.compare_at_price) : product.compare_at_price) : undefined;
+      setValue('compare_at_price', compareAtPrice);
+      const costPrice = product.cost_price ? (typeof product.cost_price === 'string' ? parseFloat(product.cost_price) : product.cost_price) : undefined;
+      setValue('cost_price', costPrice);
       setValue('sku', product.sku || undefined);
       setValue('barcode', product.barcode || undefined);
-      setValue('weight', product.weight ? (typeof product.weight === 'string' ? parseFloat(product.weight) : product.weight) : undefined);
-      setValue('is_active', product.is_active);
-      setValue('is_featured', product.is_featured);
-      setValue('is_visible', product.is_visible);
+      const weight = product.weight ? (typeof product.weight === 'string' ? parseFloat(product.weight) : product.weight) : undefined;
+      setValue('weight', weight);
+      setValue('is_active', product.is_active || false);
+      setValue('is_featured', product.is_featured || false);
+      setValue('is_visible', product.is_visible || false);
       setValue('company_id', product.company_id || undefined);
 
-      if (product.categories) {
-        setSelectedCategories(product.categories.map((c: any) => c.id || c.category?.id));
+      // Load categories
+      if (product.categories && Array.isArray(product.categories)) {
+        const categoryIds = product.categories.map((c: any) => c.category?.id || c.category_id || c.id);
+        console.log('🔵 [ProductForm] Categorías cargadas:', categoryIds);
+        setSelectedCategories(categoryIds.filter(Boolean));
       }
     }
   }, [product, isEditing, setValue]);
