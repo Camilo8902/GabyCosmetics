@@ -430,11 +430,7 @@ export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
   try {
     const { data, error } = await supabase
       .from('products')
-      .select(`
-        *,
-        images:product_images(*),
-        company:companies(id, name, logo_url)
-      `)
+      .select('*')
       .eq('is_active', true)
       .eq('is_visible', true)
       .eq('is_featured', true)
@@ -445,6 +441,42 @@ export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
     return data as Product[];
   } catch (error) {
     console.error('Error getting featured products:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtener productos más vendidos
+ */
+export async function getBestSellers(limit = 8): Promise<Product[]> {
+  try {
+    // Por ahora retornamos productos destacados como best sellers
+    return getFeaturedProducts(limit);
+  } catch (error) {
+    console.error('Error getting best sellers:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtener producto por slug
+ */
+export async function getProductBySlug(slug: string): Promise<Product | null> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('slug', slug)
+      .single();
+
+    if (error) {
+      if (error.code === 'PGRST116') return null;
+      throw error;
+    }
+
+    return data as Product;
+  } catch (error) {
+    console.error('Error getting product by slug:', error);
     throw error;
   }
 }
@@ -653,10 +685,81 @@ export async function adjustInventory(
   }
 }
 
+/**
+ * Subir imagen de producto (con archivo File)
+ */
+export async function uploadProductImage(
+  productId: string,
+  file: File,
+  isPrimary = false
+): Promise<ProductImage> {
+  try {
+    // Subir archivo a Supabase Storage
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${productId}/${Date.now()}.${fileExt}`;
+    
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    // Obtener URL pública
+    const { data: { publicUrl } } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(fileName);
+
+    // Guardar en la tabla product_images
+    return addProductImage(productId, {
+      url: publicUrl,
+      alt_text: file.name,
+      order_index: 0,
+      is_primary: isPrimary,
+    });
+  } catch (error) {
+    console.error('Error uploading product image:', error);
+    throw error;
+  }
+}
+
+/**
+ * Asignar categorías a un producto
+ */
+export async function setProductCategories(
+  productId: string,
+  categoryIds: string[]
+): Promise<void> {
+  try {
+    // Eliminar categorías existentes
+    await supabase
+      .from('product_categories')
+      .delete()
+      .eq('product_id', productId);
+
+    // Insertar nuevas categorías
+    if (categoryIds.length > 0) {
+      const inserts = categoryIds.map((categoryId) => ({
+        product_id: productId,
+        category_id: categoryId,
+      }));
+
+      const { error } = await supabase
+        .from('product_categories')
+        .insert(inserts);
+
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error('Error setting product categories:', error);
+    throw error;
+  }
+}
+
 // Exportar como objeto para facilitar imports
 const productService = {
   getProducts,
   getProductById,
+  getProductBySlug,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -664,12 +767,15 @@ const productService = {
   addProductImage,
   deleteProductImage,
   reorderProductImages,
+  uploadProductImage,
+  setProductCategories,
   getProductVariants,
   createProductVariant,
   updateProductVariant,
   deleteProductVariant,
   searchProducts,
   getFeaturedProducts,
+  getBestSellers,
   getCategories,
   createCategory,
   updateCategory,
