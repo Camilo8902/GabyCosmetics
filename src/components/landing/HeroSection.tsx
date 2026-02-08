@@ -5,37 +5,37 @@ import { ArrowRight, Sparkles, Star } from 'lucide-react';
 import { ImageCarousel } from './ImageCarousel';
 import { FloatingDecorations } from './FloatingDecorations';
 
-// Placeholder images from Unsplash for beauty products
+// Placeholder images from Unsplash for beauty products - Hair focused
 const HERO_IMAGES = [
   {
-    src: 'https://images.unsplash.com/photo-1596462502278-27bfdd403348?q=80&w=1920&auto=format&fit=crop',
-    alt: 'Skincare products with natural ingredients',
-    title: 'Belleza Natural',
-    subtitle: 'Cuida tu piel con ingredientes 100% naturales',
+    src: 'https://images.unsplash.com/photo-1560869713-7d0a29430803?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Cabello hermoso y saludable',
+    title: 'Transforma Tu Cabello',
+    subtitle: 'Productos premium diseñados para nutrir y revitalizar tu cabello desde la raíz hasta las puntas.',
   },
   {
-    src: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=1920&auto=format&fit=crop',
-    alt: 'Cosmetic products and makeup',
-    title: 'Cosméticos Premium',
-    subtitle: 'Productos de alta calidad para tu rutina diaria',
+    src: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Cuidado del cabello natural',
+    title: 'Belleza Natural para Tu Pelo',
+    subtitle: 'Ingredientes 100% naturales que restauran el brillo y la suavidad sin químicos agresivos.',
   },
   {
-    src: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=1920&auto=format&fit=crop',
-    alt: 'Spa and wellness products',
-    title: 'Bienestar y Spa',
-    subtitle: 'Transforma tu rutina en un momento de lujo',
+    src: 'https://images.unsplash.com/photo-1604654894610-df63bc536371?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Productos para el cuidado del cabello',
+    title: 'Hidratación Profunda',
+    subtitle: 'Dale a tu cabello la hidratación que merece con nuestros tratamientos intensivos.',
   },
   {
-    src: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=1920&auto=format&fit=crop',
-    alt: 'Organic beauty products',
-    title: 'Orgánicos y Limpios',
-    subtitle: 'La mejor selección de productos orgánicos',
+    src: 'https://images.unsplash.com/photo-1580618672591-eb180b1a973f?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Mujer con cabello hermoso',
+    title: 'Cabello Sin Frizz',
+    subtitle: 'Di adiós al frizz con nuestra línea especializada para un cabello lacio y controlado.',
   },
   {
-    src: 'https://images.unsplash.com/photo-1608248597279-f99d160bfbc8?q=80&w=1920&auto=format&fit=crop',
-    alt: 'Luxury beauty products',
-    title: 'Lujo y Elegancia',
-    subtitle: 'Descubre nuestra línea premium',
+    src: 'https://images.unsplash.com/photo-1519699047748-de8e457a634e?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Productos capilares profesionales',
+    title: 'Color Vibrante y Duradero',
+    subtitle: 'Protege y realza tu coloración con productos diseñados para mantener tu cabello radiante.',
   },
 ];
 
@@ -47,7 +47,7 @@ export function HeroSection() {
       {/* Image Carousel */}
       <ImageCarousel
         images={HERO_IMAGES}
-        interval={4000}
+        interval={5000}
         autoPlay={true}
         showNavigation={true}
         showIndicators={true}
