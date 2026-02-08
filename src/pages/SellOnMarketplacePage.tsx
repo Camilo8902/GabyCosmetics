@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Store, TrendingUp, Shield, Zap, Support, LocalShipping, Target } from 'lucide-react';
+import { Check, Store, TrendingUp, Shield, Zap, Headset, LocalShipping, Target } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 // Datos para el Hero
@@ -41,7 +41,7 @@ const FEATURES = [
     description: 'Métricas detalladas de tu negocio para tomar mejores decisiones.',
   },
   {
-    icon: Support,
+    icon: Headset,
     title: 'Soporte Experto',
     description: 'Equipo dedicado para ayudarte a crecer tu negocio.',
   },
