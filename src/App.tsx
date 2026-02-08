@@ -36,6 +36,7 @@ import { UsersList } from '@/pages/admin/users/UsersList';
 import { UserDetail } from '@/pages/admin/users/UserDetail';
 import { CompaniesList } from '@/pages/admin/companies/CompaniesList';
 import { CompanyDetail } from '@/pages/admin/companies/CompanyDetail';
+import { CompanyRequests } from '@/pages/admin/companies/CompanyRequests';
 import { CategoriesList, CategoryForm } from '@/pages/admin/categories';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
@@ -45,6 +46,7 @@ import PaymentSuccessPage from '@/pages/shop/PaymentSuccessPage';
 import { SuccessPage } from '@/pages/shop/SuccessPage';
 import { FailurePage } from '@/pages/shop/FailurePage';
 import { CompanyRegistrationPage } from '@/pages/company/CompanyRegistrationPage';
+import { SellOnMarketplacePage } from '@/pages/SellOnMarketplacePage';
 
 // Lazy load StaticContentEditor to avoid module resolution issues
 const StaticContentEditor = lazy(() => import('@/pages/admin/staticContent/StaticContentEditor').then(m => ({ default: m.StaticContentEditor })));
@@ -292,6 +294,9 @@ function App() {
 
           <Route path="/account" element={<ProtectedRoute><PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Mi Cuenta</h1></div></PublicLayout></ProtectedRoute>} />
 
+          <Route path="/sell" element={<PublicLayout><SellOnMarketplacePage /></PublicLayout>} />
+          <Route path="/sell-on-marketplace" element={<PublicLayout><SellOnMarketplacePage /></PublicLayout>} />
+
           <Route path="/company/register" element={<ProtectedRoute><CompanyRegistrationPage /></ProtectedRoute>} />
 
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
@@ -318,6 +323,7 @@ function App() {
             <Route path="users/:id" element={<UserDetail />} />
             <Route path="companies" element={<CompaniesList />} />
             <Route path="companies/:id" element={<CompanyDetail />} />
+            <Route path="company-requests" element={<CompanyRequests />} />
             <Route path="categories" element={<CategoriesList />} />
             <Route path="categories/new" element={
               <ErrorBoundary>

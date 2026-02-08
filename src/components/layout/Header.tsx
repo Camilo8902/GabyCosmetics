@@ -13,7 +13,8 @@ import {
   Heart,
   LogOut,
   Settings,
-  LayoutDashboard
+  LayoutDashboard,
+  Store
 } from 'lucide-react';
 import { useCartStore } from '@/store/cartStore';
 import { useAuthStore } from '@/store/authStore';
@@ -82,6 +83,7 @@ function HeaderContent() {
     { href: '/shop', label: t('nav.shop') },
     { href: '/about', label: t('nav.about') },
     { href: '/contact', label: t('nav.contact') },
+    { href: '/sell', label: 'Vender' },
   ];
 
   const getDashboardLink = () => {
@@ -141,6 +143,15 @@ function HeaderContent() {
                 </Link>
               ))}
             </nav>
+
+            {/* CTA: Vender en GabyCosmetics */}
+            <Link
+              to="/sell"
+              className="hidden lg:inline-flex items-center px-4 py-2 bg-pink-500 text-white text-sm font-semibold rounded-lg hover:bg-pink-600 transition-colors"
+            >
+              <Store className="w-4 h-4 mr-2" />
+              Vender
+            </Link>
 
             {/* Right Actions */}
             <div className="flex items-center space-x-4">
