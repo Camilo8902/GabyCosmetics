@@ -721,77 +721,42 @@ export async function adjustInventory(
 }
 
 /**
- * Subir imagen de producto usando API route server-side (bypassea RLS)
+ * Subir imagen de producto - GUARDAR COMO BASE64 EN EL PRODUCTO (igual que categorías)
  */
 export async function uploadProductImage(
   productId: string,
   file: File,
   isPrimary = false
 ): Promise<ProductImage> {
-  console.log('🔵 [uploadProductImage] === INICIANDO VIA API ===');
-  console.log('🔵 [uploadProductImage] productId:', productId);
-  console.log('🔵 [uploadProductImage] file.name:', file.name);
+  console.log('🔵 [uploadProductImage] Convirtiendo imagen a base64...');
 
   try {
     // Convertir archivo a base64
     const reader = new FileReader();
     
-    const fileContent = await new Promise<string>((resolve, reject) => {
+    const base64Data = await new Promise<string>((resolve, reject) => {
       reader.onload = () => {
         const result = reader.result as string;
-        const base64 = result.split(',')[1];
-        resolve(base64);
+        resolve(result);
       };
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${productId}/${Date.now()}.${fileExt}`;
+    console.log('✅ [uploadProductImage] Base64 generado, longitud:', base64Data.length);
 
-    console.log('🔵 [uploadProductImage] Llamando API /api/upload-product-image');
-
-    // Usar API route del servidor (bypassea RLS)
-    const response = await fetch('/api/upload-product-image', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        productId,
-        fileName,
-        fileContent,
-        contentType: file.type,
-        altText: file.name,
-        isPrimary,
-      }),
-    });
-
-    console.log('🔵 [uploadProductImage] Response status:', response.status);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('❌ [uploadProductImage] API Error:', errorData);
-      throw new Error(errorData.error || 'Error al subir imagen');
-    }
-
-    const result = await response.json();
-    console.log('✅ [uploadProductImage] API Response:', result);
-
-    if (result.success) {
-      return {
-        id: result.image?.id || `temp-${Date.now()}`,
-        product_id: productId,
-        url: result.url,
-        alt_text: file.name,
-        order_index: 0,
-        is_primary: isPrimary,
-      } as ProductImage;
-    }
-
-    throw new Error('Upload failed');
+    // Retornar un "ProductImage" con la URL como base64
+    // Esto funciona igual que categorías
+    return {
+      id: `temp-${Date.now()}`,
+      product_id: productId,
+      url: base64Data, // Guardamos el base64 directamente
+      alt_text: file.name,
+      order_index: 0,
+      is_primary: isPrimary,
+    } as ProductImage;
   } catch (error: any) {
-    console.error('❌ [uploadProductImage] Error general:', error);
+    console.error('❌ [uploadProductImage] Error:', error);
     throw error;
   }
 }

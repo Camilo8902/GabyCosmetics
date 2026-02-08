@@ -91,6 +91,7 @@ export interface Product {
   is_active: boolean;
   is_featured: boolean;
   is_visible: boolean;
+  image_url?: string; // Base64 image URL (like categories)
   created_at: string;
   updated_at: string;
   // Relations

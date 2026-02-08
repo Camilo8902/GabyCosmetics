@@ -211,7 +211,8 @@ export function ProductsList() {
       key: 'image',
       header: 'Imagen',
       render: (product: Product) => {
-        const imageUrl = product.images?.[0]?.url || '/placeholder-product.png';
+        // Priorizar images[0].url, luego image_url, luego placeholder
+        const imageUrl = product.images?.[0]?.url || product.image_url || '/placeholder-product.png';
         return (
           <img
             src={imageUrl}

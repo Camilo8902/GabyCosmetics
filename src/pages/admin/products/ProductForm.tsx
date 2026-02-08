@@ -45,6 +45,7 @@ type ProductFormData = {
   is_visible: boolean;
   company_id?: string;
   categoryIds?: string[];
+  image_url?: string; // Base64 image URL (like categories)
 };
 
 export function ProductForm() {
@@ -137,6 +138,12 @@ export function ProductForm() {
       setValue('is_featured', product.is_featured || false);
       setValue('is_visible', product.is_visible || false);
       setValue('company_id', product.company_id || undefined);
+      setValue('image_url', product.image_url || undefined); // Load image_url
+
+      // Load image preview if exists
+      if (product.image_url) {
+        setImageFile(null); // Clear new file selection
+      }
 
       // Load categories
       if (product.categories && Array.isArray(product.categories)) {
@@ -206,91 +213,65 @@ export function ProductForm() {
 
       if (isEditing && id) {
         console.log('🟢 [ProductForm] Actualizando producto existente, ID:', id);
-        // Update existing product
-        await updateProduct.mutateAsync({
-          id,
-          updates: cleanData,
-        });
-        console.log('✅ [ProductForm] Producto actualizado exitosamente');
-        // Note: Hook already shows success toast
-
-        // Update image if provided
+        
+        // Procesar imagen si hay archivo nuevo
+        let imageUrl = product?.image_url;
         if (imageFile) {
           try {
-            console.log('🔵 [ProductForm] Subiendo imagen...');
-            await uploadProductImage.mutateAsync({
-              productId: id,
-              file: imageFile,
-              isPrimary: true,
+            console.log('🔵 [ProductForm] Procesando imagen como base64...');
+            const reader = new FileReader();
+            const base64Data = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(imageFile);
             });
-            console.log('✅ [ProductForm] Imagen subida exitosamente');
-          } catch (imageError) {
-            console.error('Warning: Image upload failed but product was saved:', imageError);
-            toast.error('Producto actualizado, pero la imagen no se pudo cargar');
+            imageUrl = base64Data;
+            console.log('✅ [ProductForm] Imagen procesada');
+          } catch (e) {
+            console.error('Error procesando imagen:', e);
           }
         }
+        
+        // Update existing product with image_url
+        await updateProduct.mutateAsync({
+          id,
+          updates: { ...cleanData, image_url: imageUrl },
+        });
+        console.log('✅ [ProductForm] Producto actualizado exitosamente');
 
-        // Update categories
-        try {
-          if (selectedCategories.length > 0) {
-            console.log('🔵 [ProductForm] Actualizando categorías:', selectedCategories);
-            await setProductCategories.mutateAsync({
-              productId: id,
-              categoryIds: selectedCategories,
-            });
-            console.log('✅ [ProductForm] Categorías actualizadas exitosamente');
-          }
-        } catch (categoryError) {
-          console.error('Warning: Category update failed:', categoryError);
-          toast.error('Producto actualizado, pero las categorías no se pudieron asignar');
-        }
-
-        // Navigate back to products list after successful update
+        // Navigate back
         console.log('🔵 [ProductForm] Navegando a lista de productos');
         navigate('/admin/products');
       } else {
         console.log('🟢 [ProductForm] Creando nuevo producto');
-        // Create new product
-        const productData = {
-          ...cleanData,
-          company_id: getCompanyId() || cleanData.company_id
-        };
-        const newProduct = await createProduct.mutateAsync(productData);
-        console.log('✅ [ProductForm] Producto creado exitosamente, ID:', newProduct.id);
-        // Note: Hook already shows success toast
         
-        // Upload image if provided
+        // Procesar imagen ANTES de crear el producto
+        let imageUrl: string | undefined;
         if (imageFile) {
           try {
-            console.log('🔵 [ProductForm] Subiendo imagen para producto nuevo...');
-            await uploadProductImage.mutateAsync({
-              productId: newProduct.id,
-              file: imageFile,
-              isPrimary: true,
+            console.log('🔵 [ProductForm] Procesando imagen como base64...');
+            const reader = new FileReader();
+            imageUrl = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(imageFile);
             });
-            console.log('✅ [ProductForm] Imagen subida exitosamente');
-          } catch (imageError) {
-            console.error('Warning: Image upload failed but product was created:', imageError);
-            toast.error('Producto creado, pero la imagen no se pudo cargar');
+            console.log('✅ [ProductForm] Imagen procesada');
+          } catch (e) {
+            console.error('Error procesando imagen:', e);
           }
         }
+        
+        // Create new product with image_url
+        const productData = {
+          ...cleanData,
+          company_id: getCompanyId() || cleanData.company_id,
+          image_url: imageUrl, // Guardar base64 directamente
+        };
+        const newProduct = await createProduct.mutateAsync(productData);
+        console.log('✅ [ProductForm] Producto creado con imagen, ID:', newProduct.id);
 
-        // Set categories
-        try {
-          if (selectedCategories.length > 0) {
-            console.log('🔵 [ProductForm] Asignando categorías:', selectedCategories);
-            await setProductCategories.mutateAsync({
-              productId: newProduct.id,
-              categoryIds: selectedCategories,
-            });
-            console.log('✅ [ProductForm] Categorías asignadas exitosamente');
-          }
-        } catch (categoryError) {
-          console.error('Warning: Category assignment failed:', categoryError);
-          toast.error('Producto creado, pero las categorías no se pudieron asignar');
-        }
-
-        console.log('🔵 [ProductForm] Navegando a página de edición del producto nuevo');
+        console.log('🔵 [ProductForm] Navegando a página de edición');
         navigate(`/admin/products/${newProduct.id}/edit`);
       }
     } catch (error) {
