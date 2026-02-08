@@ -46,20 +46,25 @@ export function ShopPage() {
   const maxPrice = searchParams.get('maxPrice') || '';
 
   // Convert real products to shop format
-  const processedProducts = realProducts.map((p: any) => ({
-    id: p.id,
-    name: p.name,
-    name_en: p.name_en,
-    slug: p.slug,
-    price: p.price,
-    compare_at_price: p.compare_at_price,
-    category: p.categories?.[0]?.category?.slug || 'otros',
-    subcategory: p.categories?.[0]?.category?.slug || 'otros',
-    image: p.images?.[0]?.url || p.image_url || null,
-    rating: 4.5,
-    reviews: 0,
-    is_featured: p.is_featured,
-  }));
+  const processedProducts = realProducts.map((p: any) => {
+    // Get first category from product
+    const firstCategory = p.categories?.[0]?.category || p.categories?.[0] || {};
+    return {
+      id: p.id,
+      name: p.name,
+      name_en: p.name_en,
+      slug: p.slug,
+      price: p.price,
+      compare_at_price: p.compare_at_price,
+      category: firstCategory.slug || 'otros',
+      category_name: firstCategory.name || 'Sin categoría',
+      subcategory: firstCategory.slug || 'otros',
+      image: p.images?.[0]?.url || p.image_url || null,
+      rating: 4.5,
+      reviews: 0,
+      is_featured: p.is_featured,
+    };
+  });
 
   // Only show products that have images
   const allProducts = processedProducts.filter(p => p.image);

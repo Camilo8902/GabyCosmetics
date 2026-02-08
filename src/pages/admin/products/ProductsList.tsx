@@ -273,6 +273,34 @@ export function ProductsList() {
       sortable: false,
     },
     {
+      key: 'categories',
+      header: 'Categorías',
+      render: (product: Product) => {
+        const categories = product.categories || [];
+        if (categories.length === 0) {
+          return <span className="text-gray-400 text-sm">Sin categorías</span>;
+        }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {categories.slice(0, 2).map((cat: any) => (
+              <span 
+                key={cat.category_id || cat.id}
+                className="px-2 py-0.5 bg-pink-100 text-pink-800 text-xs rounded-full"
+              >
+                {cat.category?.name || cat.name || 'Categoría'}
+              </span>
+            ))}
+            {categories.length > 2 && (
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                +{categories.length - 2}
+              </span>
+            )}
+          </div>
+        );
+      },
+      sortable: false,
+    },
+    {
       key: 'status',
       header: 'Estado',
       render: (product: Product) => (
