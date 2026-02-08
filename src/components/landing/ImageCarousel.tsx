@@ -19,7 +19,7 @@ interface ImageCarouselProps {
 
 export function ImageCarousel({
   images,
-  interval = 4000,
+  interval = 5000,
   autoPlay = true,
   showNavigation = true,
   showIndicators = true,
@@ -51,18 +51,18 @@ export function ImageCarousel({
 
   return (
     <div
-      className="absolute inset-0 overflow-hidden"
+      className="relative w-full h-full min-h-[450px] sm:min-h-[550px] md:min-h-[650px] overflow-hidden"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, scale: 1.1 }}
-          animate={{ opacity: 1, scale: 1 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: 'easeInOut' }}
-          className="absolute inset-0"
+          className="absolute inset-0 w-full h-full"
         >
           {/* Image */}
           <img
@@ -72,8 +72,8 @@ export function ImageCarousel({
           />
 
           {/* Overlay gradient for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-900/80 via-gray-900/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/60 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-900/70 via-gray-900/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/50 via-transparent to-transparent" />
         </motion.div>
       </AnimatePresence>
 
@@ -82,14 +82,14 @@ export function ImageCarousel({
         <>
           <button
             onClick={goToPrevious}
-            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors group"
+            className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors group z-20"
             aria-label="Previous slide"
           >
             <ChevronLeft className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
           </button>
           <button
             onClick={goToNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors group"
+            className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm hover:bg-white/30 transition-colors group z-20"
             aria-label="Next slide"
           >
             <ChevronRight className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
@@ -99,7 +99,7 @@ export function ImageCarousel({
 
       {/* Slide indicators */}
       {showIndicators && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3">
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-20">
           {images.map((_, index) => (
             <button
               key={index}
@@ -116,21 +116,13 @@ export function ImageCarousel({
                     : 'bg-white/40 hover:bg-white/60'
                 }`}
               />
-              {index === currentIndex && (
-                <motion.div
-                  layoutId="activeIndicator"
-                  className="absolute inset-0 h-2 rounded-full bg-rose-500"
-                  initial={false}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
             </button>
           ))}
         </div>
       )}
 
       {/* Progress bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10 z-20">
         <motion.div
           key={`progress-${currentIndex}`}
           initial={{ width: '0%' }}
@@ -148,15 +140,15 @@ export function ImageCarousel({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="absolute bottom-20 left-8 md:left-16 max-w-xl"
+          className="absolute bottom-16 left-8 md:left-16 max-w-xl z-10"
         >
           {images[currentIndex].title && (
-            <h2 className="text-2xl md:text-4xl font-serif font-bold text-white mb-2">
+            <h2 className="text-xl md:text-3xl font-serif font-bold text-white mb-2">
               {images[currentIndex].title}
             </h2>
           )}
           {images[currentIndex].subtitle && (
-            <p className="text-white/80 text-lg md:text-xl">
+            <p className="text-white/80 text-sm md:text-lg">
               {images[currentIndex].subtitle}
             </p>
           )}

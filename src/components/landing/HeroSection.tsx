@@ -43,7 +43,7 @@ export function HeroSection() {
   const { t } = useTranslation();
 
   return (
-    <section className="relative w-full">
+    <section className="relative w-full min-h-[500px] sm:min-h-[600px] md:min-h-[700px]">
       {/* Image Carousel - Starts below header */}
       <ImageCarousel
         images={HERO_IMAGES}
