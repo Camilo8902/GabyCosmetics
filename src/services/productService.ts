@@ -115,13 +115,19 @@ export async function createProduct(
   product: Partial<Product>
 ): Promise<Product> {
   try {
+    const insertData: any = {
+      ...product,
+      slug: product.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    };
+
+    // Solo agregar company_id si no está vacío
+    if (companyId && companyId.trim() !== '') {
+      insertData.company_id = companyId;
+    }
+
     const { data, error } = await supabase
       .from('products')
-      .insert({
-        ...product,
-        company_id: companyId,
-        slug: product.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      })
+      .insert(insertData)
       .select()
       .single();
 

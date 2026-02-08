@@ -102,12 +102,13 @@ export function useCreateProduct() {
         companyId = user.company_id;
       }
       
-      // Admin can create products without company_id (handled by service)
+      // Admin can create products without company_id (pass empty string)
       // Company users must have a company_id
       if (!companyId && isCompany()) {
         throw new Error('Tu cuenta no tiene una empresa asociada. Contacta al administrador.');
       }
       
+      // Pass empty string for admin, or the company_id for company users
       return productService.createProduct(companyId || '', product);
     },
     onSuccess: () => {
