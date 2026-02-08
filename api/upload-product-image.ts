@@ -1,23 +1,4 @@
-import { VercelRequest, VercelResponse } from '@vercel/node';
-
-// We'll use dynamic import to avoid build issues
-let supabaseAdmin: any = null;
-
-async function getSupabaseAdmin() {
-  if (supabaseAdmin) return supabaseAdmin;
-  
-  const { createClient } = await import('@supabase/supabase-js');
-  
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  }
-  
-  supabaseAdmin = createClient(supabaseUrl, supabaseKey);
-  return supabaseAdmin;
-}
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(
   req: VercelRequest,
@@ -31,23 +12,48 @@ export default async function handler(
   try {
     const { productId, fileName, fileContent, contentType, altText, isPrimary } = req.body;
 
+    console.log('🔵 [API] Request received');
+    console.log('🔵 [API] productId:', productId);
+    console.log('🔵 [API] fileName:', fileName);
+    console.log('🔵 [API] fileContent length:', fileContent?.length);
+    console.log('🔵 [API] contentType:', contentType);
+
     // Validar campos requeridos
     if (!productId || !fileName || !fileContent || !contentType) {
       return res.status(400).json({
-        error: 'Faltan campos requeridos: productId, fileName, fileContent, contentType',
+        error: 'Faltan campos requeridos',
+        received: { productId: !!productId, fileName: !!fileName, fileContent: !!fileContent, contentType: !!contentType },
       });
     }
 
-    console.log('🔵 [API] Subiendo imagen para producto:', productId);
-    console.log('🔵 [API] fileName:', fileName);
+    // Obtener variables de entorno
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    // Obtener cliente Supabase Admin
-    const supabase = await getSupabaseAdmin();
+    console.log('🔵 [API] SUPABASE_URL set:', !!supabaseUrl);
+    console.log('🔵 [API] SUPABASE_SERVICE_ROLE_KEY set:', !!supabaseKey);
+
+    if (!supabaseUrl || !supabaseKey) {
+      return res.status(500).json({
+        error: 'Missing environment variables',
+        envVars: {
+          SUPABASE_URL: !!supabaseUrl,
+          SUPABASE_SERVICE_ROLE_KEY: !!supabaseKey,
+        },
+      });
+    }
+
+    // Dynamic imports
+    const { createClient } = await import('@supabase/supabase-js');
+    
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✅ [API] Supabase client created');
 
     // Convertir base64 a buffer
     const fileBuffer = Buffer.from(fileContent, 'base64');
+    console.log('🔵 [API] Buffer created, size:', fileBuffer.length);
 
-    // Subir archivo a Supabase Storage usando admin client
+    // Subir archivo a Supabase Storage
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('product-images')
       .upload(fileName, fileBuffer, {
@@ -57,19 +63,21 @@ export default async function handler(
       });
 
     if (uploadError) {
-      console.error('❌ [API] Error subiendo archivo:', uploadError);
+      console.error('❌ [API] Storage error:', uploadError);
       return res.status(500).json({
-        error: 'Error al subir archivo a Storage',
+        error: 'Storage error',
         details: uploadError.message,
       });
     }
 
-    console.log('✅ [API] Archivo subido:', uploadData.path);
+    console.log('✅ [API] File uploaded:', uploadData.path);
 
     // Obtener URL pública
     const { data: { publicUrl } } = supabase.storage
       .from('product-images')
       .getPublicUrl(fileName);
+
+    console.log('🔵 [API] Public URL:', publicUrl);
 
     // Insertar en la tabla product_images
     const { data: imageData, error: insertError } = await supabase
@@ -85,11 +93,11 @@ export default async function handler(
       .single();
 
     if (insertError) {
-      console.warn('⚠️ [API] Error insertando en DB:', insertError);
+      console.warn('⚠️ [API] DB insert warning:', insertError);
       return res.status(200).json({
         success: true,
         url: publicUrl,
-        warning: 'Imagen subida pero no registrada en DB',
+        warning: 'Image uploaded but not registered in DB',
       });
     }
 
@@ -99,10 +107,10 @@ export default async function handler(
       url: publicUrl,
     });
   } catch (error: any) {
-    console.error('❌ [API] Error general:', error);
+    console.error('❌ [API] Error:', error.message);
+    console.error('❌ [API] Stack:', error.stack);
     return res.status(500).json({
-      error: error.message || 'Error interno del servidor',
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      error: error.message || 'Internal server error',
     });
   }
 }
