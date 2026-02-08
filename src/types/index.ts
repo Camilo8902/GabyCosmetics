@@ -672,3 +672,252 @@ export function hasAnyPermission(
 ): boolean {
   return requiredPermissions.some(p => userPermissions.includes(p));
 }
+
+// ==========================================
+// FASE 2: CATÁLOGO DE PRODUCTOS AVANZADO
+// ==========================================
+
+// --- Productos ---
+
+export type ProductStatus = 'draft' | 'active' | 'inactive' | 'archived';
+
+export type ProductType = 'physical' | 'digital' | 'service';
+
+// Producto extendido para marketplace
+export interface ExtendedProduct {
+  id: string;
+  company_id: string;
+  category_id?: string;
+  name: string;
+  name_en?: string;
+  slug: string;
+  description?: string;
+  description_en?: string;
+  short_description?: string;
+  brand?: string;
+  model?: string;
+  base_price: number;
+  compare_at_price?: number;
+  cost_price?: number;
+  sku_prefix?: string;
+  barcode?: string;
+  weight?: number;
+  dimensions?: ProductDimensions;
+  images: string[];
+  videos: ExtendedProductVideo[];
+  documents: ExtendedProductDocument[];
+  attributes: Record<string, string>;
+  seo_metadata: ProductSEOMetadata;
+  status: ProductStatus;
+  is_featured: boolean;
+  is_digital: boolean;
+  has_variants: boolean;
+  total_stock: number;
+  low_stock_threshold: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProductDimensions {
+  length: number;
+  width: number;
+  height: number;
+  unit: 'cm' | 'in' | 'm';
+}
+
+export interface ProductSEOMetadata {
+  title?: string;
+  description?: string;
+  keywords?: string[];
+}
+
+// Video de producto
+export interface ExtendedProductVideo {
+  id: string;
+  product_id: string;
+  url: string;
+  thumbnail_url?: string;
+  title?: string;
+  type: 'youtube' | 'vimeo' | 'upload';
+  duration_seconds?: number;
+  sort_order: number;
+}
+
+// Documento de producto (manuales, etc.)
+export interface ExtendedProductDocument {
+  id: string;
+  product_id: string;
+  name: string;
+  url: string;
+  type: 'manual' | 'specsheet' | 'warranty' | 'other';
+  file_size: number;
+  mime_type: string;
+}
+
+// --- Categorías Jerárquicas ---
+
+export interface ExtendedCategory {
+  id: string;
+  company_id?: string;
+  parent_id?: string;
+  name: string;
+  name_en?: string;
+  slug: string;
+  description?: string;
+  description_en?: string;
+  image_url?: string;
+  icon?: string;
+  attributes: ExtendedCategoryAttribute[];
+  sort_order: number;
+  is_active: boolean;
+  children?: ExtendedCategory[];
+  product_count?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// Atributo de categoría
+export interface ExtendedCategoryAttribute {
+  id: string;
+  category_id: string;
+  name: string;
+  type: 'text' | 'number' | 'select' | 'multiselect' | 'boolean' | 'color' | 'size';
+  options?: string[];
+  is_required: boolean;
+  is_filterable: boolean;
+  sort_order: number;
+}
+
+// --- Inventario y Almacenes ---
+
+export type WarehouseType = 'fulfillment' | 'dropship' | 'returns';
+
+export interface Warehouse {
+  id: string;
+  company_id: string;
+  name: string;
+  type: WarehouseType;
+  address: WarehouseAddress;
+  is_active: boolean;
+  is_default: boolean;
+  contact_email?: string;
+  contact_phone?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WarehouseAddress {
+  street: string;
+  city: string;
+  state: string;
+  postal_code: string;
+  country: string;
+}
+
+// Inventario por almacén
+export interface ExtendedWarehouseInventory {
+  id: string;
+  variant_id: string;
+  warehouse_id: string;
+  quantity: number;
+  reserved_quantity: number;
+  reorder_point: number;
+  reorder_quantity: number;
+  location_code?: string;
+  last_counted_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Historial de movimientos de inventario
+export type InventoryMovementType = 
+  | 'purchase' | 'sale' | 'return' | 'transfer_in' | 'transfer_out'
+  | 'adjustment' | 'damaged' | 'expired' | 'reserved' | 'unreserved';
+
+export interface ExtendedInventoryMovement {
+  id: string;
+  variant_id: string;
+  warehouse_id?: string;
+  type: InventoryMovementType;
+  quantity_change: number;
+  previous_quantity: number;
+  new_quantity: number;
+  reason?: string;
+  reference_type?: 'order' | 'purchase' | 'transfer' | 'adjustment';
+  reference_id?: string;
+  user_id: string;
+  created_at: string;
+}
+
+// --- SKU Automático ---
+
+export interface SKUTemplate {
+  id: string;
+  company_id: string;
+  pattern: string;
+  segments: SKUSegment[];
+  is_active: boolean;
+}
+
+export interface SKUSegment {
+  name: string;
+  type: 'fixed' | 'attribute' | 'sequence' | 'date';
+  value?: string;
+  attribute_key?: string;
+  format?: string;
+  length?: number;
+}
+
+// --- Filtros de Búsqueda ---
+
+export interface ProductSearchFilters {
+  search?: string;
+  category_ids?: string[];
+  include_children?: boolean;
+  min_price?: number;
+  max_price?: number;
+  attributes?: Record<string, string[]>;
+  in_stock?: boolean;
+  low_stock?: boolean;
+  status?: ProductStatus[];
+  brands?: string[];
+  sort_by?: 'name' | 'price' | 'created_at' | 'updated_at' | 'sales' | 'popularity';
+  sort_order?: 'asc' | 'desc';
+  page?: number;
+  page_size?: number;
+}
+
+// --- Respuestas de API ---
+
+export interface ProductListResponse {
+  products: ExtendedProduct[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+  facets?: ProductFacets;
+}
+
+export interface ProductFacets {
+  categories: { id: string; name: string; count: number }[];
+  brands: { name: string; count: number }[];
+  attributes: { name: string; values: { value: string; count: number }[] }[];
+  price_range: { min: number; max: number };
+}
+
+export interface InventoryStatus {
+  product_id: string;
+  total_stock: number;
+  total_reserved: number;
+  total_available: number;
+  low_stock: boolean;
+  out_of_stock: boolean;
+  warehouses: {
+    warehouse_id: string;
+    warehouse_name: string;
+    quantity: number;
+    reserved: number;
+    available: number;
+  }[];
+}
+

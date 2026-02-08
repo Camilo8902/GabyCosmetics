@@ -1,527 +1,649 @@
 import { supabase } from '@/lib/supabase';
-import type { Product, ProductFilters, PaginatedResponse } from '@/types';
+import type {
+  Product,
+  ProductImage,
+  ProductVariant,
+  ProductAttribute,
+  ProductFilters,
+  PaginatedResponse,
+  ExtendedProduct,
+  ProductSearchFilters,
+  ProductListResponse,
+  InventoryStatus,
+  ExtendedCategory,
+  ExtendedCategoryAttribute,
+} from '@/types';
+
+// ==========================================
+// SERVICIOS DE PRODUCTOS
+// ==========================================
 
 /**
- * Product Service
- * Handles all product-related operations with Supabase
+ * Obtener productos con filtros y paginación
  */
-export const productService = {
-  /**
-   * Get all products with filters and pagination
-   */
-  async getProducts(filters?: ProductFilters, page = 1, pageSize = 20): Promise<PaginatedResponse<Product>> {
-    try {
-      let query = supabase
-        .from('products')
-        .select(`
-          *,
-          images:product_images(*),
-          categories:product_categories(category:categories(*)),
-          company:companies(*),
-          inventory:inventory(*)
-        `, { count: 'exact' });
+export async function getProducts(
+  companyId: string,
+  filters?: ProductFilters,
+  page = 1,
+  pageSize = 20
+): Promise<PaginatedResponse<Product>> {
+  try {
+    let query = supabase
+      .from('products')
+      .select('*', { count: 'exact' })
+      .eq('company_id', companyId);
 
-      // Only filter by active/visible if not explicitly requesting all products (for admin panel)
-      if (filters?.includeInactive !== true) {
-        query = query.eq('is_active', true);
+    if (filters) {
+      if (filters.categoryId) {
+        query = query.eq('category_id', filters.categoryId);
       }
-      if (filters?.includeInvisible !== true) {
-        query = query.eq('is_visible', true);
-      }
-
-      // Apply explicit status filters if provided
-      if (filters?.is_active !== undefined) {
-        query = query.eq('is_active', filters.is_active);
-      }
-      if (filters?.is_visible !== undefined) {
-        query = query.eq('is_visible', filters.is_visible);
-      }
-
-      // Apply filters
-      if (filters?.categoryId) {
-        const { data: categoryProducts } = await supabase
-          .from('product_categories')
-          .select('product_id')
-          .eq('category_id', filters.categoryId);
-        
-        const productIds = categoryProducts?.map((item) => item.product_id) || [];
-        if (productIds.length > 0) {
-          query = query.in('id', productIds);
-        } else {
-          // Return empty result if no products found for this category
-          return {
-            data: [],
-            total: 0,
-            page,
-            pageSize,
-            totalPages: 0,
-          };
-        }
-      }
-
-      if (filters?.minPrice) {
+      if (filters.minPrice !== undefined) {
         query = query.gte('price', filters.minPrice);
       }
-
-      if (filters?.maxPrice) {
+      if (filters.maxPrice !== undefined) {
         query = query.lte('price', filters.maxPrice);
       }
-
-      if (filters?.search) {
-        query = query.or(`name.ilike.%${filters.search}%,name_en.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      if (filters.search) {
+        query = query.ilike('name', `%${filters.search}%`);
       }
-
-      if (filters?.featured) {
-        query = query.eq('is_featured', true);
+      if (filters.is_active !== undefined) {
+        query = query.eq('is_active', filters.is_active);
       }
-
-      if (filters?.inStock) {
-        query = query.gt('inventory.quantity', 0);
+      if (filters.is_visible !== undefined) {
+        query = query.eq('is_visible', filters.is_visible);
       }
+    }
 
-      // Apply sorting
-      const sortBy = filters?.sortBy || 'created_at';
-      const sortOrder = filters?.sortOrder || 'desc';
-      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+    const { data, error, count } = await query
+      .range((page - 1) * pageSize, page * pageSize - 1)
+      .order('created_at', { ascending: false });
 
-      // Apply pagination
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
+    if (error) throw error;
 
-      const { data, error, count } = await query;
+    return {
+      data: data as Product[],
+      total: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  } catch (error) {
+    console.error('Error getting products:', error);
+    throw error;
+  }
+}
 
-      if (error) {
-        console.error('Error en query de productos:', error);
-        // If it's an auth error, return empty result instead of throwing
-        if (error.message?.includes('Auth') || error.code === 'PGRST301') {
-          return {
-            data: [],
-            total: 0,
-            page,
-            pageSize,
-            totalPages: 0,
-          };
-        }
-        throw error;
-      }
+/**
+ * Obtener un producto por ID
+ */
+export async function getProductById(productId: string): Promise<Product | null> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        images:product_images(*),
+        variants:product_variants(*),
+        categories:product_categories(categories(*)),
+        attributes:product_attributes(*)
+      `)
+      .eq('id', productId)
+      .single();
 
-      const totalPages = count ? Math.ceil(count / pageSize) : 0;
-
-      return {
-        data: (data || []) as Product[],
-        total: count || 0,
-        page,
-        pageSize,
-        totalPages,
-      };
-    } catch (error: any) {
-      console.error('Error fetching products:', error);
-      // Return empty result for auth errors instead of throwing
-      if (error?.message?.includes('Auth') || error?.code === 'PGRST301') {
-        return {
-          data: [],
-          total: 0,
-          page,
-          pageSize,
-          totalPages: 0,
-        };
-      }
+    if (error) {
+      if (error.code === 'PGRST116') return null;
       throw error;
     }
-  },
 
-  /**
-   * Get a single product by ID
-   */
-  async getProductById(id: string): Promise<Product | null> {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          *,
-          images:product_images(*),
-          categories:product_categories(category:categories(*)),
-          attributes:product_attributes(category_attribute:category_attributes(*)),
-          company:companies(*),
-          inventory:inventory(*),
-          reviews:reviews(*, user:users(*))
-        `)
-        .eq('id', id)
-        .single();
+    return data as Product;
+  } catch (error) {
+    console.error('Error getting product:', error);
+    throw error;
+  }
+}
 
-      if (error) throw error;
-      return data as Product;
-    } catch (error) {
-      console.error('Error fetching product:', error);
-      return null;
-    }
-  },
+/**
+ * Crear un nuevo producto
+ */
+export async function createProduct(
+  companyId: string,
+  product: Partial<Product>
+): Promise<Product> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        ...product,
+        company_id: companyId,
+        slug: product.name?.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      })
+      .select()
+      .single();
 
-  /**
-   * Get a single product by slug
-   */
-  async getProductBySlug(slug: string): Promise<Product | null> {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          *,
-          images:product_images(*),
-          categories:product_categories(category:categories(*)),
-          attributes:product_attributes(category_attribute:category_attributes(*)),
-          company:companies(*),
-          inventory:inventory(*),
-          reviews:reviews(*, user:users(*))
-        `)
-        .eq('slug', slug)
-        .single();
+    if (error) throw error;
 
-      if (error) throw error;
-      return data as Product;
-    } catch (error) {
-      console.error('Error fetching product by slug:', error);
-      return null;
-    }
-  },
+    return data as Product;
+  } catch (error) {
+    console.error('Error creating product:', error);
+    throw error;
+  }
+}
 
-  /**
-   * Get featured products - optimized for landing page (minimal data)
-   */
-  async getFeaturedProducts(limit = 8): Promise<Product[]> {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          id,
-          name,
-          name_en,
-          slug,
-          price,
-          compare_at_price,
-          images:product_images(id, url, alt_text),
-          compare_at_price
-        `)
-        .eq('is_featured', true)
-        .eq('is_active', true)
-        .eq('is_visible', true)
-        .order('created_at', { ascending: false })
-        .limit(limit);
+/**
+ * Actualizar un producto
+ */
+export async function updateProduct(
+  productId: string,
+  updates: Partial<Product>
+): Promise<Product> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', productId)
+      .select()
+      .single();
 
-      if (error) throw error;
-      return (data || []) as Product[];
-    } catch (error) {
-      console.error('Error fetching featured products:', error);
-      return [];
-    }
-  },
+    if (error) throw error;
 
-  /**
-   * Get best sellers - optimized for landing page (minimal data)
-   */
-  async getBestSellers(limit = 8): Promise<Product[]> {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .select(`
-          id,
-          name,
-          name_en,
-          slug,
-          price,
-          compare_at_price,
-          images:product_images(id, url, alt_text),
-          compare_at_price
-        `)
-        .eq('is_active', true)
-        .eq('is_visible', true)
-        .order('sales_count', { ascending: false })
-        .limit(limit);
+    return data as Product;
+  } catch (error) {
+    console.error('Error updating product:', error);
+    throw error;
+  }
+}
 
-      if (error) throw error;
-      return (data || []) as Product[];
-    } catch (error) {
-      console.error('Error fetching best sellers:', error);
-      return [];
-    }
-  },
+/**
+ * Eliminar un producto
+ */
+export async function deleteProduct(productId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', productId);
 
-  /**
-   * Create a new product
-   */
-  async createProduct(product: Partial<Product>): Promise<Product> {
-    try {
-      const { data, error } = await supabase
-        .from('products')
-        .insert(product)
-        .select()
-        .single();
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting product:', error);
+    throw error;
+  }
+}
 
-      if (error) throw error;
-      return data as Product;
-    } catch (error) {
-      console.error('Error creating product:', error);
-      throw error;
-    }
-  },
+/**
+ * Duplicar un producto
+ */
+export async function duplicateProduct(productId: string): Promise<Product> {
+  try {
+    const original = await getProductById(productId);
+    if (!original) throw new Error('Product not found');
 
-  /**
-   * Update a product
-   */
-  async updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
-    try {
-      if (!id) {
-        throw new Error('Product ID is required for update');
-      }
+    const { id, created_at, updated_at, ...rest } = original;
 
-      console.log('Updating product:', { id, updates });
-
-      const { data, error } = await supabase
-        .from('products')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) {
-        console.error('Supabase error updating product:', error);
-        throw error;
-      }
-
-      if (!data) {
-        throw new Error('No data returned from update');
-      }
-
-      console.log('Product updated successfully:', data);
-      return data as Product;
-    } catch (error) {
-      console.error('Error updating product:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Delete a product (real delete with cascade)
-   */
-  async deleteProduct(id: string): Promise<void> {
-    try {
-      console.log('🗑️ [productService] Eliminando producto ID:', id);
-      
-      // First delete related records
-      // Delete product categories
-      console.log('🗑️ [productService] Eliminando categorías del producto...');
-      const { error: catError } = await supabase
-        .from('product_categories')
-        .delete()
-        .eq('product_id', id);
-      if (catError) {
-        console.error('❌ [productService] Error eliminando categorías:', catError);
-        throw catError;
-      }
-      console.log('✅ [productService] Categorías eliminadas');
-
-      // Delete product images
-      console.log('🗑️ [productService] Eliminando imágenes del producto...');
-      const { error: imgError } = await supabase
-        .from('product_images')
-        .delete()
-        .eq('product_id', id);
-      if (imgError) {
-        console.error('❌ [productService] Error eliminando imágenes:', imgError);
-        throw imgError;
-      }
-      console.log('✅ [productService] Imágenes eliminadas');
-
-      // Delete inventory
-      console.log('🗑️ [productService] Eliminando inventario del producto...');
-      const { error: invError } = await supabase
-        .from('inventory')
-        .delete()
-        .eq('product_id', id);
-      if (invError) {
-        console.error('❌ [productService] Error eliminando inventario:', invError);
-        throw invError;
-      }
-      console.log('✅ [productService] Inventario eliminado');
-
-      // Delete product attributes
-      console.log('🗑️ [productService] Eliminando atributos del producto...');
-      const { error: attrError } = await supabase
-        .from('product_attributes')
-        .delete()
-        .eq('product_id', id);
-      if (attrError) {
-        console.error('❌ [productService] Error eliminando atributos:', attrError);
-        throw attrError;
-      }
-      console.log('✅ [productService] Atributos eliminados');
-
-      // Finally delete the product itself
-      console.log('🗑️ [productService] Eliminando registro del producto...');
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        console.error('❌ [productService] Error al eliminar producto:', error);
-        throw error;
-      }
-      console.log('✅ [productService] Producto eliminado exitosamente');
-    } catch (error) {
-      console.error('❌ [productService] Error en deleteProduct:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Upload product images
-   * Falls back to storing image as base64 if storage bucket not available
-   */
-  async uploadProductImage(productId: string, file: File, isPrimary = false): Promise<string> {
-    try {
-      let imageUrl = '';
-      
-      try {
-        // First try to upload to Supabase Storage
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${productId}/${Date.now()}.${fileExt}`;
-        const filePath = `products/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(filePath, file, {
-            cacheControl: '3600',
-            upsert: false,
-          });
-
-        if (uploadError) {
-          // If bucket not found, fall back to data URL
-          if (uploadError.message?.includes('Bucket not found') || 
-              uploadError.message?.includes('404')) {
-            console.warn('Storage bucket not found, using data URL fallback');
-            imageUrl = await this.fileToDataUrl(file);
-          } else {
-            throw uploadError;
-          }
-        } else {
-          // Get public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('product-images')
-            .getPublicUrl(filePath);
-          imageUrl = publicUrl;
-        }
-      } catch (storageError) {
-        // Fallback: convert file to data URL for storage
-        console.warn('Could not upload to storage, using data URL:', storageError);
-        imageUrl = await this.fileToDataUrl(file);
-      }
-
-      // Save image record to database
-      const { error: dbError } = await supabase
-        .from('product_images')
-        .insert({
-          product_id: productId,
-          url: imageUrl,
-          is_primary: isPrimary,
-          order_index: 0,
-        });
-
-      if (dbError) throw dbError;
-
-      return imageUrl;
-    } catch (error) {
-      console.error('Error uploading product image:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * Convert file to data URL as fallback
-   */
-  async fileToDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const result = reader.result as string;
-        resolve(result);
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+    const newProduct = await createProduct(rest.company_id || '', {
+      ...rest,
+      name: `${rest.name} (Copia)`,
+      slug: `${rest.slug}-copy-${Date.now()}`,
+      is_active: false,
+      is_featured: false,
     });
-  },
 
-  /**
-   * Link categories to a product
-   */
-  async setProductCategories(productId: string, categoryIds: string[]): Promise<void> {
-    try {
-      // Validate inputs
-      if (!productId) {
-        throw new Error('Product ID is required');
-      }
+    return newProduct;
+  } catch (error) {
+    console.error('Error duplicating product:', error);
+    throw error;
+  }
+}
 
-      if (!categoryIds || categoryIds.length === 0) {
-        // Just delete existing categories if no new ones provided
-        const { error: deleteError } = await supabase
-          .from('product_categories')
-          .delete()
-          .eq('product_id', productId);
-        
-        if (deleteError) {
-          console.warn('Warning deleting old categories:', deleteError);
-        }
-        return;
-      }
+// ==========================================
+// SERVICIOS DE IMÁGENES
+// ==========================================
 
-      // Filter out empty strings
-      const validCategoryIds = categoryIds.filter(id => id && id.trim());
-
-      if (validCategoryIds.length === 0) {
-        // Delete all associations if no valid categories
-        await supabase
-          .from('product_categories')
-          .delete()
-          .eq('product_id', productId);
-        return;
-      }
-
-      // First delete existing category associations
-      const { error: deleteError } = await supabase
-        .from('product_categories')
-        .delete()
-        .eq('product_id', productId);
-
-      if (deleteError) {
-        console.warn('Warning deleting old categories:', deleteError);
-      }
-
-      // Then insert new ones
-      const categoriesToInsert = validCategoryIds.map((categoryId) => ({
+/**
+ * Agregar imagen a producto
+ */
+export async function addProductImage(
+  productId: string,
+  image: Omit<ProductImage, 'id' | 'product_id'>
+): Promise<ProductImage> {
+  try {
+    const { data, error } = await supabase
+      .from('product_images')
+      .insert({
         product_id: productId,
-        category_id: categoryId,
-      }));
+        ...image,
+      })
+      .select()
+      .single();
 
-      const { error: insertError, data: insertData } = await supabase
-        .from('product_categories')
-        .insert(categoriesToInsert);
+    if (error) throw error;
 
-      if (insertError) {
-        console.error('Error inserting categories:', insertError);
-        
-        // Check if it's a foreign key constraint error (category doesn't exist)
-        if (insertError.message?.includes('23503') || 
-            insertError.message?.includes('foreign key')) {
-          throw new Error('Una o más categorías seleccionadas no existen. Por favor, selecciona categorías válidas.');
-        }
-        
-        throw insertError;
+    return data as ProductImage;
+  } catch (error) {
+    console.error('Error adding product image:', error);
+    throw error;
+  }
+}
+
+/**
+ * Eliminar imagen de producto
+ */
+export async function deleteProductImage(imageId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('product_images')
+      .delete()
+      .eq('id', imageId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting product image:', error);
+    throw error;
+  }
+}
+
+/**
+ * Reordenar imágenes
+ */
+export async function reorderProductImages(
+  productId: string,
+  imageIds: string[]
+): Promise<void> {
+  try {
+    const updates = imageIds.map((id, index) => ({
+      id,
+      order_index: index,
+    }));
+
+    await supabase.from('product_images').upsert(updates);
+  } catch (error) {
+    console.error('Error reordering product images:', error);
+    throw error;
+  }
+}
+
+// ==========================================
+// SERVICIOS DE VARIANTES
+// ==========================================
+
+/**
+ * Obtener variantes de un producto
+ */
+export async function getProductVariants(productId: string): Promise<ProductVariant[]> {
+  try {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .select('*')
+      .eq('product_id', productId)
+      .order('sort_order', { ascending: true });
+
+    if (error) throw error;
+
+    return data as ProductVariant[];
+  } catch (error) {
+    console.error('Error getting product variants:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crear variante de producto
+ */
+export async function createProductVariant(
+  productId: string,
+  variant: Omit<ProductVariant, 'id' | 'product_id' | 'created_at' | 'updated_at'>
+): Promise<ProductVariant> {
+  try {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .insert({
+        product_id: productId,
+        ...variant,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data as ProductVariant;
+  } catch (error) {
+    console.error('Error creating product variant:', error);
+    throw error;
+  }
+}
+
+/**
+ * Actualizar variante de producto
+ */
+export async function updateProductVariant(
+  variantId: string,
+  updates: Partial<ProductVariant>
+): Promise<ProductVariant> {
+  try {
+    const { data, error } = await supabase
+      .from('product_variants')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', variantId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data as ProductVariant;
+  } catch (error) {
+    console.error('Error updating product variant:', error);
+    throw error;
+  }
+}
+
+/**
+ * Eliminar variante de producto
+ */
+export async function deleteProductVariant(variantId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('product_variants')
+      .delete()
+      .eq('id', variantId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting product variant:', error);
+    throw error;
+  }
+}
+
+// ==========================================
+// SERVICIOS DE BÚSQUEDA (SHOP)
+// ==========================================
+
+/**
+ * Buscar productos para la tienda pública
+ */
+export async function searchProducts(
+  filters?: ProductSearchFilters
+): Promise<ProductListResponse> {
+  try {
+    let query = supabase
+      .from('products')
+      .select(`
+        *,
+        company:companies(id, name, logo_url),
+        images:product_images(*),
+        categories:product_categories(categories(*))
+      `, { count: 'exact' })
+      .eq('is_active', true)
+      .eq('is_visible', true);
+
+    if (filters) {
+      if (filters.search) {
+        query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
       }
-
-      console.log('Categories linked successfully:', insertData);
-    } catch (error) {
-      console.error('Error setting product categories:', error);
-      throw error;
+      if (filters.category_ids && filters.category_ids.length > 0) {
+        query = query.in('category_id', filters.category_ids);
+      }
+      if (filters.min_price !== undefined) {
+        query = query.gte('base_price', filters.min_price);
+      }
+      if (filters.max_price !== undefined) {
+        query = query.lte('base_price', filters.max_price);
+      }
+      if (filters.in_stock) {
+        query = query.gte('total_stock', 1);
+      }
+      if (filters.brands && filters.brands.length > 0) {
+        query = query.in('brand', filters.brands);
+      }
     }
-  },
-};
+
+    const page = filters?.page || 1;
+    const pageSize = filters?.page_size || 20;
+
+    const { data, error, count } = await query
+      .range((page - 1) * pageSize, page * pageSize - 1)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return {
+      products: data as ExtendedProduct[],
+      total: count || 0,
+      page,
+      page_size: pageSize,
+      total_pages: Math.ceil((count || 0) / pageSize),
+    };
+  } catch (error) {
+    console.error('Error searching products:', error);
+    throw error;
+  }
+}
+
+/**
+ * Obtener productos destacados
+ */
+export async function getFeaturedProducts(limit = 8): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        images:product_images(*),
+        company:companies(id, name, logo_url)
+      `)
+      .eq('is_active', true)
+      .eq('is_visible', true)
+      .eq('is_featured', true)
+      .limit(limit);
+
+    if (error) throw error;
+
+    return data as Product[];
+  } catch (error) {
+    console.error('Error getting featured products:', error);
+    throw error;
+  }
+}
+
+// ==========================================
+// SERVICIOS DE CATEGORÍAS
+// ==========================================
+
+/**
+ * Obtener categorías jerárquicas
+ */
+export async function getCategories(
+  companyId?: string
+): Promise<ExtendedCategory[]> {
+  try {
+    let query = supabase
+      .from('categories')
+      .select(`
+        *,
+        attributes:category_attributes(*)
+      `)
+      .eq('is_active', true)
+      .order('order_index', { ascending: true });
+
+    if (companyId) {
+      query = query.eq('company_id', companyId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    // Construir jerarquía
+    const categoryMap = new Map<string, ExtendedCategory>();
+    const roots: ExtendedCategory[] = [];
+
+    data?.forEach((cat) => {
+      categoryMap.set(cat.id, { ...cat, children: [] });
+    });
+
+    data?.forEach((cat) => {
+      const category = categoryMap.get(cat.id)!;
+      if (cat.parent_id && categoryMap.has(cat.parent_id)) {
+        categoryMap.get(cat.parent_id)!.children!.push(category);
+      } else {
+        roots.push(category);
+      }
+    });
+
+    return roots;
+  } catch (error) {
+    console.error('Error getting categories:', error);
+    throw error;
+  }
+}
+
+/**
+ * Crear categoría
+ */
+export async function createCategory(
+  category: Omit<ExtendedCategory, 'id' | 'created_at' | 'updated_at'>
+): Promise<ExtendedCategory> {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .insert(category)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data as ExtendedCategory;
+  } catch (error) {
+    console.error('Error creating category:', error);
+    throw error;
+  }
+}
+
+/**
+ * Actualizar categoría
+ */
+export async function updateCategory(
+  categoryId: string,
+  updates: Partial<ExtendedCategory>
+): Promise<ExtendedCategory> {
+  try {
+    const { data, error } = await supabase
+      .from('categories')
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', categoryId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return data as ExtendedCategory;
+  } catch (error) {
+    console.error('Error updating category:', error);
+    throw error;
+  }
+}
+
+/**
+ * Eliminar categoría
+ */
+export async function deleteCategory(categoryId: string): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('id', categoryId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    throw error;
+  }
+}
+
+// ==========================================
+// SERVICIOS DE INVENTARIO
+// ==========================================
+
+/**
+ * Obtener estado de inventario de un producto
+ */
+export async function getProductInventory(
+  productId: string
+): Promise<InventoryStatus> {
+  try {
+    const product = await getProductById(productId);
+    if (!product) throw new Error('Product not found');
+
+    // Usar las propiedades existentes del tipo Product
+    const totalStock = (product as any).total_stock || (product as any).inventory?.quantity || 0;
+    const lowStockThreshold = (product as any).low_stock_threshold || 10;
+
+    return {
+      product_id: productId,
+      total_stock: totalStock,
+      total_reserved: 0,
+      total_available: totalStock,
+      low_stock: totalStock <= lowStockThreshold,
+      out_of_stock: totalStock === 0,
+      warehouses: [],
+    };
+  } catch (error) {
+    console.error('Error getting product inventory:', error);
+    throw error;
+  }
+}
+
+/**
+ * Actualizar stock de producto
+ */
+export async function updateProductStock(
+  productId: string,
+  quantity: number
+): Promise<void> {
+  try {
+    const { error } = await supabase
+      .from('products')
+      .update({
+        total_stock: quantity,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', productId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error updating product stock:', error);
+    throw error;
+  }
+}
+
+/**
+ * Ajustar inventario (incremento/decremento)
+ */
+export async function adjustInventory(
+  productId: string,
+  adjustment: number,
+  reason: string
+): Promise<void> {
+  try {
+    const product = await getProductById(productId);
+    if (!product) throw new Error('Product not found');
+
+    const currentStock = (product as any).total_stock || (product as any).inventory?.quantity || 0;
+    const newStock = currentStock + adjustment;
+    if (newStock < 0) throw new Error('Insufficient stock');
+
+    await updateProductStock(productId, newStock);
+
+    // Registrar movimiento
+    await supabase.from('inventory_movements').insert({
+      product_id: productId,
+      type: 'adjustment',
+      quantity_change: adjustment,
+      previous_quantity: currentStock,
+      new_quantity: newStock,
+      reason,
+    });
+  } catch (error) {
+    console.error('Error adjusting inventory:', error);
+    throw error;
+  }
+}
