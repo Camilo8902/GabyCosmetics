@@ -7,18 +7,18 @@ import { supabase } from '@/lib/supabase';
 // Datos para el Hero
 const HERO_IMAGES = [
   {
-    src: 'https://images.unsplash.com/photo-1556228552-523cd13b0389?q=80&w=1920&auto=format&fit=crop',
-    alt: 'Tienda online exitosa',
+    src: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Equipo empresarial colaboranco',
     overlay: true,
   },
   {
-    src: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1920&auto=format&fit=crop',
-    alt: 'Emprendedor vendiendo',
+    src: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Analíticas y gráficos de negocios',
     overlay: true,
   },
   {
-    src: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1920&auto=format&fit=crop',
-    alt: 'Dashboard de ventas',
+    src: 'https://images.unsplash.com/photo-1600880292203-757bb62b4baf?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Reunión de negocios y partnership',
     overlay: true,
   },
 ];
@@ -189,7 +189,7 @@ export function SellOnMarketplacePage() {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 container mx-auto px-4 pt-20 pb-32">
+        <div className="relative z-10 container mx-auto px-4 pt-32 pb-40">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
