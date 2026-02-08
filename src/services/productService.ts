@@ -647,3 +647,32 @@ export async function adjustInventory(
     throw error;
   }
 }
+
+// Exportar como objeto para facilitar imports
+const productService = {
+  getProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  duplicateProduct,
+  addProductImage,
+  deleteProductImage,
+  reorderProductImages,
+  getProductVariants,
+  createProductVariant,
+  updateProductVariant,
+  deleteProductVariant,
+  searchProducts,
+  getFeaturedProducts,
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getProductInventory,
+  updateProductStock,
+  adjustInventory,
+};
+
+export { productService };
+export type { ProductListResponse, InventoryStatus, ExtendedCategory, ExtendedCategoryAttribute };
