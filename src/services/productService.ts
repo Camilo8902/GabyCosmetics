@@ -83,15 +83,10 @@ export async function getProducts(
  */
 export async function getProductById(productId: string): Promise<Product | null> {
   try {
-    const { data, error } = await supabase
+    // First get the product without relationships
+    const { data: product, error } = await supabase
       .from('products')
-      .select(`
-        *,
-        images:product_images(*),
-        variants:product_variants(*),
-        categories:product_categories(categories(*)),
-        attributes:product_attributes(*)
-      `)
+      .select('*')
       .eq('id', productId)
       .single();
 
@@ -100,7 +95,41 @@ export async function getProductById(productId: string): Promise<Product | null>
       throw error;
     }
 
-    return data as Product;
+    if (!product) return null;
+
+    // Try to get images separately
+    let images: any[] = [];
+    try {
+      const { data: imagesData } = await supabase
+        .from('product_images')
+        .select('*')
+        .eq('product_id', productId)
+        .order('order_index', { ascending: true });
+      images = imagesData || [];
+    } catch (e) {
+      console.warn('Could not fetch product images:', e);
+    }
+
+    // Try to get categories separately
+    let categories: any[] = [];
+    try {
+      const { data: catsData } = await supabase
+        .from('product_categories')
+        .select('*, categories(*)')
+        .eq('product_id', productId);
+      categories = catsData || [];
+    } catch (e) {
+      console.warn('Could not fetch product categories:', e);
+    }
+
+    // Combine product with relations
+    const productWithRelations = {
+      ...product,
+      images,
+      categories,
+    };
+
+    return productWithRelations as Product;
   } catch (error) {
     console.error('Error getting product:', error);
     throw error;

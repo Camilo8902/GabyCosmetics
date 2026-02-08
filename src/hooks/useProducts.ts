@@ -44,7 +44,19 @@ export function useProducts(filters?: ProductFilters, page = 1, pageSize = 20) {
 export function useProduct(id: string | null) {
   return useQuery<Product | null>({
     queryKey: ['product', id],
-    queryFn: () => (id ? productService.getProductById(id) : Promise.resolve(null)),
+    queryFn: async () => {
+      if (!id) return null;
+      console.log('🔵 [useProduct] Fetching product:', id);
+      try {
+        const product = await productService.getProductById(id);
+        console.log('🔵 [useProduct] Product fetched:', product);
+        return product;
+      } catch (error: any) {
+        console.error('❌ [useProduct] Error fetching product:', error);
+        // Return a minimal product object to prevent form errors
+        return null;
+      }
+    },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
   });
