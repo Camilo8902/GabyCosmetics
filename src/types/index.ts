@@ -13,6 +13,7 @@ export interface User {
   avatar_url?: string;
   role: UserRole;
   phone?: string;
+  company_id?: string; // Company ID if user belongs to a company
   created_at: string;
   updated_at: string;
   email_verified: boolean;

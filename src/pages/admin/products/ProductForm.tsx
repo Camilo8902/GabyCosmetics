@@ -15,6 +15,7 @@ import { productSchema } from '@/utils/validators';
 import { FormField } from '@/components/ui/FormField';
 import { ImageUploader } from '@/components/ui/ImageUploader';
 import { useCategories } from '@/hooks/useCategories';
+import { useAuthStore } from '@/store/authStore';
 import type { Product } from '@/types';
 import toast from 'react-hot-toast';
 
@@ -52,10 +53,23 @@ export function ProductForm() {
   const isEditing = !!id;
   const { data: product, isLoading: loadingProduct } = useProduct(id || null);
   const { data: categories } = useCategories(true);
+  const { user, isAdmin, isCompany } = useAuthStore();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const uploadProductImage = useUploadProductImage();
   const setProductCategories = useSetProductCategories();
+
+  // Get company_id for the product
+  const getCompanyId = () => {
+    if (isAdmin()) {
+      // Admin can create products for any company, default to first or none
+      return undefined;
+    }
+    if (isCompany()) {
+      return user?.company_id;
+    }
+    return undefined;
+  };
 
   const methods = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -228,7 +242,11 @@ export function ProductForm() {
       } else {
         console.log('🟢 [ProductForm] Creando nuevo producto');
         // Create new product
-        const newProduct = await createProduct.mutateAsync(cleanData);
+        const productData = {
+          ...cleanData,
+          company_id: getCompanyId() || cleanData.company_id
+        };
+        const newProduct = await createProduct.mutateAsync(productData);
         console.log('✅ [ProductForm] Producto creado exitosamente, ID:', newProduct.id);
         // Note: Hook already shows success toast
         

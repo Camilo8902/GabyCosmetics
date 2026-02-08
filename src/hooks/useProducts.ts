@@ -1,7 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productService } from '@/services/productService';
 import type { Product, ProductFilters, PaginatedResponse } from '@/types';
+import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
+
+/**
+ * Hook for fetching products with filters and pagination
+ */
 
 /**
  * Hook for fetching products with filters and pagination
@@ -89,9 +94,24 @@ export function useBestSellers(limit = 8) {
  */
 export function useCreateProduct() {
   const queryClient = useQueryClient();
+  const { user, isCompany } = useAuthStore();
 
   return useMutation({
-    mutationFn: (product: Partial<Product>) => productService.createProduct(product),
+    mutationFn: async (product: Partial<Product>) => {
+      // Get company_id from user or product
+      let companyId = product.company_id;
+      
+      // If user is a company owner, use their company_id
+      if (!companyId && isCompany()) {
+        companyId = user?.company_id;
+      }
+      
+      if (!companyId) {
+        throw new Error('Se requiere company_id para crear un producto');
+      }
+      
+      return productService.createProduct(companyId, product);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast.success('Producto creado exitosamente');
