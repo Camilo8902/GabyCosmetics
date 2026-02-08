@@ -1,299 +1,224 @@
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles } from 'lucide-react';
-import { useStaticContent } from '@/hooks/useStaticContent';
+import { ArrowRight, Sparkles, Star } from 'lucide-react';
+import { ImageCarousel } from './ImageCarousel';
+import { FloatingDecorations } from './FloatingDecorations';
+
+// Placeholder images from Unsplash for beauty products
+const HERO_IMAGES = [
+  {
+    src: 'https://images.unsplash.com/photo-1596462502278-27bfdd403348?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Skincare products with natural ingredients',
+    title: 'Belleza Natural',
+    subtitle: 'Cuida tu piel con ingredientes 100% naturales',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1616683693504-3ea7e9ad6fec?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Cosmetic products and makeup',
+    title: 'Cosméticos Premium',
+    subtitle: 'Productos de alta calidad para tu rutina diaria',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Spa and wellness products',
+    title: 'Bienestar y Spa',
+    subtitle: 'Transforma tu rutina en un momento de lujo',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Organic beauty products',
+    title: 'Orgánicos y Limpios',
+    subtitle: 'La mejor selección de productos orgánicos',
+  },
+  {
+    src: 'https://images.unsplash.com/photo-1608248597279-f99d160bfbc8?q=80&w=1920&auto=format&fit=crop',
+    alt: 'Luxury beauty products',
+    title: 'Lujo y Elegancia',
+    subtitle: 'Descubre nuestra línea premium',
+  },
+];
 
 export function HeroSection() {
   const { t } = useTranslation();
-  const { data: staticContent } = useStaticContent();
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-gradient-to-br from-rose-50 via-white to-amber-50">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute -top-40 -right-40 w-96 h-96 bg-rose-200 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute -bottom-40 -left-40 w-96 h-96 bg-amber-200 rounded-full blur-3xl"
-        />
-        <motion.div
-          animate={{
-            y: [0, -20, 0],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-          className="absolute top-1/4 right-1/4 w-64 h-64 bg-pink-100 rounded-full blur-2xl opacity-50"
-        />
-      </div>
+    <section className="relative min-h-screen w-full overflow-hidden">
+      {/* Image Carousel */}
+      <ImageCarousel
+        images={HERO_IMAGES}
+        interval={4000}
+        autoPlay={true}
+        showNavigation={true}
+        showIndicators={true}
+      />
 
-      {/* Floating Particles */}
-      {[...Array(20)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-2 h-2 bg-rose-300 rounded-full"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            opacity: [0.2, 0.6, 0.2],
-          }}
-          transition={{
-            duration: 3 + Math.random() * 2,
-            repeat: Infinity,
-            delay: Math.random() * 2,
-          }}
-        />
-      ))}
+      {/* Floating Decorations */}
+      <FloatingDecorations />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Content */}
+      {/* Overlay Content */}
+      <div className="relative z-10 min-h-screen flex flex-col justify-center px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto w-full">
+          {/* Badge */}
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center lg:text-left"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-white text-sm font-medium mb-6"
           >
-            {/* Badge */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 bg-rose-100 text-rose-700 px-4 py-2 rounded-full text-sm font-medium mb-6"
-            >
-              <Sparkles className="w-4 h-4" />
-              <span>{staticContent.hero.badge || t('hero.badge')}</span>
-            </motion.div>
-
-            {/* Title */}
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-gray-900 leading-tight mb-6"
-            >
-              {(staticContent.hero.title || t('hero.title')).split(' ').map((word, index) => (
-                <motion.span
-                  key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                  className={index === 1 ? 'text-rose-600' : ''}
-                >
-                  {word}{' '}
-                </motion.span>
-              ))}
-            </motion.h1>
-
-            {/* Subtitle */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-xl mx-auto lg:mx-0"
-            >
-              {staticContent.hero.description || t('hero.subtitle')}
-            </motion.p>
-
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
-            >
-              <Link to="/shop">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="group px-8 py-4 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-all flex items-center justify-center gap-2"
-                >
-                  {staticContent.hero.cta || t('hero.cta')}
-                  <motion.span
-                    animate={{ x: [0, 5, 0] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </motion.span>
-                </motion.button>
-              </Link>
-            </motion.div>
-
-            {/* Stats */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="mt-12 grid grid-cols-3 gap-8"
-            >
-              {[
-                { value: '500+', label: 'Productos' },
-                { value: '50K+', label: 'Clientes' },
-                { value: '4.9', label: 'Rating' },
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 + index * 0.1 }}
-                  className="text-center lg:text-left"
-                >
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-                  <p className="text-sm text-gray-500">{stat.label}</p>
-                </motion.div>
-              ))}
-            </motion.div>
+            <Sparkles className="w-4 h-4 text-rose-400" />
+            <span>{t('hero.badge', 'Calidad Premium')}</span>
           </motion.div>
 
-          {/* Hero Image */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.3 }}
-            className="relative"
+          {/* Main Title */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-serif font-bold text-white leading-tight mb-6"
           >
-            <motion.div
-              animate={{
-                y: [0, -10, 0],
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-              className="relative z-10"
-            >
-              {/* Main product showcase - stylized logo */}
-              <div className="relative w-full aspect-square max-w-lg mx-auto">
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  className="w-full h-full bg-gradient-to-br from-rose-100 to-amber-100 rounded-3xl shadow-2xl flex items-center justify-center p-8 overflow-hidden"
-                >
-                  <motion.img
-                    src="/logo.png"
-                    alt="Gaby Cosmetics"
-                    className="w-3/4 h-auto drop-shadow-2xl"
-                    animate={{
-                      rotate: [0, 2, -2, 0],
-                    }}
-                    transition={{
-                      duration: 8,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  />
-                </motion.div>
+            {(t('hero.title', 'Belleza Natural Para Tu Piel')).split(' ').map((word, index) => (
+              <motion.span
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 + index * 0.1 }}
+                className={index === 1 || index === 2 ? 'text-rose-300' : ''}
+              >
+                {word}{' '}
+              </motion.span>
+            ))}
+          </motion.h1>
 
-                {/* Floating product cards */}
-                <motion.div
-                  animate={{
-                    y: [0, -15, 0],
-                    rotate: [0, 5, 0],
-                  }}
-                  transition={{
-                    duration: 5,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  className="absolute -top-8 -right-8 bg-white rounded-2xl shadow-xl p-4 w-32"
-                >
-                  <div className="w-full aspect-square bg-gradient-to-br from-pink-200 to-rose-300 rounded-xl mb-2" />
-                  <p className="text-xs font-medium text-gray-900">Shampoo Premium</p>
-                  <p className="text-xs text-rose-600">$299</p>
-                </motion.div>
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="text-base sm:text-lg md:text-xl text-white/80 mb-8 max-w-2xl leading-relaxed"
+          >
+            {t('hero.subtitle', 'Descubre nuestra colección de productos de belleza diseñados para realzar tu belleza natural con ingredientes de la más alta calidad.')}
+          </motion.p>
 
-                <motion.div
-                  animate={{
-                    y: [0, 10, 0],
-                    rotate: [0, -3, 0],
-                  }}
-                  transition={{
-                    duration: 4,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                    delay: 0.5,
-                  }}
-                  className="absolute -bottom-4 -left-8 bg-white rounded-2xl shadow-xl p-4 w-36"
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <Link to="/shop">
+              <motion.button
+                whileHover={{ scale: 1.05, boxShadow: '0 0 30px rgba(244, 63, 94, 0.4)' }}
+                whileTap={{ scale: 0.95 }}
+                className="group px-8 py-4 bg-gradient-to-r from-rose-600 to-rose-500 text-white rounded-full font-medium hover:from-rose-500 hover:to-rose-400 transition-all flex items-center justify-center gap-2 shadow-lg"
+              >
+                <span>{t('hero.cta', 'Ver Productos')}</span>
+                <motion.span
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
                 >
-                  <div className="w-full aspect-square bg-gradient-to-br from-amber-200 to-orange-300 rounded-xl mb-2" />
-                  <p className="text-xs font-medium text-gray-900">Crema Nutritiva</p>
-                  <p className="text-xs text-rose-600">$199</p>
-                </motion.div>
+                  <ArrowRight className="w-5 h-5" />
+                </motion.span>
+              </motion.button>
+            </Link>
 
-                {/* Discount badge */}
-                <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  className="absolute top-1/2 -right-12 bg-rose-600 text-white rounded-full w-20 h-20 flex flex-col items-center justify-center shadow-lg"
-                >
-                  <span className="text-2xl font-bold">30%</span>
-                  <span className="text-xs">OFF</span>
-                </motion.div>
-              </div>
-            </motion.div>
+            <Link to="/shop?category=new">
+              <motion.button
+                whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
+                whileTap={{ scale: 0.95 }}
+                className="px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-full font-medium hover:bg-white/20 transition-all flex items-center justify-center gap-2"
+              >
+                <span>{t('hero.cta2', 'Nueva Colección')}</span>
+              </motion.button>
+            </Link>
+          </motion.div>
 
-            {/* Background decoration */}
-            <div className="absolute inset-0 -z-10">
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+            className="mt-12 flex flex-wrap gap-8"
+          >
+            {[
+              { value: '500+', label: 'Productos', icon: '✨' },
+              { value: '50K+', label: 'Clientes', icon: '💜' },
+              { value: '4.9★', label: 'Rating', icon: '⭐' },
+              { value: '100%', label: 'Natural', icon: '🌿' },
+            ].map((stat, index) => (
               <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] border-2 border-dashed border-rose-200 rounded-full"
-              />
+                key={index}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.8 + index * 0.1 }}
+                className="flex items-center gap-3"
+              >
+                <div className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm">
+                  <span className="text-lg">{stat.icon}</span>
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-white">{stat.value}</p>
+                  <p className="text-sm text-white/70">{stat.label}</p>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Trust badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            className="mt-8 flex items-center gap-6 text-white/60 text-sm"
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-green-500" />
+              </div>
+              <span>Envío gratis +$50</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+              </div>
+              <span>Devolución 30 días</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded-full bg-amber-500/20 flex items-center justify-center">
+                <div className="w-2 h-2 rounded-full bg-amber-500" />
+              </div>
+              <span>Calidad garantizada</span>
             </div>
           </motion.div>
         </div>
       </div>
 
-      {/* Scroll indicator */}
+      {/* Scroll Indicator */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20"
       >
         <motion.div
           animate={{ y: [0, 10, 0] }}
           transition={{ duration: 1.5, repeat: Infinity }}
-          className="w-6 h-10 border-2 border-gray-400 rounded-full flex items-start justify-center p-1"
+          className="flex flex-col items-center gap-2"
         >
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-1.5 h-3 bg-gray-400 rounded-full"
-          />
+          <div className="w-8 h-12 border-2 border-white/40 rounded-full flex items-start justify-center p-1">
+            <motion.div
+              animate={{ y: [0, 14, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+              className="w-1.5 h-3 bg-white/60 rounded-full"
+            />
+          </div>
+          <span className="text-white/50 text-xs uppercase tracking-wider">Scroll</span>
         </motion.div>
       </motion.div>
+
+      {/* Gradient overlay at bottom for smooth transition */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-gray-900/50 to-transparent pointer-events-none" />
     </section>
   );
 }
