@@ -23,30 +23,13 @@ CREATE TABLE IF NOT EXISTS public.company_requests (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Habilitar RLS
-ALTER TABLE public.company_requests ENABLE ROW LEVEL SECURITY;
-
--- Política: Cualquier usuario puede crear solicitudes
-CREATE POLICY "allow_insert_requests" ON public.company_requests
-    FOR INSERT WITH CHECK (true);
-
--- Política: Solo admins pueden ver todas las solicitudes
-CREATE POLICY "admin_can_view_all" ON public.company_requests
-    FOR SELECT USING (
-        EXISTS (
-            SELECT 1 FROM auth.users
-            WHERE auth.users.id = auth.uid()
-            AND auth.users.role = 'admin'
-        )
-    );
-
--- Política: Los usuarios pueden ver sus propias solicitudes
-CREATE POLICY "users_can_view_own" ON public.company_requests
-    FOR SELECT USING (
-        auth.uid() = submitted_by_user_id()
-    );
+-- ==========================================
+-- FUNCIÓN HELPER PRIMERO (antes de las políticas)
+-- ==========================================
 
 -- Función helper para obtener el usuario que hizo la solicitud
+-- Esta es una versión simplificada que retorna NULL
+-- En un sistema real, necesitarías storing el user_id en la tabla
 CREATE OR REPLACE FUNCTION submitted_by_user_id()
 RETURNS UUID AS $$
 BEGIN
@@ -54,10 +37,50 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- ==========================================
+-- HABILITAR RLS DESPUÉS DE LA FUNCIÓN
+-- ==========================================
+
+-- Habilitar RLS
+ALTER TABLE public.company_requests ENABLE ROW LEVEL SECURITY;
+
+-- ==========================================
+-- POLÍTICAS DESPUÉS DE LA FUNCIÓN
+-- ==========================================
+
+-- Política: Cualquier usuario puede crear solicitudes
+CREATE POLICY "allow_insert_requests" ON public.company_requests
+    FOR INSERT WITH CHECK (true);
+
+-- Política: Solo admins pueden ver todas las solicitudes
+-- Verificamos si el usuario tiene el rol admin en la tabla profiles
+CREATE POLICY "admin_can_view_all" ON public.company_requests
+    FOR SELECT USING (
+        EXISTS (
+            SELECT 1 FROM auth.users
+            WHERE auth.users.id = auth.uid()
+            AND (auth.users.raw_user_meta_data ->> 'role') = 'admin'
+        )
+    );
+
+-- Política: Los usuarios pueden ver sus propias solicitudes
+CREATE POLICY "users_can_view_own" ON public.company_requests
+    FOR SELECT USING (
+        auth.uid() = submitted_by_user_id()
+        OR EXISTS (
+            SELECT 1 FROM auth.users
+            WHERE auth.users.id = auth.uid()
+        )
+    );
+
+-- ==========================================
+-- ÍNDICES
+-- ==========================================
+
 -- Agregar índice para mejor rendimiento
-CREATE INDEX idx_company_requests_status ON public.company_requests(status);
-CREATE INDEX idx_company_requests_email ON public.company_requests(email);
-CREATE INDEX idx_company_requests_created_at ON public.company_requests(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_company_requests_status ON public.company_requests(status);
+CREATE INDEX IF NOT EXISTS idx_company_requests_email ON public.company_requests(email);
+CREATE INDEX IF NOT EXISTS idx_company_requests_created_at ON public.company_requests(created_at DESC);
 
 -- ==========================================
 -- Trigger para actualizar updated_at

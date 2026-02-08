@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Store, TrendingUp, Security, Analytics, Support, LocalShipping, Campaign } from 'lucide-react';
+import { Check, Store, TrendingUp, Shield, Zap, Support, LocalShipping, Target } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 // Datos para el Hero
@@ -31,12 +31,12 @@ const FEATURES = [
     description: 'Accede a nuestra base de clientes activos listos para comprar tus productos.',
   },
   {
-    icon: Security,
+    icon: Shield,
     title: 'Pagos Seguros',
     description: 'Sistema de pagos 100% protegido con las mejores pasarelas del mercado.',
   },
   {
-    icon: Analytics,
+    icon: Zap,
     title: 'Analíticas en Tiempo Real',
     description: 'Métricas detalladas de tu negocio para tomar mejores decisiones.',
   },
@@ -51,7 +51,7 @@ const FEATURES = [
     description: 'Red de envíos a todo el país con las mejores tarifas.',
   },
   {
-    icon: Campaign,
+    icon: Target,
     title: 'Herramientas de Marketing',
     description: 'Promociona tus productos fácilmente y reacha más compradores.',
   },
