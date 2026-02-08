@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Check, Store, TrendingUp, Shield, Zap, Headset, LocalShipping, Target } from 'lucide-react';
+import { Check, Store, TrendingUp, Shield, Zap, Headset, Truck, Target } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 // Datos para el Hero
@@ -46,7 +46,7 @@ const FEATURES = [
     description: 'Equipo dedicado para ayudarte a crecer tu negocio.',
   },
   {
-    icon: LocalShipping,
+    icon: Truck,
     title: 'Logística Integrada',
     description: 'Red de envíos a todo el país con las mejores tarifas.',
   },
