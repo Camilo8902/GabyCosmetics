@@ -131,14 +131,31 @@ export interface ProductCategory {
 // Inventory - Advanced with variants and SKUs
 export interface Inventory {
   id: string;
-  product_id: string;
+  variant_id?: string;
+  product_id?: string;
   quantity: number;
+  reserved_quantity?: number;
   low_stock_threshold: number;
   track_inventory: boolean;
   allow_backorder: boolean;
   location?: string; // Warehouse location
   updated_at: string;
   [key: string]: any; // Allow array indexing for backwards compatibility
+}
+
+// Low Stock Alert
+export interface LowStockAlert {
+  id: string;
+  variant_id: string;
+  product_id?: string;
+  product_name: string;
+  variant_name?: string;
+  sku?: string;
+  current_stock: number;
+  low_stock_threshold: number;
+  product_image?: string;
+  created_at: string;
+  is_read?: boolean;
 }
 
 // Product Variants (for advanced inventory)
