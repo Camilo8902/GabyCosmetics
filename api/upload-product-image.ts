@@ -1,11 +1,23 @@
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase admin client (bypasses RLS)
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-);
+// We'll use dynamic import to avoid build issues
+let supabaseAdmin: any = null;
+
+async function getSupabaseAdmin() {
+  if (supabaseAdmin) return supabaseAdmin;
+  
+  const { createClient } = await import('@supabase/supabase-js');
+  
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+  }
+  
+  supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+  return supabaseAdmin;
+}
 
 export default async function handler(
   req: VercelRequest,
@@ -28,13 +40,15 @@ export default async function handler(
 
     console.log('🔵 [API] Subiendo imagen para producto:', productId);
     console.log('🔵 [API] fileName:', fileName);
-    console.log('🔵 [API] contentType:', contentType);
+
+    // Obtener cliente Supabase Admin
+    const supabase = await getSupabaseAdmin();
 
     // Convertir base64 a buffer
     const fileBuffer = Buffer.from(fileContent, 'base64');
 
-    // Subir archivo a Supabase Storage usando admin client (bypasses RLS)
-    const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+    // Subir archivo a Supabase Storage usando admin client
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('product-images')
       .upload(fileName, fileBuffer, {
         contentType,
@@ -50,17 +64,15 @@ export default async function handler(
       });
     }
 
-    console.log('✅ [API] Archivo subido exitosamente:', uploadData.path);
+    console.log('✅ [API] Archivo subido:', uploadData.path);
 
     // Obtener URL pública
-    const { data: { publicUrl } } = supabaseAdmin.storage
+    const { data: { publicUrl } } = supabase.storage
       .from('product-images')
       .getPublicUrl(fileName);
 
-    console.log('🔵 [API] publicUrl:', publicUrl);
-
-    // Insertar en la tabla product_images usando admin client
-    const { data: imageData, error: insertError } = await supabaseAdmin
+    // Insertar en la tabla product_images
+    const { data: imageData, error: insertError } = await supabase
       .from('product_images')
       .insert({
         product_id: productId,
@@ -73,26 +85,24 @@ export default async function handler(
       .single();
 
     if (insertError) {
-      console.error('❌ [API] Error insertando en DB:', insertError);
-      // Si falla el insert, igual retornamos la URL
+      console.warn('⚠️ [API] Error insertando en DB:', insertError);
       return res.status(200).json({
         success: true,
         url: publicUrl,
-        warning: 'Imagen subida pero no se pudo registrar en DB',
+        warning: 'Imagen subida pero no registrada en DB',
       });
     }
-
-    console.log('✅ [API] Imagen registrada en DB:', imageData);
 
     return res.status(200).json({
       success: true,
       image: imageData,
       url: publicUrl,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ [API] Error general:', error);
     return res.status(500).json({
-      error: error instanceof Error ? error.message : 'Error interno del servidor',
+      error: error.message || 'Error interno del servidor',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     });
   }
 }
