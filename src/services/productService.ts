@@ -721,78 +721,103 @@ export async function adjustInventory(
 }
 
 /**
- * Subir imagen de producto (con archivo File)
+ * Subir imagen de producto (con archivo File) - CON LOGGING DETALLADO
  */
 export async function uploadProductImage(
   productId: string,
   file: File,
   isPrimary = false
 ): Promise<ProductImage> {
+  console.log('🔵 [uploadProductImage] === INICIANDO ===');
+  console.log('🔵 [uploadProductImage] productId:', productId);
+  console.log('🔵 [uploadProductImage] file.name:', file.name);
+  console.log('🔵 [uploadProductImage] file.size:', file.size);
+  console.log('🔵 [uploadProductImage] file.type:', file.type);
+  console.log('🔵 [uploadProductImage] isPrimary:', isPrimary);
+
   try {
     // Subir archivo a Supabase Storage
     const fileExt = file.name.split('.').pop();
     const fileName = `${productId}/${Date.now()}.${fileExt}`;
-    
+
+    console.log('🔵 [uploadProductImage] Bucket: product-images');
+    console.log('🔵 [uploadProductImage] fileName a subir:', fileName);
+
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('product-images')
-      .upload(fileName, file);
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
 
-    if (uploadError) throw uploadError;
+    console.log('🔵 [uploadProductImage] uploadResponse:', { uploadData, uploadError });
+
+    if (uploadError) {
+      console.error('❌ [uploadProductImage] ERROR EN STORAGE UPLOAD:');
+      console.error('   uploadError:', uploadError);
+      console.error('   Error name:', uploadError.name);
+      console.error('   Error message:', uploadError.message);
+      console.error('   Error error:', uploadError.error);
+      throw uploadError;
+    }
+
+    console.log('✅ [uploadProductImage] Storage upload EXITOSO');
 
     // Obtener URL pública
     const { data: { publicUrl } } = supabase.storage
       .from('product-images')
       .getPublicUrl(fileName);
 
-    // Insertar en la tabla (primero intentar con RLS, si falla usar RPC o bypass)
-    try {
-      const { data, error } = await supabase
-        .from('product_images')
-        .insert({
-          product_id: productId,
-          url: publicUrl,
-          alt_text: file.name,
-          order_index: 0,
-          is_primary: isPrimary,
-        })
-        .select()
-        .single();
+    console.log('🔵 [uploadProductImage] publicUrl:', publicUrl);
 
-      if (error) throw error;
-      return data as ProductImage;
-    } catch (insertError: any) {
-      // Si falla por RLS, intentar usar una función RPC para bypass
-      if (insertError?.message?.includes('row-level security') || insertError?.code === '42501') {
-        console.warn('⚠️ RLS prevented insert, trying RPC bypass...');
-        
-        // Usar RPC function si existe, o simplemente retornar la imagen sin guardar
-        const { data: rpcData, error: rpcError } = await supabase.rpc('insert_product_image_bypass_rls', {
-          p_product_id: productId,
-          p_url: publicUrl,
-          p_alt_text: file.name,
-          p_order_index: 0,
-          p_is_primary: isPrimary,
-        });
+    // Insertar en la tabla de base de datos
+    console.log('🔵 [uploadProductImage] Insertando en tabla product_images...');
 
-        if (rpcError) {
-          // Si no hay RPC, retornar la imagen metadata sin guardar
-          console.warn('⚠️ Could not insert image due to RLS, returning metadata only');
-          return {
-            id: `temp-${Date.now()}`,
-            product_id: productId,
-            url: publicUrl,
-            alt_text: file.name,
-            order_index: 0,
-            is_primary: isPrimary,
-          } as ProductImage;
-        }
+    const { data, error } = await supabase
+      .from('product_images')
+      .insert({
+        product_id: productId,
+        url: publicUrl,
+        alt_text: file.name,
+        order_index: 0,
+        is_primary: isPrimary,
+      })
+      .select()
+      .single();
 
-        return rpcData as ProductImage;
-      }
-      throw insertError;
+    if (error) {
+      console.error('❌ [uploadProductImage] ERROR INSERTANDO EN DB:');
+      console.error('   error:', error);
+      console.error('   code:', error.code);
+      console.error('   message:', error.message);
+      console.error('   details:', error.details);
+      throw error;
     }
-  } catch (error) {
-    console.error('Error uploading product image:', error);
+
+    console.log('✅ [uploadProductImage] Imagen guardada en DB:', data);
+    return data as ProductImage;
+
+  } catch (error: any) {
+    console.error('❌ [uploadProductImage] ERROR GENERAL:');
+    console.error('   error:', error);
+    console.error('   error.name:', error.name);
+    console.error('   error.message:', error.message);
+    console.error('   error.code:', error.code);
+    console.error('   Stack:', error.stack);
+
+    // Si el error es por RLS, intentar retornar metadata sin guardar
+    if (error?.message?.includes('row-level security') || error?.code === '42501') {
+      console.warn('⚠️ [uploadProductImage] RLS error - retornando metadata sin guardar');
+      return {
+        id: `temp-${Date.now()}`,
+        product_id: productId,
+        url: '',
+        alt_text: file.name,
+        order_index: 0,
+        is_primary: isPrimary,
+      } as ProductImage;
+    }
+
     throw error;
   }
 }
