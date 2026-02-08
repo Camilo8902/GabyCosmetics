@@ -72,8 +72,59 @@ CREATE TABLE public.companies (
   is_active boolean DEFAULT true,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  slug character varying UNIQUE,
+  email character varying UNIQUE,
+  plan character varying DEFAULT 'basic'::character varying CHECK (plan IS NULL OR (plan::text = ANY (ARRAY['basic'::character varying, 'premium'::character varying, 'enterprise'::character varying]::text[]))),
+  status character varying DEFAULT 'pending'::character varying CHECK (status IS NULL OR (status::text = ANY (ARRAY['pending'::character varying, 'approved'::character varying, 'rejected'::character varying, 'suspended'::character varying, 'active'::character varying]::text[]))),
+  tax_id character varying,
+  business_type character varying,
+  fiscal_address jsonb,
+  headquarters_address jsonb,
+  cover_image_url text,
+  short_description character varying,
+  social_links jsonb DEFAULT '{"tiktok": null, "twitter": null, "youtube": null, "facebook": null, "instagram": null}'::jsonb,
+  settings jsonb DEFAULT '{"currency": "USD", "language": "es", "timezone": "America/Havana", "low_stock_alerts": true, "auto_fulfill_orders": false, "email_notifications": true, "low_stock_threshold": 10, "order_notifications": true}'::jsonb,
+  metadata jsonb DEFAULT '{}'::jsonb,
+  approved_at timestamp with time zone,
+  approved_by uuid,
   CONSTRAINT companies_pkey PRIMARY KEY (id),
-  CONSTRAINT companies_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT companies_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT companies_approved_by_fkey FOREIGN KEY (approved_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.company_invitations (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  invited_email character varying NOT NULL,
+  invited_by uuid,
+  role character varying DEFAULT 'viewer'::character varying,
+  permissions jsonb DEFAULT '[]'::jsonb,
+  invitation_token character varying NOT NULL UNIQUE,
+  expires_at timestamp with time zone NOT NULL,
+  status character varying DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'accepted'::character varying, 'expired'::character varying, 'canceled'::character varying]::text[])),
+  personal_message text,
+  accepted_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT company_invitations_pkey PRIMARY KEY (id),
+  CONSTRAINT company_invitations_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT company_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES auth.users(id)
+);
+CREATE TABLE public.company_users (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  role character varying NOT NULL DEFAULT 'viewer'::character varying,
+  permissions jsonb DEFAULT '[]'::jsonb,
+  status character varying DEFAULT 'invited'::character varying CHECK (status::text = ANY (ARRAY['invited'::character varying, 'active'::character varying, 'inactive'::character varying, 'removed'::character varying]::text[])),
+  invited_at timestamp with time zone DEFAULT now(),
+  hired_at timestamp with time zone,
+  removed_at timestamp with time zone,
+  invited_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT company_users_pkey PRIMARY KEY (id),
+  CONSTRAINT company_users_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
+  CONSTRAINT company_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id),
+  CONSTRAINT company_users_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES auth.users(id)
 );
 CREATE TABLE public.coupons (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -119,27 +170,29 @@ CREATE TABLE public.order_items (
   product_name character varying NOT NULL,
   product_image text,
   CONSTRAINT order_items_pkey PRIMARY KEY (id),
-  CONSTRAINT order_items_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id),
   CONSTRAINT order_items_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id),
   CONSTRAINT order_items_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id)
 );
 CREATE TABLE public.orders (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  user_id uuid NOT NULL,
-  order_number character varying NOT NULL UNIQUE,
-  status character varying NOT NULL DEFAULT 'pending'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'confirmed'::character varying, 'processing'::character varying, 'shipped'::character varying, 'delivered'::character varying, 'cancelled'::character varying, 'refunded'::character varying]::text[])),
-  subtotal numeric NOT NULL,
-  tax numeric DEFAULT 0,
-  shipping_cost numeric DEFAULT 0,
-  discount numeric DEFAULT 0,
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid,
+  email character varying NOT NULL,
   total numeric NOT NULL,
-  shipping_address jsonb NOT NULL,
-  billing_address jsonb,
-  notes text,
+  status character varying NOT NULL DEFAULT 'pending'::character varying,
+  payment_intent_id character varying UNIQUE,
+  shipping_name character varying NOT NULL,
+  shipping_email character varying NOT NULL,
+  shipping_phone character varying,
+  shipping_address character varying NOT NULL,
+  shipping_city character varying NOT NULL,
+  shipping_zip character varying,
+  shipping_country character varying NOT NULL,
+  items jsonb NOT NULL,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  paid_at timestamp with time zone,
   CONSTRAINT orders_pkey PRIMARY KEY (id),
-  CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+  CONSTRAINT orders_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id)
 );
 CREATE TABLE public.product_attributes (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -190,6 +243,7 @@ CREATE TABLE public.products (
   view_count integer DEFAULT 0,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
+  status character varying DEFAULT 'draft'::character varying CHECK (status IS NULL OR (status::text = ANY (ARRAY['draft'::character varying, 'active'::character varying, 'inactive'::character varying, 'archived'::character varying]::text[]))),
   CONSTRAINT products_pkey PRIMARY KEY (id),
   CONSTRAINT products_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id)
 );
@@ -215,6 +269,47 @@ CREATE TABLE public.site_settings (
   description text,
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT site_settings_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.static_content (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  hero jsonb,
+  promise jsonb,
+  testimonials jsonb,
+  footer jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT static_content_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.subscription_plans (
+  id character varying NOT NULL,
+  name character varying NOT NULL,
+  description text,
+  price_monthly numeric NOT NULL,
+  price_yearly numeric NOT NULL,
+  features jsonb NOT NULL,
+  limits jsonb NOT NULL,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT subscription_plans_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.subscriptions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  company_id uuid NOT NULL UNIQUE,
+  plan character varying NOT NULL DEFAULT 'basic'::character varying CHECK (plan::text = ANY (ARRAY['basic'::character varying, 'premium'::character varying, 'enterprise'::character varying]::text[])),
+  status character varying DEFAULT 'active'::character varying CHECK (status::text = ANY (ARRAY['active'::character varying, 'canceled'::character varying, 'past_due'::character varying, 'trialing'::character varying, 'paused'::character varying, 'incomplete'::character varying]::text[])),
+  stripe_customer_id character varying,
+  stripe_subscription_id character varying,
+  stripe_price_id character varying,
+  current_period_start timestamp with time zone,
+  current_period_end timestamp with time zone,
+  trial_end timestamp with time zone,
+  cancel_at_period_end boolean DEFAULT false,
+  canceled_at timestamp with time zone,
+  limits jsonb DEFAULT '{"users": 1, "products": 100, "storage_gb": 5, "orders_per_month": 500}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT subscriptions_pkey PRIMARY KEY (id),
+  CONSTRAINT subscriptions_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id)
 );
 CREATE TABLE public.users (
   id uuid NOT NULL,

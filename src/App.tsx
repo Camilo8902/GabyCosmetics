@@ -44,6 +44,7 @@ import { CheckoutPage } from '@/pages/shop/CheckoutPage';
 import PaymentSuccessPage from '@/pages/shop/PaymentSuccessPage';
 import { SuccessPage } from '@/pages/shop/SuccessPage';
 import { FailurePage } from '@/pages/shop/FailurePage';
+import { CompanyRegistrationPage } from '@/pages/company/CompanyRegistrationPage';
 
 // Lazy load StaticContentEditor to avoid module resolution issues
 const StaticContentEditor = lazy(() => import('@/pages/admin/staticContent/StaticContentEditor').then(m => ({ default: m.StaticContentEditor })));
@@ -290,6 +291,8 @@ function App() {
           <Route path="/auth/callback" element={<AuthCallback />} />
 
           <Route path="/account" element={<ProtectedRoute><PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Mi Cuenta</h1></div></PublicLayout></ProtectedRoute>} />
+
+          <Route path="/company/register" element={<ProtectedRoute><CompanyRegistrationPage /></ProtectedRoute>} />
 
           <Route path="/admin" element={<ProtectedRoute allowedRoles={['admin']}><AdminLayout /></ProtectedRoute>}>
             <Route index element={<AdminDashboard />} />

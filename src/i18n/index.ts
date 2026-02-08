@@ -165,13 +165,6 @@ const en = {
       admin: 'Admin',
       dashboard: 'Dashboard',
     },
-    // Hero Section
-    hero: {
-      title: 'Beauty that Transforms',
-      subtitle: 'Discover our exclusive collection of hair care and personal grooming products',
-      cta: 'Explore Collection',
-      secondary_cta: 'View Offers',
-    },
     // Categories
     categories: {
       title: 'Our Categories',
