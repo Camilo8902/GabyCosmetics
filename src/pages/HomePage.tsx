@@ -2,8 +2,8 @@ import { lazy, Suspense } from 'react';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { CategoriesSection } from '@/components/landing/CategoriesSection';
 import { WhyChooseUs } from '@/components/landing/WhyChooseUs';
-import { Testimonials } from '@/components/landing/Testimonials';
 import { Newsletter } from '@/components/landing/Newsletter';
+import { RecentProducts } from '@/components/landing/RecentProducts';
 
 // Lazy load product sections for better performance
 const FeaturedProducts = lazy(() =>
@@ -39,8 +39,8 @@ export function HomePage() {
       <Suspense fallback={<LoadingPlaceholder />}>
         <BestSellers />
       </Suspense>
+      <RecentProducts />
       <WhyChooseUs />
-      <Testimonials />
       <Newsletter />
     </main>
   );
