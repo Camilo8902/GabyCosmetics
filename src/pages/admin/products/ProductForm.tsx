@@ -16,7 +16,8 @@ import { FormField } from '@/components/ui/FormField';
 import { ImageUploader } from '@/components/ui/ImageUploader';
 import { useCategories } from '@/hooks/useCategories';
 import { useAuthStore } from '@/store/authStore';
-import type { Product } from '@/types';
+import type { Product, ProductVariant } from '@/types';
+import { VariantManager } from '@/components/admin/VariantManager';
 import toast from 'react-hot-toast';
 
 // Función para generar SKU aleatorio
@@ -94,6 +95,8 @@ export function ProductForm() {
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [hasVariants, setHasVariants] = useState(false);
   
   // Track loading state including async mutations
   const isLoading = isSubmitting || createProduct.isPending || updateProduct.isPending || uploadProductImage.isPending;
@@ -437,6 +440,35 @@ export function ProductForm() {
                   step="0.01"
                 />
               </div>
+            </div>
+
+            {/* Variants */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">Variantes del Producto</h2>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasVariants}
+                    onChange={(e) => setHasVariants(e.target.checked)}
+                    className="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                  />
+                  <span className="text-sm text-gray-700">Este producto tiene variantes</span>
+                </label>
+              </div>
+              {hasVariants && (
+                <VariantManager
+                  productId={product?.id}
+                  variants={variants}
+                  onChange={setVariants}
+                  basePrice={watch('price') || 0}
+                />
+              )}
+              {!hasVariants && (
+                <p className="text-gray-500 text-sm">
+                  Activa esta opción si tu producto viene en diferentes presentaciones como tallas, colores o tamaños.
+                </p>
+              )}
             </div>
           </div>
 

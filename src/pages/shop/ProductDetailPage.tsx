@@ -5,6 +5,7 @@ import { ArrowLeft, Star, ShoppingBag, Heart, Share2, Truck, Shield, RefreshCw }
 import { useProducts } from '@/hooks';
 import { useCartStore } from '@/store/cartStore';
 import { Loader } from 'lucide-react';
+import { ProductImageGallery } from '@/components/shop/ProductImageGallery';
 
 export function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -69,48 +70,12 @@ export function ProductDetailPage() {
       {/* Product Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Images */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="space-y-4"
-          >
-            {/* Main Image */}
-            {mainImage && (
-              <div className="relative aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl overflow-hidden group">
-                <img
-                  src={mainImage}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                />
-
-                {/* Discount Badge */}
-                {product.compare_at_price && product.price < product.compare_at_price && (
-                  <div className="absolute top-6 right-6 bg-rose-600 text-white px-4 py-2 rounded-full font-bold text-lg">
-                    -{Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)}%
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Thumbnail Images */}
-            {secondaryImages.length > 0 && (
-              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 sm:gap-3">
-                {secondaryImages.map((img: any, index: number) => (
-                  <div
-                    key={index}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-rose-600 transition"
-                  >
-                    <img
-                      src={img.url}
-                      alt={`${product.name} ${index + 2}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
+          {/* Images with Gallery and Zoom */}
+          <ProductImageGallery
+            images={product.images || []}
+            productName={product.name}
+            image_url={product.image_url}
+          />
 
           {/* Details */}
           <motion.div
