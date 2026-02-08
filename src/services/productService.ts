@@ -20,9 +20,10 @@ import type {
 
 /**
  * Obtener productos con filtros y paginación
+ * Si companyId es null/undefined, devuelve todos los productos (para admin)
  */
 export async function getProducts(
-  companyId: string,
+  companyId?: string,
   filters?: ProductFilters,
   page = 1,
   pageSize = 20
@@ -30,8 +31,12 @@ export async function getProducts(
   try {
     let query = supabase
       .from('products')
-      .select('*', { count: 'exact' })
-      .eq('company_id', companyId);
+      .select('*', { count: 'exact' });
+
+    // Solo filtrar por company_id si se proporciona
+    if (companyId) {
+      query = query.eq('company_id', companyId);
+    }
 
     if (filters) {
       if (filters.categoryId) {

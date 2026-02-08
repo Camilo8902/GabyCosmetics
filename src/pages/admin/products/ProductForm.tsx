@@ -62,7 +62,8 @@ export function ProductForm() {
   // Get company_id for the product
   const getCompanyId = () => {
     if (isAdmin()) {
-      // Admin can create products for any company, default to first or none
+      // Admin can create products - don't set company_id here
+      // It will be set by the service or left null
       return undefined;
     }
     if (isCompany()) {

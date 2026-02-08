@@ -7,16 +7,13 @@ import toast from 'react-hot-toast';
 /**
  * Hook for fetching products with filters and pagination
  */
-
-/**
- * Hook for fetching products with filters and pagination
- */
 export function useProducts(filters?: ProductFilters, page = 1, pageSize = 20) {
   return useQuery<PaginatedResponse<Product>>({
     queryKey: ['products', filters, page, pageSize],
     queryFn: async () => {
       try {
-        const result = await productService.getProducts(filters, page, pageSize);
+        // Pass undefined for companyId to get all products (admin view)
+        const result = await productService.getProducts(undefined, filters, page, pageSize);
         return result;
       } catch (error: any) {
         console.error('Error en useProducts:', error);
@@ -94,23 +91,24 @@ export function useBestSellers(limit = 8) {
  */
 export function useCreateProduct() {
   const queryClient = useQueryClient();
-  const { user, isCompany } = useAuthStore();
+  const { user, isAdmin, isCompany } = useAuthStore();
 
   return useMutation({
     mutationFn: async (product: Partial<Product>) => {
-      // Get company_id from user or product
       let companyId = product.company_id;
       
       // If user is a company owner, use their company_id
+      if (!companyId && isCompany() && user?.company_id) {
+        companyId = user.company_id;
+      }
+      
+      // Admin can create products without company_id (handled by service)
+      // Company users must have a company_id
       if (!companyId && isCompany()) {
-        companyId = user?.company_id;
+        throw new Error('Tu cuenta no tiene una empresa asociada. Contacta al administrador.');
       }
       
-      if (!companyId) {
-        throw new Error('Se requiere company_id para crear un producto');
-      }
-      
-      return productService.createProduct(companyId, product);
+      return productService.createProduct(companyId || '', product);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
