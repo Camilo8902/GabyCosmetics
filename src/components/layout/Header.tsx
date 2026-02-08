@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
@@ -37,17 +37,39 @@ function HeaderContent() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isLangMenuOpen, setIsLangMenuOpen] = useState(false);
 
+  // Refs for click outside detection
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
   const { getItemCount, toggleCart } = useCartStore();
   const { user, isAuthenticated, logout, isAdmin, isCompany, isConsultant } = useAuthStore();
 
   const itemCount = getItemCount();
 
+  // Scroll handler
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 50);
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Click outside handler to close menus
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close user menu if clicked outside
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+      // Close language menu if clicked outside
+      if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
+        setIsLangMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const toggleLanguage = (lang: string) => {
@@ -136,7 +158,7 @@ function HeaderContent() {
               </motion.button>
 
               {/* Language Switcher */}
-              <div className="relative hidden sm:block">
+              <div className="relative hidden sm:block" ref={langMenuRef}>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
@@ -217,7 +239,7 @@ function HeaderContent() {
               </motion.button>
 
               {/* User Menu */}
-              <div className="relative">
+              <div className="relative" ref={userMenuRef}>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
