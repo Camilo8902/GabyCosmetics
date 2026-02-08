@@ -1,946 +1,838 @@
 ---
 name: api-docs-generator
-description: Generates API documentation using OpenAPI/Swagger specifications with interactive documentation, code examples, and SDK generation. Use when users request "API documentation", "OpenAPI spec", "Swagger docs", "document API endpoints", or "generate API reference".
+description: Generates comprehensive API documentation in Markdown, HTML, or Docusaurus format from Express, Next.js, Fastify, or other API routes. Creates endpoint references, request/response examples, authentication guides, and error documentation. Use when users request "generate api docs", "api documentation", "endpoint documentation", or "api reference".
 ---
 
 # API Docs Generator
 
-Create comprehensive API documentation with OpenAPI specifications and interactive documentation.
+Generate comprehensive, developer-friendly API documentation automatically.
 
 ## Core Workflow
 
-1. **Analyze API endpoints**: Review routes, methods, parameters
-2. **Define OpenAPI spec**: Create specification in YAML/JSON
-3. **Add schemas**: Define request/response models
-4. **Include examples**: Add realistic example values
-5. **Generate documentation**: Deploy interactive docs
-6. **Create SDK**: Optional client library generation
+1. **Scan routes**: Find all API route definitions
+2. **Extract schemas**: Request/response types, params
+3. **Generate docs**: Markdown/HTML documentation
+4. **Add examples**: Request/response examples
+5. **Document errors**: Error codes and handling
+6. **Create guides**: Authentication, getting started
 
-## OpenAPI Specification Structure
+## Documentation Structure
 
-```yaml
-# openapi.yaml
-openapi: 3.1.0
-
-info:
-  title: My API
-  version: 1.0.0
-  description: |
-    API description with **Markdown** support.
-
-    ## Authentication
-    All endpoints require Bearer token authentication.
-  contact:
-    name: API Support
-    email: api@example.com
-    url: https://docs.example.com
-  license:
-    name: MIT
-    url: https://opensource.org/licenses/MIT
-
-servers:
-  - url: https://api.example.com/v1
-    description: Production
-  - url: https://staging-api.example.com/v1
-    description: Staging
-  - url: http://localhost:3000/v1
-    description: Development
-
-tags:
-  - name: Users
-    description: User management endpoints
-  - name: Products
-    description: Product catalog endpoints
-  - name: Orders
-    description: Order processing endpoints
-
-paths:
-  # Endpoints defined here
-
-components:
-  # Reusable schemas, security, etc.
+```
+docs/
+├── api/
+│   ├── index.md              # API overview
+│   ├── authentication.md     # Auth guide
+│   ├── errors.md             # Error reference
+│   ├── rate-limiting.md      # Rate limit info
+│   └── endpoints/
+│       ├── users.md
+│       ├── products.md
+│       └── orders.md
+├── guides/
+│   ├── getting-started.md
+│   ├── pagination.md
+│   └── webhooks.md
+└── sdks/
+    ├── javascript.md
+    ├── python.md
+    └── curl.md
 ```
 
-## Path Definitions
-
-### Basic CRUD Endpoints
-
-```yaml
-paths:
-  /users:
-    get:
-      tags:
-        - Users
-      summary: List all users
-      description: Retrieve a paginated list of users
-      operationId: listUsers
-      parameters:
-        - $ref: '#/components/parameters/PageParam'
-        - $ref: '#/components/parameters/LimitParam'
-        - name: role
-          in: query
-          description: Filter by user role
-          schema:
-            type: string
-            enum: [admin, user, guest]
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserList'
-              example:
-                data:
-                  - id: "usr_123"
-                    email: "john@example.com"
-                    name: "John Doe"
-                    role: "admin"
-                    createdAt: "2024-01-15T10:30:00Z"
-                pagination:
-                  page: 1
-                  limit: 20
-                  total: 150
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalError'
-
-    post:
-      tags:
-        - Users
-      summary: Create a new user
-      description: Create a new user account
-      operationId: createUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateUserRequest'
-            example:
-              email: "newuser@example.com"
-              name: "New User"
-              password: "securePassword123"
-              role: "user"
-      responses:
-        '201':
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '409':
-          description: User already exists
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                code: "USER_EXISTS"
-                message: "A user with this email already exists"
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
-  /users/{userId}:
-    parameters:
-      - $ref: '#/components/parameters/UserId'
-
-    get:
-      tags:
-        - Users
-      summary: Get user by ID
-      description: Retrieve a specific user by their ID
-      operationId: getUserById
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-    patch:
-      tags:
-        - Users
-      summary: Update user
-      description: Update an existing user's information
-      operationId: updateUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateUserRequest'
-      responses:
-        '200':
-          description: User updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
-    delete:
-      tags:
-        - Users
-      summary: Delete user
-      description: Permanently delete a user
-      operationId: deleteUser
-      responses:
-        '204':
-          description: User deleted successfully
-        '404':
-          $ref: '#/components/responses/NotFound'
-```
-
-## Component Schemas
-
-### Data Models
-
-```yaml
-components:
-  schemas:
-    # Base User Schema
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique user identifier
-          example: "usr_123abc"
-          readOnly: true
-        email:
-          type: string
-          format: email
-          description: User's email address
-          example: "john@example.com"
-        name:
-          type: string
-          minLength: 1
-          maxLength: 100
-          description: User's full name
-          example: "John Doe"
-        role:
-          $ref: '#/components/schemas/UserRole'
-        avatar:
-          type: string
-          format: uri
-          nullable: true
-          description: URL to user's avatar image
-          example: "https://cdn.example.com/avatars/123.jpg"
-        createdAt:
-          type: string
-          format: date-time
-          description: Account creation timestamp
-          readOnly: true
-        updatedAt:
-          type: string
-          format: date-time
-          description: Last update timestamp
-          readOnly: true
-      required:
-        - id
-        - email
-        - name
-        - role
-        - createdAt
-
-    UserRole:
-      type: string
-      enum:
-        - admin
-        - user
-        - guest
-      description: User's role in the system
-      example: "user"
-
-    # Request Schemas
-    CreateUserRequest:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-        name:
-          type: string
-          minLength: 1
-          maxLength: 100
-        password:
-          type: string
-          format: password
-          minLength: 8
-          description: Must contain at least one uppercase, one lowercase, and one number
-        role:
-          $ref: '#/components/schemas/UserRole'
-      required:
-        - email
-        - name
-        - password
-
-    UpdateUserRequest:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-          maxLength: 100
-        role:
-          $ref: '#/components/schemas/UserRole'
-        avatar:
-          type: string
-          format: uri
-          nullable: true
-      minProperties: 1
-
-    # List Response
-    UserList:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-        pagination:
-          $ref: '#/components/schemas/Pagination'
-
-    Pagination:
-      type: object
-      properties:
-        page:
-          type: integer
-          minimum: 1
-          example: 1
-        limit:
-          type: integer
-          minimum: 1
-          maximum: 100
-          example: 20
-        total:
-          type: integer
-          minimum: 0
-          example: 150
-        hasMore:
-          type: boolean
-          example: true
-
-    # Error Schemas
-    Error:
-      type: object
-      properties:
-        code:
-          type: string
-          description: Machine-readable error code
-          example: "VALIDATION_ERROR"
-        message:
-          type: string
-          description: Human-readable error message
-          example: "The request body is invalid"
-        details:
-          type: array
-          items:
-            $ref: '#/components/schemas/ErrorDetail'
-      required:
-        - code
-        - message
-
-    ErrorDetail:
-      type: object
-      properties:
-        field:
-          type: string
-          description: The field that caused the error
-          example: "email"
-        message:
-          type: string
-          description: Description of the validation error
-          example: "Must be a valid email address"
-```
-
-## Parameters and Responses
-
-```yaml
-components:
-  parameters:
-    UserId:
-      name: userId
-      in: path
-      required: true
-      description: Unique user identifier
-      schema:
-        type: string
-        format: uuid
-      example: "usr_123abc"
-
-    PageParam:
-      name: page
-      in: query
-      description: Page number for pagination
-      schema:
-        type: integer
-        minimum: 1
-        default: 1
-      example: 1
-
-    LimitParam:
-      name: limit
-      in: query
-      description: Number of items per page
-      schema:
-        type: integer
-        minimum: 1
-        maximum: 100
-        default: 20
-      example: 20
-
-    SortParam:
-      name: sort
-      in: query
-      description: Sort field and direction
-      schema:
-        type: string
-        pattern: '^[a-zA-Z]+:(asc|desc)$'
-      example: "createdAt:desc"
-
-  responses:
-    BadRequest:
-      description: Bad request - invalid input
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: "BAD_REQUEST"
-            message: "Invalid request format"
-
-    Unauthorized:
-      description: Authentication required
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: "UNAUTHORIZED"
-            message: "Authentication token is missing or invalid"
-
-    Forbidden:
-      description: Permission denied
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: "FORBIDDEN"
-            message: "You don't have permission to access this resource"
-
-    NotFound:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: "NOT_FOUND"
-            message: "The requested resource was not found"
-
-    ValidationError:
-      description: Validation error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: "VALIDATION_ERROR"
-            message: "Request validation failed"
-            details:
-              - field: "email"
-                message: "Must be a valid email address"
-              - field: "password"
-                message: "Must be at least 8 characters"
-
-    InternalError:
-      description: Internal server error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          example:
-            code: "INTERNAL_ERROR"
-            message: "An unexpected error occurred"
-```
-
-## Security Definitions
-
-```yaml
-components:
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-      description: |
-        JWT token obtained from the /auth/login endpoint.
-
-        Example: `Authorization: Bearer eyJhbGciOiJIUzI1...`
-
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-      description: API key for server-to-server communication
-
-    OAuth2:
-      type: oauth2
-      description: OAuth 2.0 authentication
-      flows:
-        authorizationCode:
-          authorizationUrl: https://auth.example.com/oauth/authorize
-          tokenUrl: https://auth.example.com/oauth/token
-          scopes:
-            read:users: Read user information
-            write:users: Create and modify users
-            admin: Full administrative access
-
-# Apply security globally
-security:
-  - BearerAuth: []
-
-# Or per-endpoint
-paths:
-  /public/health:
-    get:
-      security: []  # No auth required
-      summary: Health check
-      responses:
-        '200':
-          description: Service is healthy
-```
-
-## Express/Node.js Integration
-
-### Generate from Code with express-openapi
+## Generator Script
 
 ```typescript
-// src/docs/openapi.ts
-import { OpenAPIV3_1 } from 'openapi-types';
+// scripts/generate-api-docs.ts
+import * as fs from "fs";
+import * as path from "path";
 
-export const openApiDocument: OpenAPIV3_1.Document = {
-  openapi: '3.1.0',
-  info: {
-    title: 'My API',
-    version: '1.0.0',
-    description: 'API documentation',
-  },
-  servers: [
-    { url: 'http://localhost:3000', description: 'Development' },
-  ],
-  paths: {},
-  components: {
-    schemas: {},
-    securitySchemes: {
-      BearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-      },
-    },
-  },
-};
-```
+interface RouteInfo {
+  method: string;
+  path: string;
+  name: string;
+  description?: string;
+  params?: ParamInfo[];
+  queryParams?: ParamInfo[];
+  requestBody?: SchemaInfo;
+  responses?: ResponseInfo[];
+  auth?: boolean;
+  tags?: string[];
+}
 
-### Swagger UI Express
+interface ParamInfo {
+  name: string;
+  type: string;
+  required: boolean;
+  description?: string;
+  example?: string;
+}
 
-```typescript
-// src/docs/swagger.ts
-import swaggerUi from 'swagger-ui-express';
-import YAML from 'yamljs';
-import path from 'path';
-import { Express } from 'express';
+interface SchemaInfo {
+  type: string;
+  properties?: Record<string, PropertyInfo>;
+  required?: string[];
+  example?: object;
+}
 
-export function setupSwagger(app: Express) {
-  const swaggerDocument = YAML.load(
-    path.join(__dirname, '../../openapi.yaml')
+interface PropertyInfo {
+  type: string;
+  description?: string;
+  example?: unknown;
+  enum?: string[];
+  format?: string;
+}
+
+interface ResponseInfo {
+  status: number;
+  description: string;
+  schema?: SchemaInfo;
+  example?: object;
+}
+
+interface DocsOptions {
+  title: string;
+  baseUrl: string;
+  version: string;
+  outputDir: string;
+  format: "markdown" | "html" | "docusaurus";
+}
+
+function generateApiDocs(routes: RouteInfo[], options: DocsOptions): void {
+  const { outputDir } = options;
+
+  // Create directories
+  fs.mkdirSync(path.join(outputDir, "api", "endpoints"), { recursive: true });
+  fs.mkdirSync(path.join(outputDir, "guides"), { recursive: true });
+
+  // Generate overview
+  generateOverview(options);
+
+  // Generate auth docs
+  generateAuthDocs(options);
+
+  // Generate error docs
+  generateErrorDocs(options);
+
+  // Group routes by resource
+  const groupedRoutes = groupRoutesByResource(routes);
+
+  // Generate endpoint docs
+  for (const [resource, resourceRoutes] of Object.entries(groupedRoutes)) {
+    const content = generateEndpointDoc(resource, resourceRoutes, options);
+    const filePath = path.join(outputDir, "api", "endpoints", `${resource}.md`);
+    fs.writeFileSync(filePath, content);
+  }
+
+  // Generate getting started guide
+  generateGettingStarted(routes, options);
+}
+
+function generateEndpointDoc(
+  resource: string,
+  routes: RouteInfo[],
+  options: DocsOptions
+): string {
+  const lines: string[] = [];
+
+  // Header
+  lines.push(`# ${capitalize(resource)}`);
+  lines.push("");
+  lines.push(`Endpoints for managing ${resource}.`);
+  lines.push("");
+
+  // Table of contents
+  lines.push("## Endpoints");
+  lines.push("");
+  lines.push("| Method | Endpoint | Description |");
+  lines.push("|--------|----------|-------------|");
+
+  for (const route of routes) {
+    lines.push(
+      `| \`${route.method}\` | \`${route.path}\` | ${route.description || route.name} |`
+    );
+  }
+  lines.push("");
+
+  // Detailed documentation for each endpoint
+  for (const route of routes) {
+    lines.push(generateEndpointSection(route, options));
+    lines.push("");
+  }
+
+  return lines.join("\n");
+}
+
+function generateEndpointSection(
+  route: RouteInfo,
+  options: DocsOptions
+): string {
+  const lines: string[] = [];
+  const anchor = route.name.toLowerCase().replace(/\s+/g, "-");
+
+  // Endpoint header
+  lines.push(`## ${route.name} {#${anchor}}`);
+  lines.push("");
+  lines.push(
+    `<span class="method method-${route.method.toLowerCase()}">${route.method}</span> \`${route.path}\``
   );
+  lines.push("");
 
-  const options: swaggerUi.SwaggerUiOptions = {
-    explorer: true,
-    customSiteTitle: 'API Documentation',
-    customCss: '.swagger-ui .topbar { display: none }',
-    swaggerOptions: {
-      persistAuthorization: true,
-      displayRequestDuration: true,
-      filter: true,
-      showExtensions: true,
+  if (route.description) {
+    lines.push(route.description);
+    lines.push("");
+  }
+
+  // Authentication
+  if (route.auth) {
+    lines.push("### Authentication");
+    lines.push("");
+    lines.push("This endpoint requires authentication. Include the Bearer token in the Authorization header.");
+    lines.push("");
+  }
+
+  // Path parameters
+  if (route.params?.length) {
+    lines.push("### Path Parameters");
+    lines.push("");
+    lines.push("| Parameter | Type | Required | Description |");
+    lines.push("|-----------|------|----------|-------------|");
+
+    for (const param of route.params) {
+      lines.push(
+        `| \`${param.name}\` | ${param.type} | ${param.required ? "Yes" : "No"} | ${param.description || "-"} |`
+      );
+    }
+    lines.push("");
+  }
+
+  // Query parameters
+  if (route.queryParams?.length) {
+    lines.push("### Query Parameters");
+    lines.push("");
+    lines.push("| Parameter | Type | Required | Default | Description |");
+    lines.push("|-----------|------|----------|---------|-------------|");
+
+    for (const param of route.queryParams) {
+      lines.push(
+        `| \`${param.name}\` | ${param.type} | ${param.required ? "Yes" : "No"} | ${param.example || "-"} | ${param.description || "-"} |`
+      );
+    }
+    lines.push("");
+  }
+
+  // Request body
+  if (route.requestBody) {
+    lines.push("### Request Body");
+    lines.push("");
+    lines.push("```json");
+    lines.push(JSON.stringify(route.requestBody.example || {}, null, 2));
+    lines.push("```");
+    lines.push("");
+
+    if (route.requestBody.properties) {
+      lines.push("| Field | Type | Required | Description |");
+      lines.push("|-------|------|----------|-------------|");
+
+      for (const [name, prop] of Object.entries(route.requestBody.properties)) {
+        const required = route.requestBody.required?.includes(name)
+          ? "Yes"
+          : "No";
+        lines.push(
+          `| \`${name}\` | ${prop.type} | ${required} | ${prop.description || "-"} |`
+        );
+      }
+      lines.push("");
+    }
+  }
+
+  // Responses
+  lines.push("### Responses");
+  lines.push("");
+
+  const responses = route.responses || [
+    { status: 200, description: "Successful response" },
+    { status: 400, description: "Bad request" },
+    { status: 401, description: "Unauthorized" },
+    { status: 404, description: "Not found" },
+  ];
+
+  for (const response of responses) {
+    lines.push(`#### ${response.status} ${response.description}`);
+    lines.push("");
+
+    if (response.example) {
+      lines.push("```json");
+      lines.push(JSON.stringify(response.example, null, 2));
+      lines.push("```");
+      lines.push("");
+    }
+  }
+
+  // Example request
+  lines.push("### Example Request");
+  lines.push("");
+  lines.push("```bash");
+  lines.push(generateCurlExample(route, options));
+  lines.push("```");
+  lines.push("");
+
+  return lines.join("\n");
+}
+
+function generateCurlExample(route: RouteInfo, options: DocsOptions): string {
+  const parts: string[] = ["curl"];
+  parts.push(`-X ${route.method}`);
+
+  let url = `${options.baseUrl}${route.path}`;
+  url = url.replace(/:(\w+)/g, "{$1}");
+  parts.push(`"${url}"`);
+
+  if (["POST", "PUT", "PATCH"].includes(route.method)) {
+    parts.push('-H "Content-Type: application/json"');
+  }
+
+  if (route.auth) {
+    parts.push('-H "Authorization: Bearer YOUR_TOKEN"');
+  }
+
+  if (route.requestBody?.example) {
+    parts.push(`-d '${JSON.stringify(route.requestBody.example)}'`);
+  }
+
+  return parts.join(" \\\n  ");
+}
+
+function generateOverview(options: DocsOptions): void {
+  const content = `# ${options.title} API Reference
+
+Version: ${options.version}
+
+Base URL: \`${options.baseUrl}\`
+
+## Overview
+
+Welcome to the ${options.title} API documentation. This API provides programmatic access to [describe your service].
+
+## Quick Links
+
+- [Authentication](./authentication.md)
+- [Error Handling](./errors.md)
+- [Rate Limiting](./rate-limiting.md)
+
+## Endpoints
+
+| Resource | Description |
+|----------|-------------|
+| [Users](./endpoints/users.md) | User management |
+| [Products](./endpoints/products.md) | Product catalog |
+| [Orders](./endpoints/orders.md) | Order processing |
+
+## SDKs & Libraries
+
+- [JavaScript/TypeScript](../sdks/javascript.md)
+- [Python](../sdks/python.md)
+- [cURL Examples](../sdks/curl.md)
+
+## Support
+
+If you have questions or need help, please:
+
+- Check the [FAQ](../guides/faq.md)
+- Open an issue on GitHub
+- Contact support@example.com
+`;
+
+  fs.writeFileSync(path.join(options.outputDir, "api", "index.md"), content);
+}
+
+function generateAuthDocs(options: DocsOptions): void {
+  const content = `# Authentication
+
+The ${options.title} API uses Bearer token authentication.
+
+## Getting an Access Token
+
+### Login
+
+\`\`\`bash
+curl -X POST "${options.baseUrl}/auth/login" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email": "user@example.com", "password": "your-password"}'
+\`\`\`
+
+Response:
+
+\`\`\`json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "expiresIn": 3600,
+  "tokenType": "Bearer"
+}
+\`\`\`
+
+## Using the Token
+
+Include the token in the Authorization header of all authenticated requests:
+
+\`\`\`bash
+curl -X GET "${options.baseUrl}/users" \\
+  -H "Authorization: Bearer YOUR_TOKEN"
+\`\`\`
+
+## Token Expiration
+
+Tokens expire after 1 hour. When a token expires, you'll receive a 401 response:
+
+\`\`\`json
+{
+  "error": {
+    "code": "TOKEN_EXPIRED",
+    "message": "Your access token has expired"
+  }
+}
+\`\`\`
+
+Refresh your token using the refresh endpoint:
+
+\`\`\`bash
+curl -X POST "${options.baseUrl}/auth/refresh" \\
+  -H "Content-Type: application/json" \\
+  -d '{"refreshToken": "YOUR_REFRESH_TOKEN"}'
+\`\`\`
+
+## API Keys
+
+For server-to-server communication, you can use API keys:
+
+\`\`\`bash
+curl -X GET "${options.baseUrl}/users" \\
+  -H "X-API-Key: YOUR_API_KEY"
+\`\`\`
+
+Generate API keys in your dashboard under Settings > API Keys.
+`;
+
+  fs.writeFileSync(
+    path.join(options.outputDir, "api", "authentication.md"),
+    content
+  );
+}
+
+function generateErrorDocs(options: DocsOptions): void {
+  const content = `# Error Handling
+
+The API uses conventional HTTP status codes and returns errors in a consistent format.
+
+## Error Response Format
+
+\`\`\`json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": {
+      "field": ["Specific error for this field"]
     },
-  };
+    "trace_id": "abc123"
+  }
+}
+\`\`\`
 
-  app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, options));
-  app.get('/openapi.json', (req, res) => res.json(swaggerDocument));
+## HTTP Status Codes
+
+| Code | Description |
+|------|-------------|
+| 200 | OK - Request succeeded |
+| 201 | Created - Resource created successfully |
+| 204 | No Content - Request succeeded, no content returned |
+| 400 | Bad Request - Invalid request data |
+| 401 | Unauthorized - Missing or invalid authentication |
+| 403 | Forbidden - Insufficient permissions |
+| 404 | Not Found - Resource doesn't exist |
+| 409 | Conflict - Resource already exists |
+| 422 | Unprocessable Entity - Validation error |
+| 429 | Too Many Requests - Rate limit exceeded |
+| 500 | Internal Server Error - Server error |
+
+## Error Codes
+
+### Validation Errors
+
+| Code | Description |
+|------|-------------|
+| \`VALIDATION_ERROR\` | Request body validation failed |
+| \`INVALID_FORMAT\` | Field format is invalid |
+| \`REQUIRED_FIELD\` | Required field is missing |
+
+### Authentication Errors
+
+| Code | Description |
+|------|-------------|
+| \`UNAUTHORIZED\` | No authentication provided |
+| \`INVALID_TOKEN\` | Token is invalid or malformed |
+| \`TOKEN_EXPIRED\` | Token has expired |
+| \`INSUFFICIENT_PERMISSIONS\` | User lacks required permissions |
+
+### Resource Errors
+
+| Code | Description |
+|------|-------------|
+| \`NOT_FOUND\` | Resource doesn't exist |
+| \`ALREADY_EXISTS\` | Resource already exists |
+| \`CONFLICT\` | Operation conflicts with current state |
+
+### Rate Limiting
+
+| Code | Description |
+|------|-------------|
+| \`RATE_LIMIT_EXCEEDED\` | Too many requests |
+
+When rate limited, check the response headers:
+
+\`\`\`
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1640000000
+\`\`\`
+
+## Handling Errors
+
+\`\`\`typescript
+try {
+  const response = await api.get('/users');
+} catch (error) {
+  if (error.response) {
+    switch (error.response.status) {
+      case 401:
+        // Redirect to login
+        break;
+      case 403:
+        // Show permission denied
+        break;
+      case 404:
+        // Show not found
+        break;
+      case 429:
+        // Implement retry with backoff
+        break;
+      default:
+        // Show generic error
+    }
+  }
+}
+\`\`\`
+`;
+
+  fs.writeFileSync(path.join(options.outputDir, "api", "errors.md"), content);
+}
+
+function generateGettingStarted(
+  routes: RouteInfo[],
+  options: DocsOptions
+): void {
+  const content = `# Getting Started
+
+This guide will help you make your first API request.
+
+## Prerequisites
+
+- An API key or user account
+- A tool to make HTTP requests (curl, Postman, or your preferred HTTP client)
+
+## Step 1: Get Your API Credentials
+
+1. Sign up for an account at [example.com](https://example.com)
+2. Navigate to Settings > API Keys
+3. Generate a new API key
+
+## Step 2: Make Your First Request
+
+Let's fetch a list of users:
+
+\`\`\`bash
+curl -X GET "${options.baseUrl}/users" \\
+  -H "Authorization: Bearer YOUR_TOKEN"
+\`\`\`
+
+You should receive a response like:
+
+\`\`\`json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "user_123",
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 1
+  }
+}
+\`\`\`
+
+## Step 3: Create a Resource
+
+\`\`\`bash
+curl -X POST "${options.baseUrl}/users" \\
+  -H "Content-Type: application/json" \\
+  -H "Authorization: Bearer YOUR_TOKEN" \\
+  -d '{
+    "name": "Jane Doe",
+    "email": "jane@example.com"
+  }'
+\`\`\`
+
+## Next Steps
+
+- Read the [Authentication Guide](../api/authentication.md)
+- Explore the [API Reference](../api/index.md)
+- Check out [Error Handling](../api/errors.md)
+- Try the [Postman Collection](./postman.md)
+`;
+
+  fs.writeFileSync(
+    path.join(options.outputDir, "guides", "getting-started.md"),
+    content
+  );
+}
+
+function groupRoutesByResource(
+  routes: RouteInfo[]
+): Record<string, RouteInfo[]> {
+  const groups: Record<string, RouteInfo[]> = {};
+
+  for (const route of routes) {
+    const parts = route.path.split("/").filter(Boolean);
+    const resource = parts[0] || "api";
+
+    if (!groups[resource]) {
+      groups[resource] = [];
+    }
+    groups[resource].push(route);
+  }
+
+  return groups;
+}
+
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
 }
 ```
 
-### Zod to OpenAPI
+## Example Generated Documentation
 
-```typescript
-// src/schemas/user.ts
-import { z } from 'zod';
-import { extendZodWithOpenApi } from '@asteasolutions/zod-to-openapi';
+### users.md
 
-extendZodWithOpenApi(z);
+```markdown
+# Users
 
-export const UserSchema = z.object({
-  id: z.string().uuid().openapi({ example: 'usr_123abc' }),
-  email: z.string().email().openapi({ example: 'john@example.com' }),
-  name: z.string().min(1).max(100).openapi({ example: 'John Doe' }),
-  role: z.enum(['admin', 'user', 'guest']).openapi({ example: 'user' }),
-  createdAt: z.string().datetime(),
-}).openapi('User');
+Endpoints for managing users.
 
-export const CreateUserSchema = z.object({
-  email: z.string().email(),
-  name: z.string().min(1).max(100),
-  password: z.string().min(8),
-  role: z.enum(['admin', 'user', 'guest']).optional().default('user'),
-}).openapi('CreateUserRequest');
-```
+## Endpoints
 
-```typescript
-// src/docs/generator.ts
-import {
-  OpenAPIRegistry,
-  OpenApiGeneratorV31,
-} from '@asteasolutions/zod-to-openapi';
-import { UserSchema, CreateUserSchema } from '../schemas/user';
+| Method   | Endpoint          | Description         |
+| -------- | ----------------- | ------------------- |
+| `GET`    | `/api/users`      | List all users      |
+| `GET`    | `/api/users/:id`  | Get user by ID      |
+| `POST`   | `/api/users`      | Create new user     |
+| `PUT`    | `/api/users/:id`  | Update user         |
+| `DELETE` | `/api/users/:id`  | Delete user         |
 
-const registry = new OpenAPIRegistry();
+## List Users {#list-users}
 
-// Register schemas
-registry.register('User', UserSchema);
-registry.register('CreateUserRequest', CreateUserSchema);
+<span class="method method-get">GET</span> `/api/users`
 
-// Register endpoints
-registry.registerPath({
-  method: 'get',
-  path: '/users',
-  tags: ['Users'],
-  summary: 'List all users',
-  responses: {
-    200: {
-      description: 'List of users',
-      content: {
-        'application/json': {
-          schema: z.array(UserSchema),
-        },
-      },
-    },
-  },
-});
+Retrieve a paginated list of users.
 
-registry.registerPath({
-  method: 'post',
-  path: '/users',
-  tags: ['Users'],
-  summary: 'Create a user',
-  request: {
-    body: {
-      content: {
-        'application/json': {
-          schema: CreateUserSchema,
-        },
-      },
-    },
-  },
-  responses: {
-    201: {
-      description: 'User created',
-      content: {
-        'application/json': {
-          schema: UserSchema,
-        },
-      },
-    },
-  },
-});
+### Authentication
 
-// Generate OpenAPI document
-const generator = new OpenApiGeneratorV31(registry.definitions);
-export const openApiDocument = generator.generateDocument({
-  openapi: '3.1.0',
-  info: {
-    title: 'My API',
-    version: '1.0.0',
-  },
-});
-```
+This endpoint requires authentication. Include the Bearer token in the Authorization header.
 
-## FastAPI Integration
+### Query Parameters
 
-```python
-# main.py
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.openapi.utils import get_openapi
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-from datetime import datetime
-from enum import Enum
+| Parameter | Type    | Required | Default | Description              |
+| --------- | ------- | -------- | ------- | ------------------------ |
+| `page`    | integer | No       | 1       | Page number              |
+| `limit`   | integer | No       | 10      | Items per page (max 100) |
+| `sort`    | string  | No       | -       | Sort field               |
+| `order`   | string  | No       | desc    | Sort order (asc/desc)    |
 
-app = FastAPI(
-    title="My API",
-    description="API documentation with FastAPI",
-    version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-)
+### Responses
 
+#### 200 OK
 
-class UserRole(str, Enum):
-    admin = "admin"
-    user = "user"
-    guest = "guest"
-
-
-class UserBase(BaseModel):
-    email: EmailStr = Field(..., example="john@example.com")
-    name: str = Field(..., min_length=1, max_length=100, example="John Doe")
-    role: UserRole = Field(default=UserRole.user, example="user")
-
-
-class UserCreate(UserBase):
-    password: str = Field(..., min_length=8, example="securePassword123")
-
-
-class User(UserBase):
-    id: str = Field(..., example="usr_123abc")
-    created_at: datetime
-    updated_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
-
-
-class UserList(BaseModel):
-    data: list[User]
-    total: int
-    page: int
-    limit: int
-
-
-@app.get(
-    "/users",
-    response_model=UserList,
-    tags=["Users"],
-    summary="List all users",
-    description="Retrieve a paginated list of users",
-)
-async def list_users(
-    page: int = Query(1, ge=1, description="Page number"),
-    limit: int = Query(20, ge=1, le=100, description="Items per page"),
-    role: Optional[UserRole] = Query(None, description="Filter by role"),
-):
-    # Implementation
-    pass
-
-
-@app.post(
-    "/users",
-    response_model=User,
-    status_code=201,
-    tags=["Users"],
-    summary="Create a new user",
-    responses={
-        409: {"description": "User already exists"},
-        422: {"description": "Validation error"},
-    },
-)
-async def create_user(user: UserCreate):
-    # Implementation
-    pass
-
-
-# Custom OpenAPI schema
-def custom_openapi():
-    if app.openapi_schema:
-        return app.openapi_schema
-
-    openapi_schema = get_openapi(
-        title="My API",
-        version="1.0.0",
-        description="API documentation",
-        routes=app.routes,
-    )
-
-    # Add security scheme
-    openapi_schema["components"]["securitySchemes"] = {
-        "BearerAuth": {
-            "type": "http",
-            "scheme": "bearer",
-            "bearerFormat": "JWT",
-        }
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "user_abc123",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "role": "user",
+      "createdAt": "2024-01-15T10:30:00Z"
     }
-    openapi_schema["security"] = [{"BearerAuth": []}]
-
-    app.openapi_schema = openapi_schema
-    return app.openapi_schema
-
-
-app.openapi = custom_openapi
+  ],
+  "meta": {
+    "page": 1,
+    "limit": 10,
+    "total": 156,
+    "total_pages": 16
+  }
+}
 ```
 
-## Documentation Generators
+#### 401 Unauthorized
 
-### Redoc
-
-```html
-<!-- docs/index.html -->
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>API Documentation</title>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://fonts.googleapis.com/css?family=Montserrat:300,400,700|Roboto:300,400,700" rel="stylesheet">
-    <style>
-      body { margin: 0; padding: 0; }
-    </style>
-  </head>
-  <body>
-    <redoc spec-url='/openapi.yaml' expand-responses="200,201"></redoc>
-    <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
-  </body>
-</html>
+```json
+{
+  "success": false,
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Authentication required"
+  }
+}
 ```
 
-### Stoplight Elements
-
-```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>API Documentation</title>
-    <script src="https://unpkg.com/@stoplight/elements/web-components.min.js"></script>
-    <link rel="stylesheet" href="https://unpkg.com/@stoplight/elements/styles.min.css">
-  </head>
-  <body>
-    <elements-api
-      apiDescriptionUrl="/openapi.yaml"
-      router="hash"
-      layout="sidebar"
-    />
-  </body>
-</html>
-```
-
-## SDK Generation
-
-### OpenAPI Generator
+### Example Request
 
 ```bash
-# Install OpenAPI Generator
-npm install -g @openapitools/openapi-generator-cli
-
-# Generate TypeScript client
-openapi-generator-cli generate \
-  -i openapi.yaml \
-  -g typescript-fetch \
-  -o ./sdk/typescript \
-  --additional-properties=supportsES6=true,npmName=@myorg/api-client
-
-# Generate Python client
-openapi-generator-cli generate \
-  -i openapi.yaml \
-  -g python \
-  -o ./sdk/python \
-  --additional-properties=packageName=myapi_client
+curl -X GET "https://api.example.com/users?page=1&limit=10" \
+  -H "Authorization: Bearer YOUR_TOKEN"
 ```
 
-### Configuration
+## Create User {#create-user}
 
-```yaml
-# openapitools.json
+<span class="method method-post">POST</span> `/api/users`
+
+Create a new user account.
+
+### Authentication
+
+This endpoint requires authentication. Include the Bearer token in the Authorization header.
+
+### Request Body
+
+```json
 {
-  "$schema": "https://raw.githubusercontent.com/OpenAPITools/openapi-generator/master/modules/openapi-generator-gradle-plugin/src/main/resources/openapitools.json",
-  "spaces": 2,
-  "generator-cli": {
-    "version": "7.0.0",
-    "generators": {
-      "typescript-client": {
-        "generatorName": "typescript-fetch",
-        "inputSpec": "./openapi.yaml",
-        "output": "./sdk/typescript",
-        "additionalProperties": {
-          "supportsES6": true,
-          "npmName": "@myorg/api-client",
-          "npmVersion": "1.0.0"
-        }
-      }
+  "name": "John Doe",
+  "email": "john@example.com",
+  "role": "user"
+}
+```
+
+| Field   | Type   | Required | Description                         |
+| ------- | ------ | -------- | ----------------------------------- |
+| `name`  | string | Yes      | User's full name                    |
+| `email` | string | Yes      | User's email (must be unique)       |
+| `role`  | string | No       | User role (user, admin)             |
+
+### Responses
+
+#### 201 Created
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "user_xyz789",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "role": "user",
+    "createdAt": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+#### 400 Bad Request
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request data",
+    "details": {
+      "email": ["Invalid email format"]
     }
   }
 }
 ```
 
-## Validation
-
-### Spectral Linting
-
-```yaml
-# .spectral.yaml
-extends: ["spectral:oas", "spectral:asyncapi"]
-
-rules:
-  operation-operationId: error
-  operation-description: warn
-  operation-tags: error
-  info-contact: warn
-  info-license: warn
-  oas3-schema: error
-  oas3-valid-media-example: warn
-
-  # Custom rules
-  path-must-have-tag:
-    given: "$.paths[*][*]"
-    severity: error
-    then:
-      field: tags
-      function: truthy
-```
+### Example Request
 
 ```bash
-# Run linting
-npx @stoplight/spectral-cli lint openapi.yaml
+curl -X POST "https://api.example.com/users" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -d '{"name": "John Doe", "email": "john@example.com"}'
+```
+```
+
+## CLI Script
+
+```typescript
+#!/usr/bin/env node
+// scripts/docs-gen.ts
+import * as fs from "fs";
+import { program } from "commander";
+
+program
+  .name("docs-gen")
+  .description("Generate API documentation from routes")
+  .option("-f, --framework <type>", "Framework (express|nextjs|fastify)", "express")
+  .option("-s, --source <path>", "Source directory", "./src")
+  .option("-o, --output <path>", "Output directory", "./docs")
+  .option("-t, --title <name>", "API title", "My API")
+  .option("-v, --version <version>", "API version", "1.0.0")
+  .option("-b, --base-url <url>", "Base URL", "https://api.example.com")
+  .option("--format <type>", "Output format (markdown|html|docusaurus)", "markdown")
+  .parse();
+
+const options = program.opts();
+
+async function main() {
+  const routes = await scanRoutes(options.framework, options.source);
+
+  generateApiDocs(routes, {
+    title: options.title,
+    baseUrl: options.baseUrl,
+    version: options.version,
+    outputDir: options.output,
+    format: options.format,
+  });
+
+  console.log(`Generated documentation in ${options.output}`);
+}
+
+main();
 ```
 
 ## Best Practices
 
-1. **Use $ref for reusability**: Define schemas once, reference everywhere
-2. **Include examples**: Add realistic examples for all schemas
-3. **Document errors**: Describe all possible error responses
-4. **Version your API**: Use URL or header versioning
-5. **Group with tags**: Organize endpoints logically
-6. **Add descriptions**: Explain every parameter and field
-7. **Use security schemes**: Document authentication clearly
-8. **Validate spec**: Use Spectral or similar tools
-9. **Generate SDKs**: Automate client library creation
-10. **Keep spec in sync**: Generate from code or validate against it
+1. **Keep docs updated**: Regenerate docs on route changes
+2. **Include examples**: Show real request/response examples
+3. **Document errors**: List all possible error codes
+4. **Add authentication guide**: Explain how to authenticate
+5. **Use consistent format**: Follow same structure for all endpoints
+6. **Version your docs**: Match doc versions to API versions
+7. **Make it searchable**: Include table of contents and anchors
+8. **Provide SDKs**: Link to client libraries and code examples
 
 ## Output Checklist
 
-Every API documentation should include:
-
-- [ ] Complete OpenAPI 3.x specification
-- [ ] All endpoints documented with examples
-- [ ] Request/response schemas with types
-- [ ] Error responses documented
-- [ ] Authentication scheme defined
-- [ ] Parameters described with examples
-- [ ] Interactive documentation deployed (Swagger UI/Redoc)
-- [ ] Specification validated with linter
-- [ ] SDK generation configured
-- [ ] Versioning strategy documented
+- [ ] API overview with quick links
+- [ ] Authentication guide
+- [ ] Error handling reference
+- [ ] Endpoint documentation per resource
+- [ ] Path and query parameters documented
+- [ ] Request body schemas with field descriptions
+- [ ] Response examples for all status codes
+- [ ] cURL examples for each endpoint
+- [ ] Getting started guide
+- [ ] SDK/library examples
