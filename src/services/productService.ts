@@ -721,103 +721,77 @@ export async function adjustInventory(
 }
 
 /**
- * Subir imagen de producto (con archivo File) - CON LOGGING DETALLADO
+ * Subir imagen de producto usando API route server-side (bypassea RLS)
  */
 export async function uploadProductImage(
   productId: string,
   file: File,
   isPrimary = false
 ): Promise<ProductImage> {
-  console.log('🔵 [uploadProductImage] === INICIANDO ===');
+  console.log('🔵 [uploadProductImage] === INICIANDO VIA API ===');
   console.log('🔵 [uploadProductImage] productId:', productId);
   console.log('🔵 [uploadProductImage] file.name:', file.name);
-  console.log('🔵 [uploadProductImage] file.size:', file.size);
-  console.log('🔵 [uploadProductImage] file.type:', file.type);
-  console.log('🔵 [uploadProductImage] isPrimary:', isPrimary);
 
   try {
-    // Subir archivo a Supabase Storage
+    // Convertir archivo a base64
+    const reader = new FileReader();
+    
+    const fileContent = await new Promise<string>((resolve, reject) => {
+      reader.onload = () => {
+        const result = reader.result as string;
+        const base64 = result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
     const fileExt = file.name.split('.').pop();
     const fileName = `${productId}/${Date.now()}.${fileExt}`;
 
-    console.log('🔵 [uploadProductImage] Bucket: product-images');
-    console.log('🔵 [uploadProductImage] fileName a subir:', fileName);
+    console.log('🔵 [uploadProductImage] Llamando API /api/upload-product-image');
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(fileName, file, {
-        cacheControl: '3600',
-        upsert: false,
-      });
+    // Usar API route del servidor (bypassea RLS)
+    const response = await fetch('/api/upload-product-image', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        productId,
+        fileName,
+        fileContent,
+        contentType: file.type,
+        altText: file.name,
+        isPrimary,
+      }),
+    });
 
-    console.log('🔵 [uploadProductImage] uploadResponse:', { uploadData, uploadError });
+    console.log('🔵 [uploadProductImage] Response status:', response.status);
 
-    if (uploadError) {
-      console.error('❌ [uploadProductImage] ERROR EN STORAGE UPLOAD:');
-      console.error('   uploadError:', uploadError);
-      console.error('   Error name:', uploadError.name);
-      console.error('   Error message:', uploadError.message);
-      console.error('   Error error:', uploadError.error);
-      throw uploadError;
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ [uploadProductImage] API Error:', errorData);
+      throw new Error(errorData.error || 'Error al subir imagen');
     }
 
-    console.log('✅ [uploadProductImage] Storage upload EXITOSO');
+    const result = await response.json();
+    console.log('✅ [uploadProductImage] API Response:', result);
 
-    // Obtener URL pública
-    const { data: { publicUrl } } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(fileName);
-
-    console.log('🔵 [uploadProductImage] publicUrl:', publicUrl);
-
-    // Insertar en la tabla de base de datos
-    console.log('🔵 [uploadProductImage] Insertando en tabla product_images...');
-
-    const { data, error } = await supabase
-      .from('product_images')
-      .insert({
-        product_id: productId,
-        url: publicUrl,
-        alt_text: file.name,
-        order_index: 0,
-        is_primary: isPrimary,
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('❌ [uploadProductImage] ERROR INSERTANDO EN DB:');
-      console.error('   error:', error);
-      console.error('   code:', error.code);
-      console.error('   message:', error.message);
-      console.error('   details:', error.details);
-      throw error;
-    }
-
-    console.log('✅ [uploadProductImage] Imagen guardada en DB:', data);
-    return data as ProductImage;
-
-  } catch (error: any) {
-    console.error('❌ [uploadProductImage] ERROR GENERAL:');
-    console.error('   error:', error);
-    console.error('   error.name:', error.name);
-    console.error('   error.message:', error.message);
-    console.error('   error.code:', error.code);
-    console.error('   Stack:', error.stack);
-
-    // Si el error es por RLS, intentar retornar metadata sin guardar
-    if (error?.message?.includes('row-level security') || error?.code === '42501') {
-      console.warn('⚠️ [uploadProductImage] RLS error - retornando metadata sin guardar');
+    if (result.success) {
       return {
-        id: `temp-${Date.now()}`,
+        id: result.image?.id || `temp-${Date.now()}`,
         product_id: productId,
-        url: '',
+        url: result.url,
         alt_text: file.name,
         order_index: 0,
         is_primary: isPrimary,
       } as ProductImage;
     }
 
+    throw new Error('Upload failed');
+  } catch (error: any) {
+    console.error('❌ [uploadProductImage] Error general:', error);
     throw error;
   }
 }
