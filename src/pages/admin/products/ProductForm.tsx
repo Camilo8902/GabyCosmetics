@@ -242,6 +242,15 @@ export function ProductForm() {
         });
         console.log('✅ [ProductForm] Producto actualizado exitosamente');
 
+        // Save categories
+        if (selectedCategories.length > 0) {
+          await setProductCategories.mutateAsync({
+            productId: id,
+            categoryIds: selectedCategories,
+          });
+          console.log('✅ [ProductForm] Categorías actualizadas');
+        }
+
         // Navigate back
         console.log('🔵 [ProductForm] Navegando a lista de productos');
         navigate('/admin/products');
@@ -273,6 +282,15 @@ export function ProductForm() {
         };
         const newProduct = await createProduct.mutateAsync(productData);
         console.log('✅ [ProductForm] Producto creado con imagen, ID:', newProduct.id);
+
+        // Save categories for new product
+        if (selectedCategories.length > 0 && newProduct.id) {
+          await setProductCategories.mutateAsync({
+            productId: newProduct.id,
+            categoryIds: selectedCategories,
+          });
+          console.log('✅ [ProductForm] Categorías guardadas');
+        }
 
         console.log('🔵 [ProductForm] Navegando a página de edición');
         navigate(`/admin/products/${newProduct.id}/edit`);
