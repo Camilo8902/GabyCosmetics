@@ -40,7 +40,7 @@ export function ProductDetailPage() {
   }
 
   const images = product.images || [];
-  const mainImage = images[0]?.url;
+  const mainImage = images[0]?.url || product.image_url;
   const secondaryImages = images.slice(1);
 
   const handleAddToCart = () => {

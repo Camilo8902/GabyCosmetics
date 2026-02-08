@@ -18,8 +18,8 @@ function ProductCard({ product, index }: ProductCardProps) {
   const { toggleItem, isInWishlist } = useWishlistStore();
   const isWishlisted = isInWishlist(product.id);
 
-  // Get image from product.images array or fallback to demo image
-  const productImage = product.images?.[0]?.url || product.image || 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop';
+  // Get image from product.images array, image_url, or fallback to demo image
+  const productImage = product.images?.[0]?.url || product.image_url || product.image || 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop';
   const name = i18n.language === 'en' ? product.name_en : product.name;
   const discount = product.compare_at_price
     ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)

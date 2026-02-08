@@ -55,7 +55,7 @@ export function ShopPage() {
     compare_at_price: p.compare_at_price,
     category: p.categories?.[0]?.category?.slug || 'otros',
     subcategory: p.categories?.[0]?.category?.slug || 'otros',
-    image: p.images?.[0]?.url || null,
+    image: p.images?.[0]?.url || p.image_url || null,
     rating: 4.5,
     reviews: 0,
     is_featured: p.is_featured,

@@ -446,7 +446,7 @@ export function ProductForm() {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Imagen Principal</h2>
               <ImageUploader
-                value={product?.images?.[0]?.url}
+                value={product?.images?.[0]?.url || product?.image_url}
                 onChange={setImageFile}
                 label=""
               />
