@@ -35,6 +35,13 @@ export function ShopPage() {
   const { data: productsData, isLoading } = useProducts();
   const realProducts = productsData?.data || [];
   const { data: realCategories = [] } = useCategories();
+  
+  // Debug: Log products data
+  console.log('🔵 [ShopPage] Productos cargados:', realProducts.length);
+  console.log('🔵 [ShopPage] Categorías cargadas:', realCategories.length);
+  realProducts.forEach((p: any) => {
+    console.log('🔵 [ShopPage] Producto:', p.name, 'categories:', p.categories);
+  });
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -84,10 +91,22 @@ export function ShopPage() {
   // Filter and sort products
   const filteredProducts = useMemo(() => {
     let products = [...allProducts];
+    
+    console.log('🔵 [ShopPage] Filtrando productos...');
+    console.log('🔵 [ShopPage] selectedCategory:', selectedCategory);
+    console.log('🔵 [ShopPage] Total productos antes de filtro:', products.length);
 
     // Category filter
     if (selectedCategory) {
-      products = products.filter((p: any) => p.category === selectedCategory);
+      const beforeCount = products.length;
+      products = products.filter((p: any) => {
+        const matches = p.category === selectedCategory;
+        if (!matches) {
+          console.log('⚠️ [ShopPage] Producto NO coincide:', p.name, 'category:', p.category, 'expected:', selectedCategory);
+        }
+        return matches;
+      });
+      console.log(`🔵 [ShopPage] Después de filtro categoría: ${products.length} (antes: ${beforeCount})`);
     }
 
     // Search filter
