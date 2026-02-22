@@ -1,6 +1,14 @@
 import { supabase } from '@/lib/supabase';
 import type { User, UserRole, PaginatedResponse } from '@/types';
 
+// Extended user type with company information
+export interface UserWithCompany extends User {
+  company?: {
+    id: string;
+    company_name: string;
+  } | null;
+}
+
 /**
  * User Service
  * Handles all user-related operations with Supabase
@@ -17,7 +25,7 @@ export const userService = {
     },
     page = 1,
     pageSize = 20
-  ): Promise<PaginatedResponse<User>> {
+  ): Promise<PaginatedResponse<UserWithCompany>> {
     try {
       let query = supabase
         .from('users')
@@ -60,10 +68,40 @@ export const userService = {
         throw error;
       }
 
+      // Fetch company information for each user
+      const usersWithCompanies = await Promise.all(
+        (data || []).map(async (user) => {
+          try {
+            const { data: companyUser } = await supabase
+              .from('company_users')
+              .select(`
+                company_id,
+                companies (
+                  id,
+                  company_name
+                )
+              `)
+              .eq('user_id', user.id)
+              .eq('status', 'active')
+              .maybeSingle();
+
+            return {
+              ...user,
+              company: companyUser?.companies || null,
+            } as UserWithCompany;
+          } catch {
+            return {
+              ...user,
+              company: null,
+            } as UserWithCompany;
+          }
+        })
+      );
+
       const totalPages = count ? Math.ceil(count / pageSize) : 0;
 
       return {
-        data: (data || []) as User[],
+        data: usersWithCompanies,
         total: count || 0,
         page,
         pageSize,

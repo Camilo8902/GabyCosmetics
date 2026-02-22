@@ -22,6 +22,7 @@ import { formatDate } from '@/utils/formatters';
 import { USER_ROLES } from '@/utils/constants';
 import { cn } from '@/lib/utils';
 import type { User as UserType, UserRole } from '@/types';
+import type { UserWithCompany } from '@/services/userService';
 import toast from 'react-hot-toast';
 
 const roleLabels: Record<UserRole, string> = {
@@ -45,7 +46,7 @@ export function UsersList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
-  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserWithCompany | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showActionMenu, setShowActionMenu] = useState<string | null>(null);
 
@@ -84,7 +85,7 @@ export function UsersList() {
     }
   };
 
-  const handleToggleActive = async (user: UserType) => {
+  const handleToggleActive = async (user: UserWithCompany) => {
     try {
       await toggleActive.mutateAsync({ id: user.id, isActive: !user.is_active });
     } catch (error) {
@@ -116,7 +117,7 @@ export function UsersList() {
     {
       key: 'avatar',
       header: '',
-      render: (user: UserType) => (
+      render: (user: UserWithCompany) => (
         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center">
           {user.avatar_url ? (
             <img
@@ -136,7 +137,7 @@ export function UsersList() {
     {
       key: 'name',
       header: 'Nombre',
-      render: (user: UserType) => (
+      render: (user: UserWithCompany) => (
         <div>
           <Link
             to={`/admin/users/${user.id}`}
@@ -155,7 +156,7 @@ export function UsersList() {
     {
       key: 'role',
       header: 'Rol',
-      render: (user: UserType) => (
+      render: (user: UserWithCompany) => (
         <span className={cn(
           'px-3 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1',
           roleColors[user.role]
@@ -169,14 +170,14 @@ export function UsersList() {
     {
       key: 'company',
       header: 'Empresa',
-      render: (user: UserType) => (
-        user.company_id ? (
+      render: (user: UserWithCompany) => (
+        user.company ? (
           <Link
-            to={`/admin/companies/${user.company_id}`}
+            to={`/admin/companies/${user.company.id}`}
             className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
           >
             <Building2 className="w-3 h-3" />
-            Ver empresa
+            {user.company.company_name}
           </Link>
         ) : (
           <span className="text-sm text-gray-400">-</span>
@@ -187,7 +188,7 @@ export function UsersList() {
     {
       key: 'status',
       header: 'Estado',
-      render: (user: UserType) => (
+      render: (user: UserWithCompany) => (
         <span
           className={cn(
             'px-3 py-1 rounded-full text-xs font-medium inline-flex items-center gap-1',
@@ -214,7 +215,7 @@ export function UsersList() {
     {
       key: 'email_verified',
       header: 'Verificado',
-      render: (user: UserType) => (
+      render: (user: UserWithCompany) => (
         <span
           className={cn(
             'px-3 py-1 rounded-full text-xs font-medium',
@@ -231,7 +232,7 @@ export function UsersList() {
     {
       key: 'created_at',
       header: 'Registrado',
-      render: (user: UserType) => (
+      render: (user: UserWithCompany) => (
         <span className="text-sm text-gray-600">{formatDate(user.created_at)}</span>
       ),
       sortable: true,
@@ -239,7 +240,7 @@ export function UsersList() {
     {
       key: 'actions',
       header: 'Acciones',
-      render: (user: UserType) => (
+      render: (user: UserWithCompany) => (
         <div className="relative">
           <div className="flex items-center gap-2">
             <Link
