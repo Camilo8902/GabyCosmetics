@@ -98,9 +98,12 @@ export async function getCompanyById(
       .from('companies')
       .select('*')
       .eq('id', companyId)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting company:', error);
+      throw error;
+    }
 
     return { company: data as unknown as Company, error: null };
   } catch (error) {
@@ -120,9 +123,12 @@ export async function getCompanyBySlug(
       .from('companies')
       .select('*')
       .eq('slug', slug)
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting company by slug:', error);
+      throw error;
+    }
 
     return { company: data as unknown as Company, error: null };
   } catch (error) {
@@ -141,12 +147,18 @@ export async function updateCompany(
   try {
     const { data: company, error } = await supabase
       .from('companies')
-      .update(data)
+      .update({
+        ...data,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', companyId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating company:', error);
+      throw error;
+    }
 
     return { company: company as unknown as Company, error: null };
   } catch (error) {
@@ -210,35 +222,46 @@ export async function getCompanyUsers(
   companyId: string
 ): Promise<{ users: CompanyUser[]; error: Error | null }> {
   try {
-    const { data, error } = await supabase
+    // First get company_users records
+    const { data: companyUsers, error: cuError } = await supabase
       .from('company_users')
-      .select(
-        `
-        *,
-        user:auth.users!inner (
-          id,
-          email,
-          raw_user_meta_data
-        )
-      `
-      )
+      .select('*')
       .eq('company_id', companyId)
       .neq('status', 'removed')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (cuError) {
+      console.error('Error fetching company_users:', cuError);
+      return { users: [], error: cuError };
+    }
 
-    const users = data.map((item: any) => ({
-      ...item,
-      user: {
-        id: item.user.id,
-        email: item.user.email,
-        full_name: item.user.raw_user_meta_data?.full_name,
-        avatar_url: item.user.raw_user_meta_data?.avatar_url,
-      },
+    if (!companyUsers || companyUsers.length === 0) {
+      return { users: [], error: null };
+    }
+
+    // Get user IDs
+    const userIds = companyUsers.map(cu => cu.user_id).filter(Boolean);
+
+    // Get user details from public.users
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, email, full_name, avatar_url')
+      .in('id', userIds);
+
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      // Return company_users without user details
+      return { users: companyUsers as CompanyUser[], error: null };
+    }
+
+    // Merge data
+    const usersMap = new Map(users?.map(u => [u.id, u]) || []);
+    const mergedUsers = companyUsers.map(cu => ({
+      ...cu,
+      user: usersMap.get(cu.user_id) || { id: cu.user_id, email: 'N/A', full_name: 'Usuario' },
     }));
 
-    return { users: users as CompanyUser[], error: null };
+    return { users: mergedUsers as CompanyUser[], error: null };
   } catch (error) {
     console.error('Error getting company users:', error);
     return { users: [], error: error as Error };
@@ -418,11 +441,14 @@ export async function getSubscription(
       .from('subscriptions')
       .select('*')
       .eq('company_id', companyId)
-      .single();
+      .maybeSingle();
 
-    if (error && error.code !== 'PGRST116') throw error;
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error getting subscription:', error);
+      throw error;
+    }
 
-    return { subscription: data as unknown as Subscription || null, error: null };
+    return { subscription: (data as unknown as Subscription) || null, error: null };
   } catch (error) {
     console.error('Error getting subscription:', error);
     return { subscription: null, error: error as Error };
@@ -446,9 +472,12 @@ export async function updateSubscriptionPlan(
       })
       .eq('company_id', companyId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating subscription:', error);
+      throw error;
+    }
 
     // Actualizar también en companies
     await supabase
@@ -535,14 +564,17 @@ export async function getCompanies(
       query = query.eq('is_active', filters.isActive);
     }
     if (filters?.search) {
-      query = query.ilike('company_name', `%${filters.search}%`);
+      query = query.or(`company_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
     }
 
     const { data, error, count } = await query
       .range((page - 1) * pageSize, page * pageSize - 1)
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting companies:', error);
+      throw error;
+    }
 
     return {
       data: data as Company[],
@@ -652,9 +684,12 @@ export async function getMyPermissions(
       .eq('company_id', companyId)
       .eq('user_id', supabase.auth.user()?.id || '')
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error getting permissions:', error);
+      return [];
+    }
 
     return data?.permissions || [];
   } catch (error) {
@@ -683,9 +718,12 @@ export async function adminUpdateCompany(
       })
       .eq('id', companyId)
       .select()
-      .single();
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error admin updating company:', error);
+      throw error;
+    }
 
     return { company: company as unknown as Company, error: null };
   } catch (error) {
@@ -801,19 +839,28 @@ export async function getCompanyStats(
 
     const revenue = revenueData?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
 
-    // Contar usuarios
-    const { count: users } = await supabase
-      .from('company_users')
-      .select('*', { count: 'exact', head: true })
-      .eq('company_id', companyId)
-      .eq('status', 'active');
+    // Contar usuarios - manejar error de RLS
+    let users = 0;
+    try {
+      const { count: usersCount, error: usersError } = await supabase
+        .from('company_users')
+        .select('*', { count: 'exact', head: true })
+        .eq('company_id', companyId)
+        .eq('status', 'active');
+      
+      if (!usersError) {
+        users = usersCount || 0;
+      }
+    } catch (e) {
+      console.error('Error counting company users:', e);
+    }
 
     return {
       products: products || 0,
       activeProducts: activeProducts || 0,
       orders: orders || 0,
       revenue,
-      users: users || 0,
+      users,
       error: null,
     };
   } catch (error) {
@@ -926,21 +973,56 @@ export async function changeCompanyPlan(
       })
       .eq('id', companyId);
 
-    if (companyError) throw companyError;
+    if (companyError) {
+      console.error('Error updating company plan:', companyError);
+      throw companyError;
+    }
 
-    // Actualizar o crear suscripción
-    const { error: subError } = await supabase
+    // Intentar actualizar o crear suscripción
+    // Primero verificar si existe
+    const { data: existingSub, error: fetchError } = await supabase
       .from('subscriptions')
-      .upsert({
-        company_id: companyId,
-        plan,
-        status: 'active',
-        updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'company_id',
-      });
+      .select('id')
+      .eq('company_id', companyId)
+      .maybeSingle();
 
-    if (subError) throw subError;
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error checking subscription:', fetchError);
+      // No lanzar error, continuar
+    }
+
+    let subError = null;
+    if (existingSub) {
+      // Actualizar existente
+      const { error } = await supabase
+        .from('subscriptions')
+        .update({
+          plan,
+          status: 'active',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('company_id', companyId);
+      subError = error;
+    } else {
+      // Crear nueva
+      const { error } = await supabase
+        .from('subscriptions')
+        .insert({
+          company_id: companyId,
+          plan,
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+      subError = error;
+    }
+
+    if (subError) {
+      console.error('Error with subscription:', subError);
+      // No lanzar error, el plan de la empresa ya se actualizó
+    }
 
     return { success: true, error: null };
   } catch (error) {

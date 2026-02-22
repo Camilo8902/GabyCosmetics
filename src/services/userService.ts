@@ -98,9 +98,12 @@ export const userService = {
         .from('users')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user:', error);
+        return null;
+      }
       return data as User;
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -172,9 +175,12 @@ export const userService = {
         })
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error updating user:', error);
+        throw error;
+      }
       return data as User;
     } catch (error) {
       console.error('Error updating user:', error);
@@ -272,9 +278,12 @@ export const userService = {
         .from('users')
         .select('id')
         .eq('email', email)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) {
+        console.error('Error checking email:', error);
+        return false;
+      }
       return !!data;
     } catch (error) {
       console.error('Error checking email:', error);
