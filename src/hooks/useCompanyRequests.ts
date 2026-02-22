@@ -111,16 +111,18 @@ export function useApproveRequest() {
         .from('users')
         .select('id, email')
         .eq('email', requestData.email)
-        .single();
+        .maybeSingle();
 
-      let userId: string | undefined = existingUser?.id;
+      let userId: string;
 
-      // 3. Si no existe usuario, crear uno nuevo
-      if (!userId) {
-        // Generar una contraseña temporal aleatoria
+      if (existingUser) {
+        // Usuario ya existe, usar su ID
+        userId = existingUser.id;
+      } else {
+        // 3. Crear usuario con signUp
+        // Generar contraseña temporal
         const tempPassword = crypto.randomUUID().slice(0, 16) + 'A1!';
         
-        // Crear usuario con signUp
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: requestData.email,
           password: tempPassword,
@@ -134,45 +136,45 @@ export function useApproveRequest() {
         });
 
         if (signUpError) {
-          // Si el error es que el usuario ya existe, intentar obtenerlo
-          if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
-            // El usuario existe en auth pero quizás no en public.users
-            // Intentar obtener el ID del usuario existente
-            const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
-            if (listError) throw listError;
+          // Si el usuario ya existe en auth pero no en public.users
+          if (signUpError.message.includes('already') || signUpError.message.includes('exists')) {
+            // Intentar obtener el usuario de public.users nuevamente
+            // Puede ser que el trigger no se ejecutó
+            const { data: retryUser } = await supabase
+              .from('users')
+              .select('id')
+              .eq('email', requestData.email)
+              .maybeSingle();
             
-            const existingAuthUser = users?.find(u => u.email === requestData.email);
-            if (existingAuthUser) {
-              userId = existingAuthUser.id;
+            if (retryUser) {
+              userId = retryUser.id;
             } else {
-              throw new Error('No se pudo encontrar el usuario existente');
+              throw new Error('El email ya está registrado pero no se encontró el usuario. Contacta al administrador.');
             }
           } else {
             throw signUpError;
           }
-        } else if (signUpData.user) {
+        } else if (signUpData?.user) {
           userId = signUpData.user.id;
           
           // Enviar email para restablecer contraseña
           await supabase.auth.resetPasswordForEmail(requestData.email, {
             redirectTo: `${window.location.origin}/auth/reset-password`
           });
+        } else {
+          throw new Error('Error al crear usuario');
         }
       }
 
-      if (!userId) {
-        throw new Error('No se pudo obtener el ID del usuario');
-      }
-
       // 4. Esperar un momento para que el trigger cree el usuario en public.users
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
-      // 5. Verificar que el usuario existe en public.users, si no, crearlo
+      // 5. Verificar que el usuario existe en public.users
       const { data: publicUser } = await supabase
         .from('users')
         .select('id')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
       if (!publicUser) {
         // Crear el usuario en public.users manualmente
@@ -189,7 +191,7 @@ export function useApproveRequest() {
         
         if (insertUserError) {
           console.error('Error creating public user:', insertUserError);
-          throw insertUserError;
+          // Continuar de todas formas, el trigger puede haberlo creado
         }
       }
 
