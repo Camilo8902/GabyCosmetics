@@ -23,8 +23,8 @@ const companyNavItems = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/company' },
   { icon: Package, label: 'Mis Productos', href: '/company/products' },
   { icon: ShoppingCart, label: 'Pedidos', href: '/company/orders' },
-  { icon: BarChart3, label: 'Estadísticas', href: '/company/stats' },
-  { icon: Settings, label: 'Configuración', href: '/company/settings' },
+  { icon: BarChart3, label: 'Inventario', href: '/company/inventory' },
+  { icon: Settings, label: 'Facturación', href: '/company/billing' },
 ];
 
 export function CompanyLayout() {

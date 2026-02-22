@@ -39,6 +39,12 @@ import { CompanyDetail } from '@/pages/admin/companies/CompanyDetail';
 import { CompanyRequests } from '@/pages/admin/companies/CompanyRequests';
 import { CategoriesList, CategoryForm } from '@/pages/admin/categories';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
+import { CompanyDashboardPage } from '@/pages/company/CompanyDashboardPage';
+import { CompanyProductsPage } from '@/pages/company/CompanyProductsPage';
+import { CompanyOrdersPage } from '@/pages/company/CompanyOrdersPage';
+import { CompanyInventoryPage } from '@/pages/company/CompanyInventoryPage';
+import { CompanyBillingPage } from '@/pages/company/CompanyBillingPage';
+import { GlobalReportsPage } from '@/pages/admin/reports/GlobalReportsPage';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
 import { ProductDetailPage } from '@/pages/shop/ProductDetailPage';
 import { CheckoutPage } from '@/pages/shop/CheckoutPage';
@@ -353,16 +359,32 @@ function App() {
                 </Suspense>
               </ErrorBoundary>
             } />
-            <Route path="reports" element={<div><h1 className="text-2xl font-bold mb-6">Reportes</h1></div>} />
+            <Route path="reports" element={<GlobalReportsPage />} />
             <Route path="settings" element={<div><h1 className="text-2xl font-bold mb-6">Configuración</h1></div>} />
           </Route>
 
-          <Route path="/company" element={<ProtectedRoute allowedRoles={['company']}><CompanyLayout /></ProtectedRoute>}>
-            <Route index element={<CompanyDashboard />} />
-            <Route path="products" element={<div><h1 className="text-2xl font-bold mb-6">Mis Productos</h1></div>} />
-            <Route path="products/new" element={<div><h1 className="text-2xl font-bold mb-6">Nuevo Producto</h1></div>} />
-            <Route path="orders" element={<div><h1 className="text-2xl font-bold mb-6">Pedidos</h1></div>} />
-            <Route path="stats" element={<div><h1 className="text-2xl font-bold mb-6">Estadísticas</h1></div>} />
+          <Route path="/company" element={<ProtectedRoute allowedRoles={['company', 'admin']}><CompanyLayout /></ProtectedRoute>}>
+            <Route index element={<CompanyDashboardPage />} />
+            <Route path="products" element={<CompanyProductsPage />} />
+            <Route path="products/new" element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando formulario...</div>}>
+                  <ProductForm />
+                </Suspense>
+              </ErrorBoundary>
+            } />
+            <Route path="products/:id/edit" element={
+              <ErrorBoundary>
+                <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando formulario...</div>}>
+                  <ProductForm />
+                </Suspense>
+              </ErrorBoundary>
+            } />
+            <Route path="orders" element={<CompanyOrdersPage />} />
+            <Route path="orders/:id" element={<OrderDetail />} />
+            <Route path="inventory" element={<CompanyInventoryPage />} />
+            <Route path="billing" element={<CompanyBillingPage />} />
+            <Route path="stats" element={<CompanyDashboardPage />} />
             <Route path="settings" element={<div><h1 className="text-2xl font-bold mb-6">Configuración</h1></div>} />
           </Route>
 
