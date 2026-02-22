@@ -16,6 +16,7 @@ import { SUBSCRIPTION_PLANS } from '@/types';
 // Exportar como objeto para facilitar imports
 const companyService = {
   createCompany,
+  getCompanies,
   getCompanyById,
   getCompanyBySlug,
   updateCompany,
@@ -29,6 +30,8 @@ const companyService = {
   updateSubscriptionPlan,
   getSubscriptionLimits,
   canAddMoreProducts,
+  verifyCompany,
+  toggleCompanyActive,
 };
 
 export { companyService };
@@ -498,6 +501,107 @@ export async function canAddMoreProducts(companyId: string): Promise<{
   } catch (error) {
     console.error('Error checking product limits:', error);
     return { canAdd: false, currentCount: 0, limit: 0, error: error as Error };
+  }
+}
+
+// ==========================================
+// SERVICIOS DE ADMINISTRACIÓN
+// ==========================================
+
+/**
+ * Obtener todas las empresas (para admin)
+ */
+export async function getCompanies(
+  filters?: { isVerified?: boolean; isActive?: boolean; search?: string },
+  page = 1,
+  pageSize = 20
+): Promise<{ data: Company[]; total: number; page: number; pageSize: number; totalPages: number }> {
+  try {
+    let query = supabase
+      .from('companies')
+      .select('*', { count: 'exact' });
+
+    if (filters?.isVerified !== undefined) {
+      query = query.eq('is_verified', filters.isVerified);
+    }
+    if (filters?.isActive !== undefined) {
+      query = query.eq('is_active', filters.isActive);
+    }
+    if (filters?.search) {
+      query = query.ilike('company_name', `%${filters.search}%`);
+    }
+
+    const { data, error, count } = await query
+      .range((page - 1) * pageSize, page * pageSize - 1)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return {
+      data: data as Company[],
+      total: count || 0,
+      page,
+      pageSize,
+      totalPages: Math.ceil((count || 0) / pageSize),
+    };
+  } catch (error) {
+    console.error('Error getting companies:', error);
+    return {
+      data: [],
+      total: 0,
+      page,
+      pageSize,
+      totalPages: 0,
+    };
+  }
+}
+
+/**
+ * Verificar una empresa (admin)
+ */
+export async function verifyCompany(companyId: string): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    const { error } = await supabase
+      .from('companies')
+      .update({ 
+        is_verified: true, 
+        status: 'active',
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', companyId);
+
+    if (error) throw error;
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error verifying company:', error);
+    return { success: false, error: error as Error };
+  }
+}
+
+/**
+ * Activar/Desactivar una empresa (admin)
+ */
+export async function toggleCompanyActive(
+  companyId: string, 
+  isActive: boolean
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    const { error } = await supabase
+      .from('companies')
+      .update({ 
+        is_active: isActive,
+        status: isActive ? 'active' : 'suspended',
+        updated_at: new Date().toISOString() 
+      })
+      .eq('id', companyId);
+
+    if (error) throw error;
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error toggling company active status:', error);
+    return { success: false, error: error as Error };
   }
 }
 
