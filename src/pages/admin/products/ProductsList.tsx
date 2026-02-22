@@ -20,6 +20,7 @@ import { DataTable } from '@/components/ui/DataTable';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useCategories } from '@/hooks/useCategories';
+import { useCompanies } from '@/hooks/useCompanies';
 import { formatCurrency } from '@/utils/formatters';
 import type { Product } from '@/types';
 import toast from 'react-hot-toast';
@@ -34,11 +35,13 @@ export function ProductsList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [companyFilter, setCompanyFilter] = useState<string>('');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
   const { data: categories } = useCategories(true);
+  const { data: companiesData } = useCompanies();
   const deleteProduct = useDeleteProduct();
   const updateProduct = useUpdateProduct();
 
@@ -58,6 +61,10 @@ export function ProductsList() {
 
   if (categoryFilter) {
     filters.categoryId = categoryFilter;
+  }
+
+  if (companyFilter) {
+    filters.companyId = companyFilter;
   }
 
   const { data, isLoading, error, isError } = useProducts(filters, page, pageSize);
@@ -419,7 +426,7 @@ export function ProductsList() {
 
       {/* Filters */}
       <div className="bg-white rounded-lg shadow-sm border p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Search */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -468,6 +475,28 @@ export function ProductsList() {
               {categories?.map((cat) => (
                 <option key={cat.id} value={cat.id}>
                   {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Company Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Empresa
+            </label>
+            <select
+              value={companyFilter}
+              onChange={(e) => {
+                setCompanyFilter(e.target.value);
+                setPage(1);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
+              <option value="">Todas las empresas</option>
+              {companiesData?.map((company: any) => (
+                <option key={company.id} value={company.id}>
+                  {company.company_name}
                 </option>
               ))}
             </select>

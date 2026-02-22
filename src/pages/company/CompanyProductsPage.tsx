@@ -16,6 +16,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useCompanyId, useCompanyProducts } from '@/hooks/useCompanyMetrics';
+import { useCategories } from '@/hooks/useCategories';
 import { cn } from '@/lib/utils';
 import { formatCurrency } from '@/utils/formatters';
 import { supabase } from '@/lib/supabase';
@@ -24,9 +25,11 @@ import toast from 'react-hot-toast';
 export function CompanyProductsPage() {
   const navigate = useNavigate();
   const { companyId } = useCompanyId();
+  const { data: categories } = useCategories(true);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null);
 
@@ -34,7 +37,7 @@ export function CompanyProductsPage() {
     companyId,
     page,
     10,
-    { search, status: statusFilter }
+    { search, status: statusFilter, category: categoryFilter }
   );
 
   const handleToggleActive = async (productId: string, currentStatus: boolean) => {
@@ -154,6 +157,21 @@ export function CompanyProductsPage() {
               className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
             />
           </div>
+          <select
+            value={categoryFilter}
+            onChange={(e) => {
+              setCategoryFilter(e.target.value);
+              setPage(1);
+            }}
+            className="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+          >
+            <option value="">Todas las categorías</option>
+            {categories?.map((cat: any) => (
+              <option key={cat.id} value={cat.id}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
           <select
             value={statusFilter}
             onChange={(e) => {

@@ -365,18 +365,15 @@ export function useCompanyProducts(
           slug,
           price,
           compare_at_price,
-          stock_quantity,
           is_active,
+          is_visible,
           is_featured,
-          images,
+          image_url,
           created_at,
-          product_categories (
+          inventory(quantity),
+          categories:product_categories(
             category_id,
-            categories (
-              id,
-              name,
-              slug
-            )
+            categories(id, name, slug)
           )
         `, { count: 'exact' })
         .eq('company_id', companyId);
@@ -391,7 +388,18 @@ export function useCompanyProducts(
         query = query.eq('is_active', false);
       }
       if (filters?.category) {
-        query = query.contains('category_ids', [filters.category]);
+        // Filter by category using product_categories junction table
+        const { data: categoryProducts } = await supabase
+          .from('product_categories')
+          .select('product_id')
+          .eq('category_id', filters.category);
+        
+        if (categoryProducts && categoryProducts.length > 0) {
+          const productIds = categoryProducts.map(cp => cp.product_id);
+          query = query.in('id', productIds);
+        } else {
+          return { data: [], total: 0, totalPages: 0 };
+        }
       }
 
       const { data, error, count } = await query
@@ -403,8 +411,15 @@ export function useCompanyProducts(
         return { data: [], total: 0, totalPages: 0 };
       }
 
+      // Transform data to include stock_quantity from inventory
+      const transformedData = (data || []).map(product => ({
+        ...product,
+        stock_quantity: product.inventory?.[0]?.quantity || 0,
+        images: product.image_url ? [product.image_url] : [],
+      }));
+
       return {
-        data: data || [],
+        data: transformedData,
         total: count || 0,
         totalPages: Math.ceil((count || 0) / pageSize),
       };

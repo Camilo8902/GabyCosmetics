@@ -4,16 +4,21 @@ import type { Product, ProductFilters, PaginatedResponse } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
+// Extended filters to include companyId
+interface ExtendedProductFilters extends ProductFilters {
+  companyId?: string;
+}
+
 /**
  * Hook for fetching products with filters and pagination
  */
-export function useProducts(filters?: ProductFilters, page = 1, pageSize = 20) {
+export function useProducts(filters?: ExtendedProductFilters, page = 1, pageSize = 20) {
   return useQuery<PaginatedResponse<Product>>({
     queryKey: ['products', filters, page, pageSize],
     queryFn: async () => {
       try {
-        // Pass undefined for companyId to get all products (admin view)
-        const result = await productService.getProducts(undefined, filters, page, pageSize);
+        // Pass companyId filter if provided
+        const result = await productService.getProducts(filters?.companyId, filters, page, pageSize);
         return result;
       } catch (error: any) {
         console.error('Error en useProducts:', error);
