@@ -93,13 +93,13 @@ export function OrderDetail() {
                   key={index}
                   className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg"
                 >
-                  {item.product?.images?.[0]?.url && (
+                  {item.product?.images?.[0]?.url || item.product?.image_url ? (
                     <img
-                      src={item.product.images[0].url}
+                      src={item.product.images?.[0]?.url || item.product?.image_url}
                       alt={item.product.name}
                       className="w-16 h-16 object-cover rounded-lg"
                     />
-                  )}
+                  ) : null}
                   <div className="flex-1">
                     <p className="font-medium text-gray-900">{item.product?.name || 'Producto'}</p>
                     {item.variant_name && (

@@ -1,186 +1,553 @@
 import { supabase } from '@/lib/supabase';
-import type { Company, PaginatedResponse } from '@/types';
+import type {
+  Company,
+  CompanyUser,
+  Subscription,
+  SubscriptionPlan,
+  CompanyRole,
+  Permission,
+} from '@/types';
+import { SUBSCRIPTION_PLANS } from '@/types';
+
+// ==========================================
+// SERVICIOS DE EMPRESAS
+// ==========================================
+
+// Exportar como objeto para facilitar imports
+const companyService = {
+  createCompany,
+  getCompanyById,
+  getCompanyBySlug,
+  updateCompany,
+  getMyCompanies,
+  inviteUserToCompany,
+  acceptInvitation,
+  updateUserRole,
+  removeUserFromCompany,
+  getCompanyUsers,
+  getSubscription,
+  updateSubscriptionPlan,
+  getSubscriptionLimits,
+  canAddMoreProducts,
+};
+
+export { companyService };
+export type { Company, CompanyUser, Subscription };
 
 /**
- * Company Service
- * Handles all company-related operations with Supabase
+ * Crear una nueva empresa
  */
-export const companyService = {
-  /**
-   * Get all companies with filters and pagination
-   */
-  async getCompanies(
-    filters?: {
-      isVerified?: boolean;
-      isActive?: boolean;
-      search?: string;
-    },
-    page = 1,
-    pageSize = 20
-  ): Promise<PaginatedResponse<Company>> {
-    try {
-      let query = supabase
-        .from('companies')
-        .select(`
-          *,
-          user:users(*)
-        `, { count: 'exact' });
+export async function createCompany(data: {
+  name: string;
+  email: string;
+  phone?: string;
+  description?: string;
+  business_type?: string;
+  tax_id?: string;
+}): Promise<{ company: Company | null; error: Error | null }> {
+  try {
+    // Generar slug único
+    const slug = data.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
 
-      // Apply filters
-      if (filters?.isVerified !== undefined) {
-        query = query.eq('is_verified', filters.isVerified);
-      }
+    const { data: company, error } = await supabase
+      .from('companies')
+      .insert({
+        name: data.name,
+        slug: slug,
+        email: data.email,
+        phone: data.phone,
+        description: data.description,
+        business_type: data.business_type,
+        tax_id: data.tax_id,
+        status: 'pending',
+        plan: 'basic',
+      })
+      .select()
+      .single();
 
-      if (filters?.isActive !== undefined) {
-        query = query.eq('is_active', filters.isActive);
-      }
+    if (error) throw error;
 
-      if (filters?.search) {
-        query = query.or(`company_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
-      }
+    return { company: company as unknown as Company, error: null };
+  } catch (error) {
+    console.error('Error creating company:', error);
+    return { company: null, error: error as Error };
+  }
+}
 
-      // Apply sorting
-      query = query.order('created_at', { ascending: false });
+/**
+ * Obtener empresa por ID
+ */
+export async function getCompanyById(
+  companyId: string
+): Promise<{ company: Company | null; error: Error | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', companyId)
+      .single();
 
-      // Apply pagination
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
+    if (error) throw error;
 
-      const { data, error, count } = await query;
+    return { company: data as unknown as Company, error: null };
+  } catch (error) {
+    console.error('Error getting company:', error);
+    return { company: null, error: error as Error };
+  }
+}
 
-      if (error) {
-        console.error('Error en query de empresas:', error);
-        if (error.message?.includes('Auth') || error.code === 'PGRST301') {
-          return {
-            data: [],
-            total: 0,
-            page,
-            pageSize,
-            totalPages: 0,
-          };
-        }
-        throw error;
-      }
+/**
+ * Obtener empresa por slug
+ */
+export async function getCompanyBySlug(
+  slug: string
+): Promise<{ company: Company | null; error: Error | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('slug', slug)
+      .single();
 
-      const totalPages = count ? Math.ceil(count / pageSize) : 0;
+    if (error) throw error;
 
-      return {
-        data: (data || []) as Company[],
-        total: count || 0,
-        page,
-        pageSize,
-        totalPages,
-      };
-    } catch (error: any) {
-      console.error('Error fetching companies:', error);
-      if (error?.message?.includes('Auth') || error?.code === 'PGRST301') {
-        return {
-          data: [],
-          total: 0,
-          page,
-          pageSize,
-          totalPages: 0,
-        };
-      }
-      throw error;
+    return { company: data as unknown as Company, error: null };
+  } catch (error) {
+    console.error('Error getting company by slug:', error);
+    return { company: null, error: error as Error };
+  }
+}
+
+/**
+ * Actualizar empresa
+ */
+export async function updateCompany(
+  companyId: string,
+  data: Partial<Company>
+): Promise<{ company: Company | null; error: Error | null }> {
+  try {
+    const { data: company, error } = await supabase
+      .from('companies')
+      .update(data)
+      .eq('id', companyId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { company: company as unknown as Company, error: null };
+  } catch (error) {
+    console.error('Error updating company:', error);
+    return { company: null, error: error as Error };
+  }
+}
+
+/**
+ * Obtener empresas del usuario actual
+ */
+export async function getMyCompanies(): Promise<{
+  companies: (Company & { role: string })[];
+  error: Error | null;
+}> {
+  try {
+    const { data, error } = await supabase
+      .from('company_users')
+      .select(
+        `
+        id,
+        role,
+        status,
+        company:companies (
+          id,
+          name,
+          slug,
+          email,
+          logo_url,
+          plan,
+          status,
+          created_at
+        )
+      `
+      )
+      .eq('user_id', supabase.auth.user()?.id || '')
+      .eq('status', 'active');
+
+    if (error) throw error;
+
+    const companies = data.map((item: any) => ({
+      ...item.company,
+      role: item.role,
+    }));
+
+    return { companies: companies as (Company & { role: string })[], error: null };
+  } catch (error) {
+    console.error('Error getting my companies:', error);
+    return { companies: [], error: error as Error };
+  }
+}
+
+// ==========================================
+// SERVICIOS DE USUARIOS DE EMPRESA
+// ==========================================
+
+/**
+ * Obtener usuarios de una empresa
+ */
+export async function getCompanyUsers(
+  companyId: string
+): Promise<{ users: CompanyUser[]; error: Error | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('company_users')
+      .select(
+        `
+        *,
+        user:auth.users!inner (
+          id,
+          email,
+          raw_user_meta_data
+        )
+      `
+      )
+      .eq('company_id', companyId)
+      .neq('status', 'removed')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    const users = data.map((item: any) => ({
+      ...item,
+      user: {
+        id: item.user.id,
+        email: item.user.email,
+        full_name: item.user.raw_user_meta_data?.full_name,
+        avatar_url: item.user.raw_user_meta_data?.avatar_url,
+      },
+    }));
+
+    return { users: users as CompanyUser[], error: null };
+  } catch (error) {
+    console.error('Error getting company users:', error);
+    return { users: [], error: error as Error };
+  }
+}
+
+/**
+ * Invitar usuario a empresa
+ */
+export async function inviteUserToCompany(data: {
+  companyId: string;
+  email: string;
+  role: CompanyRole;
+  permissions?: Permission[];
+}): Promise<{ invitation: any | null; error: Error | null }> {
+  try {
+    const invitationToken = crypto.randomUUID();
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 días
+
+    const { data: invitation, error } = await supabase
+      .from('company_invitations')
+      .insert({
+        company_id: data.companyId,
+        invited_email: data.email,
+        invited_by: supabase.auth.user()?.id,
+        role: data.role,
+        permissions: data.permissions || [],
+        invitation_token: invitationToken,
+        expires_at: expiresAt.toISOString(),
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // TODO: Enviar email de invitación
+
+    return { invitation, error: null };
+  } catch (error) {
+    console.error('Error inviting user:', error);
+    return { invitation: null, error: error as Error };
+  }
+}
+
+/**
+ * Aceptar invitación a empresa
+ */
+export async function acceptInvitation(
+  invitationToken: string
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    // Obtener invitación
+    const { data: invitation, error: fetchError } = await supabase
+      .from('company_invitations')
+      .select('*')
+      .eq('invitation_token', invitationToken)
+      .eq('status', 'pending')
+      .single();
+
+    if (fetchError) throw fetchError;
+    if (!invitation) throw new Error('Invitación no encontrada');
+
+    // Verificar si ha expirado
+    if (new Date(invitation.expires_at) < new Date()) {
+      // Marcar como expirada
+      await supabase
+        .from('company_invitations')
+        .update({ status: 'expired' })
+        .eq('id', invitation.id);
+      throw new Error('La invitación ha expirado');
     }
-  },
 
-  /**
-   * Get a single company by ID
-   */
-  async getCompanyById(id: string): Promise<Company | null> {
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .select(`
-          *,
-          user:users(*)
-        `)
-        .eq('id', id)
-        .single();
-
-      if (error) throw error;
-      return data as Company;
-    } catch (error) {
-      console.error('Error fetching company:', error);
-      return null;
+    // Verificar si el email coincide con el usuario actual
+    const currentUser = supabase.auth.user();
+    if (!currentUser || currentUser.email !== invitation.invited_email) {
+      throw new Error('Esta invitación es para otro email');
     }
-  },
 
-  /**
-   * Get company by user ID
-   */
-  async getCompanyByUserId(userId: string): Promise<Company | null> {
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .select(`
-          *,
-          user:users(*)
-        `)
-        .eq('user_id', userId)
-        .single();
+    // Crear el registro de company_user
+    const { error: insertError } = await supabase.from('company_users').insert({
+      company_id: invitation.company_id,
+      user_id: currentUser.id,
+      role: invitation.role,
+      permissions: invitation.permissions,
+      status: 'active',
+      hired_at: new Date().toISOString(),
+    });
 
-      if (error) throw error;
-      return data as Company;
-    } catch (error) {
-      console.error('Error fetching company by user ID:', error);
-      return null;
+    if (insertError) throw insertError;
+
+    // Actualizar invitación
+    await supabase
+      .from('company_invitations')
+      .update({
+        status: 'accepted',
+        accepted_at: new Date().toISOString(),
+      })
+      .eq('id', invitation.id);
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error accepting invitation:', error);
+    return { success: false, error: error as Error };
+  }
+}
+
+/**
+ * Actualizar rol de usuario en empresa
+ */
+export async function updateUserRole(
+  companyId: string,
+  userId: string,
+  role: CompanyRole,
+  permissions?: Permission[]
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    const { error } = await supabase
+      .from('company_users')
+      .update({
+        role,
+        permissions: permissions || [],
+        updated_at: new Date().toISOString(),
+      })
+      .eq('company_id', companyId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    return { success: false, error: error as Error };
+  }
+}
+
+/**
+ * Remover usuario de empresa
+ */
+export async function removeUserFromCompany(
+  companyId: string,
+  userId: string
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    const { error } = await supabase
+      .from('company_users')
+      .update({
+        status: 'removed',
+        removed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
+      .eq('company_id', companyId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error removing user:', error);
+    return { success: false, error: error as Error };
+  }
+}
+
+// ==========================================
+// SERVICIOS DE SUSCRIPCIONES
+// ==========================================
+
+/**
+ * Obtener suscripción de empresa
+ */
+export async function getSubscription(
+  companyId: string
+): Promise<{ subscription: Subscription | null; error: Error | null }> {
+  try {
+    const { data, error } = await supabase
+      .from('subscriptions')
+      .select('*')
+      .eq('company_id', companyId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error;
+
+    return { subscription: data as unknown as Subscription || null, error: null };
+  } catch (error) {
+    console.error('Error getting subscription:', error);
+    return { subscription: null, error: error as Error };
+  }
+}
+
+/**
+ * Actualizar plan de suscripción
+ */
+export async function updateSubscriptionPlan(
+  companyId: string,
+  plan: SubscriptionPlan
+): Promise<{ subscription: Subscription | null; error: Error | null }> {
+  try {
+    const { data: subscription, error } = await supabase
+      .from('subscriptions')
+      .update({
+        plan,
+        limits: SUBSCRIPTION_PLANS[plan].limits,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('company_id', companyId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Actualizar también en companies
+    await supabase
+      .from('companies')
+      .update({ plan, updated_at: new Date().toISOString() })
+      .eq('id', companyId);
+
+    return { subscription: subscription as unknown as Subscription, error: null };
+  } catch (error) {
+    console.error('Error updating subscription plan:', error);
+    return { subscription: null, error: error as Error };
+  }
+}
+
+/**
+ * Obtener límites de suscripción
+ */
+export function getSubscriptionLimits(plan: SubscriptionPlan) {
+  return SUBSCRIPTION_PLANS[plan].limits;
+}
+
+/**
+ * Verificar si la empresa puede agregar más productos
+ */
+export async function canAddMoreProducts(companyId: string): Promise<{
+  canAdd: boolean;
+  currentCount: number;
+  limit: number;
+  error: Error | null;
+}> {
+  try {
+    // Obtener suscripción
+    const { subscription, error: subError } = await getSubscription(companyId);
+    if (subError) throw subError;
+
+    const plan = subscription?.plan || 'basic';
+    const limits = getSubscriptionLimits(plan);
+
+    if (limits.products === -1) {
+      return { canAdd: true, currentCount: 0, limit: -1, error: null };
     }
-  },
 
-  /**
-   * Create a new company
-   */
-  async createCompany(company: Partial<Company>): Promise<Company> {
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .insert(company)
-        .select()
-        .single();
+    // Contar productos actuales
+    const { count, error: countError } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId);
 
-      if (error) throw error;
-      return data as Company;
-    } catch (error) {
-      console.error('Error creating company:', error);
-      throw error;
-    }
-  },
+    if (countError) throw countError;
 
-  /**
-   * Update a company
-   */
-  async updateCompany(id: string, updates: Partial<Company>): Promise<Company> {
-    try {
-      const { data, error } = await supabase
-        .from('companies')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+    return {
+      canAdd: (count || 0) < limits.products,
+      currentCount: count || 0,
+      limit: limits.products,
+      error: null,
+    };
+  } catch (error) {
+    console.error('Error checking product limits:', error);
+    return { canAdd: false, currentCount: 0, limit: 0, error: error as Error };
+  }
+}
 
-      if (error) throw error;
-      return data as Company;
-    } catch (error) {
-      console.error('Error updating company:', error);
-      throw error;
-    }
-  },
+// ==========================================
+// VERIFICACIÓN DE PERMISOS
+// ==========================================
 
-  /**
-   * Verify a company
-   */
-  async verifyCompany(id: string): Promise<Company> {
-    return this.updateCompany(id, { is_verified: true });
-  },
+/**
+ * Verificar si el usuario tiene permiso en la empresa
+ */
+export async function checkCompanyPermission(
+  companyId: string,
+  permission: Permission
+): Promise<boolean> {
+  try {
+    const { data, error } = await supabase
+      .rpc('check_company_permission', {
+        company_uuid: companyId,
+        required_permission: permission,
+      });
 
-  /**
-   * Activate/deactivate company
-   */
-  async toggleCompanyActive(id: string, isActive: boolean): Promise<Company> {
-    return this.updateCompany(id, { is_active: isActive });
-  },
-};
+    if (error) throw error;
+
+    return data || false;
+  } catch (error) {
+    console.error('Error checking permission:', error);
+    return false;
+  }
+}
+
+/**
+ * Obtener permisos del usuario en la empresa
+ */
+export async function getMyPermissions(
+  companyId: string
+): Promise<Permission[]> {
+  try {
+    const { data, error } = await supabase
+      .from('company_users')
+      .select('role, permissions')
+      .eq('company_id', companyId)
+      .eq('user_id', supabase.auth.user()?.id || '')
+      .eq('status', 'active')
+      .single();
+
+    if (error) throw error;
+
+    return data?.permissions || [];
+  } catch (error) {
+    console.error('Error getting permissions:', error);
+    return [];
+  }
+}

@@ -19,13 +19,6 @@ const es = {
       admin: 'Administración',
       dashboard: 'Panel',
     },
-    // Hero Section
-    hero: {
-      title: 'Belleza que Transforma',
-      subtitle: 'Descubre nuestra exclusiva colección de productos para el cuidado del cabello y aseo personal',
-      cta: 'Explorar Colección',
-      secondary_cta: 'Ver Ofertas',
-    },
     // Categories
     categories: {
       title: 'Nuestras Categorías',
@@ -171,13 +164,6 @@ const en = {
       logout: 'Logout',
       admin: 'Admin',
       dashboard: 'Dashboard',
-    },
-    // Hero Section
-    hero: {
-      title: 'Beauty that Transforms',
-      subtitle: 'Discover our exclusive collection of hair care and personal grooming products',
-      cta: 'Explore Collection',
-      secondary_cta: 'View Offers',
     },
     // Categories
     categories: {

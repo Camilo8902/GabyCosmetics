@@ -15,7 +15,9 @@ import { productSchema } from '@/utils/validators';
 import { FormField } from '@/components/ui/FormField';
 import { ImageUploader } from '@/components/ui/ImageUploader';
 import { useCategories } from '@/hooks/useCategories';
-import type { Product } from '@/types';
+import { useAuthStore } from '@/store/authStore';
+import type { Product, ProductVariant } from '@/types';
+import { VariantManager } from '@/components/admin/VariantManager';
 import toast from 'react-hot-toast';
 
 // Función para generar SKU aleatorio
@@ -44,6 +46,7 @@ type ProductFormData = {
   is_visible: boolean;
   company_id?: string;
   categoryIds?: string[];
+  image_url?: string; // Base64 image URL (like categories)
 };
 
 export function ProductForm() {
@@ -52,10 +55,24 @@ export function ProductForm() {
   const isEditing = !!id;
   const { data: product, isLoading: loadingProduct } = useProduct(id || null);
   const { data: categories } = useCategories(true);
+  const { user, isAdmin, isCompany } = useAuthStore();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
   const uploadProductImage = useUploadProductImage();
   const setProductCategories = useSetProductCategories();
+
+  // Get company_id for the product
+  const getCompanyId = () => {
+    if (isAdmin()) {
+      // Admin can create products - don't set company_id here
+      // It will be set by the service or left null
+      return undefined;
+    }
+    if (isCompany()) {
+      return user?.company_id;
+    }
+    return undefined;
+  };
 
   const methods = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),
@@ -78,6 +95,8 @@ export function ProductForm() {
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [variants, setVariants] = useState<ProductVariant[]>([]);
+  const [hasVariants, setHasVariants] = useState(false);
   
   // Track loading state including async mutations
   const isLoading = isSubmitting || createProduct.isPending || updateProduct.isPending || uploadProductImage.isPending;
@@ -99,27 +118,41 @@ export function ProductForm() {
   // Load product data when editing
   useEffect(() => {
     if (product && isEditing) {
-      setValue('name', product.name);
-      setValue('name_en', product.name_en);
-      setValue('slug', product.slug);
-      setValue('description', product.description);
-      setValue('description_en', product.description_en);
+      console.log('🔵 [ProductForm] Cargando datos del producto:', product);
+      setValue('name', product.name || '');
+      setValue('name_en', product.name_en || '');
+      setValue('slug', product.slug || '');
+      setValue('description', product.description || '');
+      setValue('description_en', product.description_en || '');
       setValue('short_description', product.short_description || undefined);
       setValue('short_description_en', product.short_description_en || undefined);
       // Convert numeric values to numbers in case they come as strings
-      setValue('price', typeof product.price === 'string' ? parseFloat(product.price) : product.price);
-      setValue('compare_at_price', product.compare_at_price ? (typeof product.compare_at_price === 'string' ? parseFloat(product.compare_at_price) : product.compare_at_price) : undefined);
-      setValue('cost_price', product.cost_price ? (typeof product.cost_price === 'string' ? parseFloat(product.cost_price) : product.cost_price) : undefined);
+      const price = typeof product.price === 'string' ? parseFloat(product.price) : (product.price || 0);
+      setValue('price', price);
+      const compareAtPrice = product.compare_at_price ? (typeof product.compare_at_price === 'string' ? parseFloat(product.compare_at_price) : product.compare_at_price) : undefined;
+      setValue('compare_at_price', compareAtPrice);
+      const costPrice = product.cost_price ? (typeof product.cost_price === 'string' ? parseFloat(product.cost_price) : product.cost_price) : undefined;
+      setValue('cost_price', costPrice);
       setValue('sku', product.sku || undefined);
       setValue('barcode', product.barcode || undefined);
-      setValue('weight', product.weight ? (typeof product.weight === 'string' ? parseFloat(product.weight) : product.weight) : undefined);
-      setValue('is_active', product.is_active);
-      setValue('is_featured', product.is_featured);
-      setValue('is_visible', product.is_visible);
+      const weight = product.weight ? (typeof product.weight === 'string' ? parseFloat(product.weight) : product.weight) : undefined;
+      setValue('weight', weight);
+      setValue('is_active', product.is_active || false);
+      setValue('is_featured', product.is_featured || false);
+      setValue('is_visible', product.is_visible || false);
       setValue('company_id', product.company_id || undefined);
+      setValue('image_url', product.image_url || undefined); // Load image_url
 
-      if (product.categories) {
-        setSelectedCategories(product.categories.map((c: any) => c.id || c.category?.id));
+      // Load image preview if exists
+      if (product.image_url) {
+        setImageFile(null); // Clear new file selection
+      }
+
+      // Load categories
+      if (product.categories && Array.isArray(product.categories)) {
+        const categoryIds = product.categories.map((c: any) => c.category?.id || c.category_id || c.id);
+        console.log('🔵 [ProductForm] Categorías cargadas:', categoryIds);
+        setSelectedCategories(categoryIds.filter(Boolean));
       }
     }
   }, [product, isEditing, setValue]);
@@ -183,87 +216,83 @@ export function ProductForm() {
 
       if (isEditing && id) {
         console.log('🟢 [ProductForm] Actualizando producto existente, ID:', id);
-        // Update existing product
-        await updateProduct.mutateAsync({
-          id,
-          updates: cleanData,
-        });
-        console.log('✅ [ProductForm] Producto actualizado exitosamente');
-        // Note: Hook already shows success toast
-
-        // Update image if provided
+        
+        // Procesar imagen si hay archivo nuevo
+        let imageUrl = product?.image_url;
         if (imageFile) {
           try {
-            console.log('🔵 [ProductForm] Subiendo imagen...');
-            await uploadProductImage.mutateAsync({
-              productId: id,
-              file: imageFile,
-              isPrimary: true,
+            console.log('🔵 [ProductForm] Procesando imagen como base64...');
+            const reader = new FileReader();
+            const base64Data = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(imageFile);
             });
-            console.log('✅ [ProductForm] Imagen subida exitosamente');
-          } catch (imageError) {
-            console.error('Warning: Image upload failed but product was saved:', imageError);
-            toast.error('Producto actualizado, pero la imagen no se pudo cargar');
+            imageUrl = base64Data;
+            console.log('✅ [ProductForm] Imagen procesada');
+          } catch (e) {
+            console.error('Error procesando imagen:', e);
           }
         }
+        
+        // Update existing product with image_url
+        await updateProduct.mutateAsync({
+          id,
+          updates: { ...cleanData, image_url: imageUrl },
+        });
+        console.log('✅ [ProductForm] Producto actualizado exitosamente');
 
-        // Update categories
-        try {
-          if (selectedCategories.length > 0) {
-            console.log('🔵 [ProductForm] Actualizando categorías:', selectedCategories);
-            await setProductCategories.mutateAsync({
-              productId: id,
-              categoryIds: selectedCategories,
-            });
-            console.log('✅ [ProductForm] Categorías actualizadas exitosamente');
-          }
-        } catch (categoryError) {
-          console.error('Warning: Category update failed:', categoryError);
-          toast.error('Producto actualizado, pero las categorías no se pudieron asignar');
+        // Save categories
+        if (selectedCategories.length > 0) {
+          await setProductCategories.mutateAsync({
+            productId: id,
+            categoryIds: selectedCategories,
+          });
+          console.log('✅ [ProductForm] Categorías actualizadas');
         }
 
-        // Navigate back to products list after successful update
+        // Navigate back
         console.log('🔵 [ProductForm] Navegando a lista de productos');
         navigate('/admin/products');
       } else {
         console.log('🟢 [ProductForm] Creando nuevo producto');
-        // Create new product
-        const newProduct = await createProduct.mutateAsync(cleanData);
-        console.log('✅ [ProductForm] Producto creado exitosamente, ID:', newProduct.id);
-        // Note: Hook already shows success toast
         
-        // Upload image if provided
+        // Procesar imagen ANTES de crear el producto
+        let imageUrl: string | undefined;
         if (imageFile) {
           try {
-            console.log('🔵 [ProductForm] Subiendo imagen para producto nuevo...');
-            await uploadProductImage.mutateAsync({
-              productId: newProduct.id,
-              file: imageFile,
-              isPrimary: true,
+            console.log('🔵 [ProductForm] Procesando imagen como base64...');
+            const reader = new FileReader();
+            imageUrl = await new Promise<string>((resolve, reject) => {
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(imageFile);
             });
-            console.log('✅ [ProductForm] Imagen subida exitosamente');
-          } catch (imageError) {
-            console.error('Warning: Image upload failed but product was created:', imageError);
-            toast.error('Producto creado, pero la imagen no se pudo cargar');
+            console.log('✅ [ProductForm] Imagen procesada');
+          } catch (e) {
+            console.error('Error procesando imagen:', e);
           }
         }
+        
+        // Create new product with image_url
+        const productData = {
+          ...cleanData,
+          company_id: getCompanyId() || cleanData.company_id,
+          image_url: imageUrl, // Guardar base64 directamente
+        };
+        const newProduct = await createProduct.mutateAsync(productData);
+        console.log('✅ [ProductForm] Producto creado con imagen, ID:', newProduct.id);
 
-        // Set categories
-        try {
-          if (selectedCategories.length > 0) {
-            console.log('🔵 [ProductForm] Asignando categorías:', selectedCategories);
-            await setProductCategories.mutateAsync({
-              productId: newProduct.id,
-              categoryIds: selectedCategories,
-            });
-            console.log('✅ [ProductForm] Categorías asignadas exitosamente');
-          }
-        } catch (categoryError) {
-          console.error('Warning: Category assignment failed:', categoryError);
-          toast.error('Producto creado, pero las categorías no se pudieron asignar');
+        // Save categories for new product
+        if (selectedCategories.length > 0 && newProduct.id) {
+          await setProductCategories.mutateAsync({
+            productId: newProduct.id,
+            categoryIds: selectedCategories,
+          });
+          console.log('✅ [ProductForm] Categorías guardadas');
         }
 
-        console.log('🔵 [ProductForm] Navegando a página de edición del producto nuevo');
+        console.log('🔵 [ProductForm] Navegando a página de edición');
         navigate(`/admin/products/${newProduct.id}/edit`);
       }
     } catch (error) {
@@ -430,6 +459,35 @@ export function ProductForm() {
                 />
               </div>
             </div>
+
+            {/* Variants */}
+            <div className="bg-white rounded-lg shadow-sm border p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold text-gray-900">Variantes del Producto</h2>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasVariants}
+                    onChange={(e) => setHasVariants(e.target.checked)}
+                    className="rounded border-gray-300 text-pink-600 focus:ring-pink-500"
+                  />
+                  <span className="text-sm text-gray-700">Este producto tiene variantes</span>
+                </label>
+              </div>
+              {hasVariants && (
+                <VariantManager
+                  productId={product?.id}
+                  variants={variants}
+                  onChange={setVariants}
+                  basePrice={watch('price') || 0}
+                />
+              )}
+              {!hasVariants && (
+                <p className="text-gray-500 text-sm">
+                  Activa esta opción si tu producto viene en diferentes presentaciones como tallas, colores o tamaños.
+                </p>
+              )}
+            </div>
           </div>
 
           {/* Sidebar */}
@@ -438,7 +496,7 @@ export function ProductForm() {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Imagen Principal</h2>
               <ImageUploader
-                value={product?.images?.[0]?.url}
+                value={product?.images?.[0]?.url || product?.image_url}
                 onChange={setImageFile}
                 label=""
               />

@@ -109,21 +109,29 @@ export function ProductDetail() {
         {/* Main Info */}
         <div className="lg:col-span-2 space-y-6">
           {/* Images */}
-          {product.images && product.images.length > 0 && (
+          {(product.images && product.images.length > 0) || product.image_url ? (
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-4">Imágenes</h2>
-              <div className="grid grid-cols-4 gap-4">
-                {product.images.map((image, index) => (
-                  <img
-                    key={index}
-                    src={image.url}
-                    alt={`${product.name} ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                ))}
-              </div>
+              {product.images && product.images.length > 0 ? (
+                <div className="grid grid-cols-4 gap-4">
+                  {product.images.map((image, index) => (
+                    <img
+                      key={index}
+                      src={image.url}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                  ))}
+                </div>
+              ) : product.image_url ? (
+                <img
+                  src={product.image_url}
+                  alt={product.name}
+                  className="w-full h-64 object-cover rounded-lg"
+                />
+              ) : null}
             </div>
-          )}
+          ) : null}
 
           {/* Description */}
           <div className="bg-white rounded-lg shadow-sm border p-6">

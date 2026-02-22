@@ -13,6 +13,8 @@ import {
   Heart,
   CreditCard,
   Truck,
+  Store,
+  TrendingUp,
 } from 'lucide-react';
 import { useStaticContent } from '@/hooks/useStaticContent';
 
@@ -38,6 +40,11 @@ export function Footer() {
       { label: t('footer.privacy'), href: '/privacy' },
       { label: t('footer.terms'), href: '/terms' },
     ],
+    sell: [
+      { label: 'Vender en GabyCosmetics', href: '/sell', icon: Store },
+      { label: 'Planes y Precios', href: '/sell#plans', icon: TrendingUp },
+      { label: 'Registrarse como Vendedor', href: '/sell#register', icon: Store },
+    ],
   };
 
   const socialLinks = [
@@ -51,7 +58,7 @@ export function Footer() {
     <footer className="bg-gray-900 text-white">
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
           {/* Brand Column */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -183,6 +190,40 @@ export function Footer() {
                   Lun - Vie: 9:00 - 18:00
                 </span>
               </li>
+            </ul>
+          </motion.div>
+
+          {/* Sell on GabyCosmetics */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="lg:col-span-1"
+          >
+            <h3 className="text-lg font-bold mb-6 text-rose-400">Vender</h3>
+            <p className="text-gray-400 mb-6 text-sm">
+              Únete a miles de vendedores y reacha millones de clientes.
+            </p>
+            <Link
+              to="/sell"
+              className="inline-flex items-center justify-center w-full px-4 py-3 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 transition-colors"
+            >
+              <Store className="w-4 h-4 mr-2" />
+              Vender en GabyCosmetics
+            </Link>
+            <ul className="space-y-3 mt-6">
+              {footerLinks.sell.map((link, index) => (
+                <li key={index}>
+                  <Link
+                    to={link.href}
+                    className="text-gray-400 hover:text-rose-400 transition-colors inline-flex items-center gap-2 text-sm"
+                  >
+                    {link.icon && <link.icon className="w-4 h-4" />}
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </motion.div>
         </div>

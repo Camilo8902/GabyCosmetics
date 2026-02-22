@@ -57,7 +57,7 @@ export function BestSellers() {
         {/* Products */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {displayProducts.map((product, index) => {
-            const productImage = (product as any).images?.[0]?.url || (product as any).image || 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400&h=400&fit=crop';
+            const productImage = (product as any).images?.[0]?.url || (product as any).image_url || (product as any).image || 'https://images.unsplash.com/photo-1526947425960-945c6e72858f?w=400&h=400&fit=crop';
             const badge = (product as any).badge || `TOP ${index + 1}`;
             const isWishlisted = isInWishlist(product.id);
             

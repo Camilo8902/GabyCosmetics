@@ -18,12 +18,18 @@ function ProductCard({ product, index }: ProductCardProps) {
   const { toggleItem, isInWishlist } = useWishlistStore();
   const isWishlisted = isInWishlist(product.id);
 
-  // Get image from product.images array or fallback to demo image
-  const productImage = product.images?.[0]?.url || product.image || 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop';
+  // Get image from product.images array, image_url, or fallback to demo image
+  const productImage = product.images?.[0]?.url || product.image_url || product.image || 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=400&h=400&fit=crop';
   const name = i18n.language === 'en' ? product.name_en : product.name;
   const discount = product.compare_at_price
     ? Math.round(((product.compare_at_price - product.price) / product.compare_at_price) * 100)
     : 0;
+
+  // Get category name (handle different data structures)
+  const productAny = product as any;
+  const categoryName = productAny.categories?.[0]?.category?.name || 
+                      productAny.categories?.[0]?.name || 
+                      '';
 
   return (
     <motion.div
@@ -81,15 +87,27 @@ function ProductCard({ product, index }: ProductCardProps) {
           </div>
 
           {/* Badges */}
-          {discount > 0 && (
-            <motion.div
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              className="absolute top-4 left-4 bg-rose-600 text-white px-3 py-1 rounded-full text-sm font-medium"
-            >
-              -{discount}%
-            </motion.div>
-          )}
+          <div className="absolute top-4 left-4 flex flex-col gap-1">
+            {discount > 0 && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="bg-rose-600 text-white px-3 py-1 rounded-full text-sm font-medium"
+              >
+                -{discount}%
+              </motion.div>
+            )}
+            {categoryName && (
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.1 }}
+                className="bg-pink-500 text-white px-3 py-1 rounded-full text-sm font-medium"
+              >
+                {categoryName}
+              </motion.div>
+            )}
+          </div>
         </div>
 
         {/* Content */}

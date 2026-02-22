@@ -211,7 +211,8 @@ export function ProductsList() {
       key: 'image',
       header: 'Imagen',
       render: (product: Product) => {
-        const imageUrl = product.images?.[0]?.url || '/placeholder-product.png';
+        // Priorizar images[0].url, luego image_url, luego placeholder
+        const imageUrl = product.images?.[0]?.url || product.image_url || '/placeholder-product.png';
         return (
           <img
             src={imageUrl}
@@ -267,6 +268,34 @@ export function ProductsList() {
           <span className={stock < 10 ? 'text-red-600 font-medium' : 'text-gray-900'}>
             {stock}
           </span>
+        );
+      },
+      sortable: false,
+    },
+    {
+      key: 'categories',
+      header: 'Categorías',
+      render: (product: Product) => {
+        const categories = product.categories || [];
+        if (categories.length === 0) {
+          return <span className="text-gray-400 text-sm">Sin categorías</span>;
+        }
+        return (
+          <div className="flex flex-wrap gap-1">
+            {categories.slice(0, 2).map((cat: any) => (
+              <span 
+                key={cat.category_id || cat.id}
+                className="px-2 py-0.5 bg-pink-100 text-pink-800 text-xs rounded-full"
+              >
+                {cat.category?.name || cat.name || 'Categoría'}
+              </span>
+            ))}
+            {categories.length > 2 && (
+              <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                +{categories.length - 2}
+              </span>
+            )}
+          </div>
         );
       },
       sortable: false,

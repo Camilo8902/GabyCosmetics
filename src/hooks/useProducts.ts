@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { productService } from '@/services/productService';
 import type { Product, ProductFilters, PaginatedResponse } from '@/types';
+import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
 
 /**
@@ -11,7 +12,8 @@ export function useProducts(filters?: ProductFilters, page = 1, pageSize = 20) {
     queryKey: ['products', filters, page, pageSize],
     queryFn: async () => {
       try {
-        const result = await productService.getProducts(filters, page, pageSize);
+        // Pass undefined for companyId to get all products (admin view)
+        const result = await productService.getProducts(undefined, filters, page, pageSize);
         return result;
       } catch (error: any) {
         console.error('Error en useProducts:', error);
@@ -42,7 +44,19 @@ export function useProducts(filters?: ProductFilters, page = 1, pageSize = 20) {
 export function useProduct(id: string | null) {
   return useQuery<Product | null>({
     queryKey: ['product', id],
-    queryFn: () => (id ? productService.getProductById(id) : Promise.resolve(null)),
+    queryFn: async () => {
+      if (!id) return null;
+      console.log('🔵 [useProduct] Fetching product:', id);
+      try {
+        const product = await productService.getProductById(id);
+        console.log('🔵 [useProduct] Product fetched:', product);
+        return product;
+      } catch (error: any) {
+        console.error('❌ [useProduct] Error fetching product:', error);
+        // Return a minimal product object to prevent form errors
+        return null;
+      }
+    },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
   });
@@ -89,9 +103,26 @@ export function useBestSellers(limit = 8) {
  */
 export function useCreateProduct() {
   const queryClient = useQueryClient();
+  const { user, isAdmin, isCompany } = useAuthStore();
 
   return useMutation({
-    mutationFn: (product: Partial<Product>) => productService.createProduct(product),
+    mutationFn: async (product: Partial<Product>) => {
+      let companyId = product.company_id;
+      
+      // If user is a company owner, use their company_id
+      if (!companyId && isCompany() && user?.company_id) {
+        companyId = user.company_id;
+      }
+      
+      // Admin can create products without company_id (pass empty string)
+      // Company users must have a company_id
+      if (!companyId && isCompany()) {
+        throw new Error('Tu cuenta no tiene una empresa asociada. Contacta al administrador.');
+      }
+      
+      // Pass empty string for admin, or the company_id for company users
+      return productService.createProduct(companyId || '', product);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       toast.success('Producto creado exitosamente');
