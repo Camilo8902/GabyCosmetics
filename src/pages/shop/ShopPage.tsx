@@ -51,6 +51,12 @@ export function ShopPage() {
     // p.categories = [{ id, category_id, categories: { id, name, name_en, slug } }]
     const categoryRelation = p.categories?.[0];
     const firstCategory = categoryRelation?.categories || categoryRelation?.category || {};
+    
+    // Debug logging
+    if (p.categories && p.categories.length > 0) {
+      console.log('🔵 [ShopPage] Producto:', p.name, 'Categorías:', p.categories);
+    }
+    
     return {
       id: p.id,
       name: p.name,

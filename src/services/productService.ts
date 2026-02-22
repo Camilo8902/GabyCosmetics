@@ -28,6 +28,9 @@ export async function getProducts(
   page = 1,
   pageSize = 20
 ): Promise<PaginatedResponse<Product>> {
+  console.log('🔵 [getProducts] Iniciando consulta...');
+  console.log('🔵 [getProducts] companyId:', companyId, 'filters:', filters);
+  
   try {
     // If filtering by category, we need to use a different approach
     // because the relationship is through a junction table
@@ -102,6 +105,14 @@ export async function getProducts(
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+    
+    console.log('✅ [getProducts] Productos obtenidos:', data?.length);
+    // Log categories for each product
+    data?.forEach((p: any) => {
+      if (p.categories && p.categories.length > 0) {
+        console.log('🔵 [getProducts] Producto:', p.name, 'Categorías:', p.categories);
+      }
+    });
 
     return {
       data: data as Product[],
@@ -120,6 +131,7 @@ export async function getProducts(
  * Obtener un producto por ID
  */
 export async function getProductById(productId: string): Promise<Product | null> {
+  console.log('🔵 [getProductById] Obteniendo producto:', productId);
   try {
     // First get the product without relationships
     const { data: product, error } = await supabase
@@ -144,6 +156,7 @@ export async function getProductById(productId: string): Promise<Product | null>
         .eq('product_id', productId)
         .order('order_index', { ascending: true });
       images = imagesData || [];
+      console.log('🔵 [getProductById] Imágenes:', images.length);
     } catch (e) {
       console.warn('Could not fetch product images:', e);
     }
@@ -151,11 +164,17 @@ export async function getProductById(productId: string): Promise<Product | null>
     // Try to get categories separately
     let categories: any[] = [];
     try {
-      const { data: catsData } = await supabase
+      const { data: catsData, error: catsError } = await supabase
         .from('product_categories')
         .select('*, categories(*)')
         .eq('product_id', productId);
-      categories = catsData || [];
+      
+      if (catsError) {
+        console.error('❌ [getProductById] Error obteniendo categorías:', catsError);
+      } else {
+        categories = catsData || [];
+        console.log('🔵 [getProductById] Categorías encontradas:', categories.length, categories);
+      }
     } catch (e) {
       console.warn('Could not fetch product categories:', e);
     }
@@ -166,6 +185,8 @@ export async function getProductById(productId: string): Promise<Product | null>
       images,
       categories,
     };
+    
+    console.log('✅ [getProductById] Producto completo:', productWithRelations);
 
     return productWithRelations as Product;
   } catch (error) {
