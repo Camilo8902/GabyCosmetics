@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, 
@@ -14,7 +14,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
-import { useUser, useCreateUser, useUpdateUser, useCheckEmailExists } from '@/hooks/useUsers';
+import { useUser, useCreateUser, useUpdateUser, useAssignUserToCompany } from '@/hooks/useUsers';
 import { useCompanies } from '@/hooks';
 import { cn } from '@/lib/utils';
 import { USER_ROLES } from '@/utils/constants';
@@ -22,7 +22,6 @@ import type { User as UserType, UserRole } from '@/types';
 import toast from 'react-hot-toast';
 
 interface UserFormProps {
-  userId?: string;
   mode?: 'create' | 'edit';
 }
 
@@ -40,8 +39,9 @@ const roleDescriptions: Record<UserRole, string> = {
   customer: 'Usuario cliente con acceso a compras',
 };
 
-export function UserForm({ userId, mode = 'create' }: UserFormProps) {
+export function UserForm({ mode = 'create' }: UserFormProps) {
   const navigate = useNavigate();
+  const { id: userId } = useParams<{ id: string }>();
   const isEditing = mode === 'edit' && userId;
 
   // Queries and mutations
@@ -49,6 +49,7 @@ export function UserForm({ userId, mode = 'create' }: UserFormProps) {
   const { data: companiesData } = useCompanies({}, 1, 100);
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
+  const assignToCompany = useAssignUserToCompany();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -75,7 +76,7 @@ export function UserForm({ userId, mode = 'create' }: UserFormProps) {
         full_name: existingUser.full_name || '',
         phone: existingUser.phone || '',
         role: existingUser.role || 'customer',
-        company_id: existingUser.company_id || '',
+        company_id: '', // Will be loaded separately from company_users
         is_active: existingUser.is_active ?? true,
         password: '',
         confirm_password: '',
@@ -162,11 +163,19 @@ export function UserForm({ userId, mode = 'create' }: UserFormProps) {
           full_name: formData.full_name,
           phone: formData.phone || undefined,
           role: formData.role,
-          company_id: formData.role === 'company' ? formData.company_id : undefined,
           is_active: formData.is_active,
         };
 
         await updateUser.mutateAsync({ id: userId, updates });
+        
+        // Assign to company if role is company
+        if (formData.role === 'company' && formData.company_id) {
+          await assignToCompany.mutateAsync({ 
+            userId, 
+            companyId: formData.company_id 
+          });
+        }
+        
         navigate('/admin/users');
       } else {
         // Create new user
@@ -175,7 +184,6 @@ export function UserForm({ userId, mode = 'create' }: UserFormProps) {
           full_name: formData.full_name,
           phone: formData.phone || undefined,
           role: formData.role,
-          company_id: formData.role === 'company' ? formData.company_id : undefined,
           is_active: formData.is_active,
           password: formData.password,
         });
