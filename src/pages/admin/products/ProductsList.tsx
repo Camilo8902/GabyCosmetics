@@ -41,7 +41,8 @@ export function ProductsList() {
   const [productToDelete, setProductToDelete] = useState<string | null>(null);
 
   const { data: categories } = useCategories(true);
-  const { data: companiesData } = useCompanies();
+  const { data: companiesResponse } = useCompanies();
+  const companiesData = companiesResponse?.data || [];
   const deleteProduct = useDeleteProduct();
   const updateProduct = useUpdateProduct();
 
