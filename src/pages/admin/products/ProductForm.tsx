@@ -150,9 +150,10 @@ export function ProductForm() {
 
       // Load categories
       if (product.categories && Array.isArray(product.categories)) {
-        const categoryIds = product.categories.map((c: any) => c.category?.id || c.category_id || c.id);
+        // Structure: [{ category_id: '...', categories: { id, name, ... } }]
+        const categoryIds = product.categories.map((c: any) => c.category_id || c.categories?.id).filter(Boolean);
         console.log('🔵 [ProductForm] Categorías cargadas:', categoryIds);
-        setSelectedCategories(categoryIds.filter(Boolean));
+        setSelectedCategories(categoryIds);
       }
     }
   }, [product, isEditing, setValue]);
@@ -179,7 +180,8 @@ export function ProductForm() {
         console.log('🔵 [ProductForm] Producto original:', product);
         
         // Get current category IDs from product
-        const currentCategoryIds = product.categories?.map((c: any) => c.category?.id || c.category_id || c.id).filter(Boolean) || [];
+        // Structure: [{ category_id: '...', categories: { id, name, ... } }]
+        const currentCategoryIds = product.categories?.map((c: any) => c.category_id).filter(Boolean) || [];
         const categoriesChanged = selectedCategories.length !== currentCategoryIds.length || 
           selectedCategories.some(id => !currentCategoryIds.includes(id));
         

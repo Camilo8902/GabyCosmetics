@@ -60,13 +60,13 @@ export async function getProducts(
     }
 
     // Include categories and images relationships in the query
+    // Note: product_categories has a composite primary key (product_id, category_id), no 'id' column
     let query = supabase
       .from('products')
       .select(`
         *,
         images:product_images(*),
         categories:product_categories(
-          id,
           category_id,
           categories(id, name, name_en, slug)
         )

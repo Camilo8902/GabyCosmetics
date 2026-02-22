@@ -55,13 +55,14 @@ export function ShopPage() {
   // Convert real products to shop format
   const processedProducts = realProducts.map((p: any) => {
     // Get first category from product - the relationship structure is:
-    // p.categories = [{ id, category_id, categories: { id, name, name_en, slug } }]
+    // p.categories = [{ category_id: '...', categories: { id, name, name_en, slug } }]
+    // Note: product_categories has no 'id' column, only product_id and category_id
     const categoryRelation = p.categories?.[0];
-    const firstCategory = categoryRelation?.categories || categoryRelation?.category || {};
+    const firstCategory = categoryRelation?.categories || {};
     
     // Debug logging
     if (p.categories && p.categories.length > 0) {
-      console.log('🔵 [ShopPage] Producto:', p.name, 'Categorías:', p.categories);
+      console.log('🔵 [ShopPage] Producto:', p.name, 'Categorías:', p.categories, 'First:', firstCategory);
     }
     
     return {
