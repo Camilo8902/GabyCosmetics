@@ -4,6 +4,49 @@
 -- ==========================================
 
 -- ==========================================
+-- STEP 1: Ensure trigger for auto-creating users exists
+-- ==========================================
+
+-- Function to handle new user creation
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.users (
+    id,
+    email,
+    full_name,
+    avatar_url,
+    role,
+    email_verified,
+    is_active,
+    created_at,
+    updated_at
+  )
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email::text),
+    NEW.raw_user_meta_data->>'avatar_url',
+    COALESCE((NEW.raw_user_meta_data->>'role')::text, 'customer'),
+    COALESCE(NEW.email_confirmed_at IS NOT NULL, false),
+    true,
+    now(),
+    now()
+  )
+  ON CONFLICT (id) DO NOTHING;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger to call the function when a new user is created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- ==========================================
 -- STEP 1: Create helper function to check admin role
 -- This function breaks the circular dependency
 -- ==========================================
@@ -66,6 +109,13 @@ WITH CHECK (id = auth.uid());
 
 -- Allow insert during registration (trigger handles this)
 CREATE POLICY "Allow insert during registration"
+ON public.users
+FOR INSERT
+TO authenticated
+WITH CHECK (true);
+
+-- Allow service role to insert users (for admin operations)
+CREATE POLICY "Service role can insert users"
 ON public.users
 FOR INSERT
 TO authenticated

@@ -59,7 +59,34 @@ export function usePendingRequests() {
   });
 }
 
-// Aprobar solicitud usando RPC function
+// Generar slug único
+async function generateUniqueSlug(baseName: string): Promise<string> {
+  const baseSlug = baseName
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // Remove accents
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  
+  let slug = baseSlug;
+  let counter = 0;
+  
+  while (true) {
+    const { data } = await supabase
+      .from('companies')
+      .select('id')
+      .eq('slug', slug)
+      .single();
+    
+    if (!data) break;
+    counter++;
+    slug = `${baseSlug}-${counter}`;
+  }
+  
+  return slug;
+}
+
+// Aprobar solicitud - crea usuario y empresa
 export function useApproveRequest() {
   const queryClient = useQueryClient();
 
@@ -68,28 +95,164 @@ export function useApproveRequest() {
       requestId, 
       notes 
     }: { requestId: string; notes?: string }) => {
-      // Llamar a la función RPC que hace todo el trabajo
-      const { data, error } = await supabase.rpc('approve_company_request', {
-        p_request_id: requestId,
-        p_reviewer_notes: notes || null
-      });
+      // 1. Obtener la solicitud
+      const { data: requestData, error: fetchError } = await supabase
+        .from('company_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
 
-      if (error) {
-        console.error('Error approving request:', error);
-        throw error;
+      if (fetchError) throw fetchError;
+      if (!requestData) throw new Error('Solicitud no encontrada');
+      if (requestData.status !== 'pending') throw new Error('La solicitud ya fue procesada');
+
+      // 2. Verificar si ya existe un usuario con ese email en public.users
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('id, email')
+        .eq('email', requestData.email)
+        .single();
+
+      let userId: string | undefined = existingUser?.id;
+
+      // 3. Si no existe usuario, crear uno nuevo
+      if (!userId) {
+        // Generar una contraseña temporal aleatoria
+        const tempPassword = crypto.randomUUID().slice(0, 16) + 'A1!';
+        
+        // Crear usuario con signUp
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: requestData.email,
+          password: tempPassword,
+          options: {
+            data: {
+              full_name: requestData.owner_name,
+              role: 'company'
+            },
+            emailRedirectTo: `${window.location.origin}/auth/callback`
+          }
+        });
+
+        if (signUpError) {
+          // Si el error es que el usuario ya existe, intentar obtenerlo
+          if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
+            // El usuario existe en auth pero quizás no en public.users
+            // Intentar obtener el ID del usuario existente
+            const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
+            if (listError) throw listError;
+            
+            const existingAuthUser = users?.find(u => u.email === requestData.email);
+            if (existingAuthUser) {
+              userId = existingAuthUser.id;
+            } else {
+              throw new Error('No se pudo encontrar el usuario existente');
+            }
+          } else {
+            throw signUpError;
+          }
+        } else if (signUpData.user) {
+          userId = signUpData.user.id;
+          
+          // Enviar email para restablecer contraseña
+          await supabase.auth.resetPasswordForEmail(requestData.email, {
+            redirectTo: `${window.location.origin}/auth/reset-password`
+          });
+        }
       }
 
-      if (!data?.success) {
-        throw new Error(data?.error || 'Error al aprobar la solicitud');
+      if (!userId) {
+        throw new Error('No se pudo obtener el ID del usuario');
       }
 
-      return data;
+      // 4. Esperar un momento para que el trigger cree el usuario en public.users
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // 5. Verificar que el usuario existe en public.users, si no, crearlo
+      const { data: publicUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', userId)
+        .single();
+
+      if (!publicUser) {
+        // Crear el usuario en public.users manualmente
+        const { error: insertUserError } = await supabase
+          .from('users')
+          .insert({
+            id: userId,
+            email: requestData.email,
+            full_name: requestData.owner_name,
+            role: 'company',
+            is_active: true,
+            email_verified: false
+          });
+        
+        if (insertUserError) {
+          console.error('Error creating public user:', insertUserError);
+          throw insertUserError;
+        }
+      }
+
+      // 6. Generar slug único
+      const slug = await generateUniqueSlug(requestData.business_name);
+
+      // 7. Obtener el usuario admin actual
+      const { data: { user: adminUser } } = await supabase.auth.getUser();
+
+      // 8. Crear la empresa
+      const { data: newCompany, error: companyError } = await supabase
+        .from('companies')
+        .insert({
+          user_id: userId,
+          company_name: requestData.business_name,
+          slug: slug,
+          email: requestData.email,
+          phone: requestData.phone,
+          business_type: requestData.business_type,
+          status: 'active',
+          is_active: true,
+          is_verified: true,
+          plan: 'basic',
+          approved_by: adminUser?.id,
+          approved_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (companyError) {
+        console.error('Error creating company:', companyError);
+        throw companyError;
+      }
+
+      // 9. Actualizar la solicitud
+      const { error: updateError } = await supabase
+        .from('company_requests')
+        .update({
+          status: 'approved',
+          notes: notes || requestData.notes,
+          reviewed_by: adminUser?.id,
+          reviewed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
+
+      if (updateError) {
+        console.error('Error updating request:', updateError);
+        throw updateError;
+      }
+
+      return { 
+        success: true, 
+        company: newCompany,
+        request: requestData,
+        userId 
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['company-requests'] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success(`Empresa "${data.company_name}" creada exitosamente`);
+      toast.success(`Empresa "${data.company.company_name}" creada exitosamente`);
     },
     onError: (error: Error) => {
       console.error('Error approving request:', error);
@@ -98,7 +261,7 @@ export function useApproveRequest() {
   });
 }
 
-// Rechazar solicitud usando RPC function
+// Rechazar solicitud
 export function useRejectRequest() {
   const queryClient = useQueryClient();
 
@@ -107,21 +270,21 @@ export function useRejectRequest() {
       requestId, 
       notes 
     }: { requestId: string; notes?: string }) => {
-      const { data, error } = await supabase.rpc('reject_company_request', {
-        p_request_id: requestId,
-        p_reviewer_notes: notes || null
-      });
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from('company_requests')
+        .update({
+          status: 'rejected',
+          notes,
+          reviewed_by: user?.id,
+          reviewed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', requestId);
 
-      if (error) {
-        console.error('Error rejecting request:', error);
-        throw error;
-      }
-
-      if (!data?.success) {
-        throw new Error(data?.error || 'Error al rechazar la solicitud');
-      }
-
-      return data;
+      if (error) throw error;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-requests'] });
