@@ -332,7 +332,7 @@ function App() {
             <Route path="users/new" element={<UserForm mode="create" />} />
             <Route path="users/:id" element={<UserDetail />} />
             <Route path="users/:id/edit" element={<UserForm mode="edit" />} />
-            <Route path="companies" element={<CompaniesList />} />
+            <Route path="companies" element={<CompaniesListPage />} />
             <Route path="companies/:id" element={<CompanyDetail />} />
             <Route path="companies/:id/edit" element={<CompanyForm />} />
             <Route path="company-requests" element={<CompanyRequests />} />
