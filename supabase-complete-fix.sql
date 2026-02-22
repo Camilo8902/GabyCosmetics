@@ -386,6 +386,27 @@ FROM auth.users u
 WHERE NOT EXISTS (SELECT 1 FROM public.users p WHERE p.id = u.id);
 
 -- ==========================================
+-- STEP 12: Ensure admin user has correct role
+-- ==========================================
+
+-- Update the first user to be admin (adjust email as needed)
+-- This ensures at least one user has admin role
+UPDATE public.users 
+SET role = 'admin' 
+WHERE email IN ('admin@gabycosmetics.com', 'admin@example.com')
+AND role != 'admin';
+
+-- If no admin exists, make the first user an admin
+UPDATE public.users 
+SET role = 'admin' 
+WHERE id = (
+  SELECT id FROM public.users 
+  ORDER BY created_at 
+  LIMIT 1
+)
+AND NOT EXISTS (SELECT 1 FROM public.users WHERE role = 'admin');
+
+-- ==========================================
 -- VERIFICATION QUERIES (run after applying)
 -- ==========================================
 

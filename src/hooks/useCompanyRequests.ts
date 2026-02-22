@@ -131,6 +131,7 @@ export function useApproveRequest() {
               full_name: requestData.owner_name,
               role: 'company'
             },
+            // Usar la misma URL de callback para verificación de email
             emailRedirectTo: `${window.location.origin}/auth/callback`
           }
         });
@@ -156,11 +157,9 @@ export function useApproveRequest() {
           }
         } else if (signUpData?.user) {
           userId = signUpData.user.id;
-          
-          // Enviar email para restablecer contraseña
-          await supabase.auth.resetPasswordForEmail(requestData.email, {
-            redirectTo: `${window.location.origin}/auth/reset-password`
-          });
+          // El usuario recibirá un email de verificación de Supabase
+          // No enviamos email de restablecimiento aquí para evitar confusión
+          // El usuario puede restablecer su contraseña después de verificar
         } else {
           throw new Error('Error al crear usuario');
         }
