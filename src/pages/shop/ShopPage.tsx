@@ -69,11 +69,13 @@ export function ShopPage() {
       rating: 4.5,
       reviews: 0,
       is_featured: p.is_featured,
+      is_active: p.is_active,
+      is_visible: p.is_visible,
     };
   });
 
-  // Only show products that have images
-  const allProducts = processedProducts.filter(p => p.image);
+  // Only show products that have images AND are active AND visible
+  const allProducts = processedProducts.filter(p => p.image && p.is_active && p.is_visible);
   // Use only real categories from database, no fallback
   const categories = realCategories;
 

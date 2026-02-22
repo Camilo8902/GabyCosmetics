@@ -14,6 +14,7 @@ import {
   CheckSquare,
   Square,
   Building2,
+  Check,
 } from 'lucide-react';
 import { useProducts, useDeleteProduct, useUpdateProduct } from '@/hooks';
 import { DataTable } from '@/components/ui/DataTable';
@@ -34,6 +35,7 @@ export function ProductsList() {
   const [pageSize, setPageSize] = useState(20);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'visible' | 'hidden' | 'pending'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('');
   const [companyFilter, setCompanyFilter] = useState<string>('');
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set());
@@ -59,6 +61,17 @@ export function ProductsList() {
     filters.is_active = false;
   }
   // 'all' doesn't set is_active filter, so it shows all
+
+  // Visibility filter
+  if (visibilityFilter === 'visible') {
+    filters.is_visible = true;
+  } else if (visibilityFilter === 'hidden') {
+    filters.is_visible = false;
+  } else if (visibilityFilter === 'pending') {
+    // Pending approval: products from companies that are active but not visible
+    filters.is_visible = false;
+    filters.has_company = true;
+  }
 
   if (categoryFilter) {
     filters.categoryId = categoryFilter;
@@ -332,6 +345,12 @@ export function ProductsList() {
           >
             {product.is_visible ? 'Visible' : 'Oculto'}
           </span>
+          {/* Pending approval badge for company products */}
+          {product.company_id && !product.is_visible && product.is_active && (
+            <span className="inline-block px-2 py-1 text-xs font-medium rounded-full bg-amber-100 text-amber-700">
+              Pendiente
+            </span>
+          )}
         </div>
       ),
       sortable: false,
@@ -372,6 +391,16 @@ export function ProductsList() {
       header: 'Acciones',
       render: (product: Product) => (
         <div className="flex items-center gap-2">
+          {/* Quick approve button for pending products */}
+          {product.company_id && !product.is_visible && product.is_active && (
+            <button
+              onClick={() => handleToggleVisibility(product)}
+              className="p-2 hover:bg-green-50 rounded-lg transition-colors"
+              title="Aprobar (hacer visible)"
+            >
+              <Check className="w-4 h-4 text-green-600" />
+            </button>
+          )}
           <button
             onClick={() => handleToggleVisibility(product)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -456,6 +485,26 @@ export function ProductsList() {
               <option value="all">Todos</option>
               <option value="active">Activos</option>
               <option value="inactive">Inactivos</option>
+            </select>
+          </div>
+
+          {/* Visibility Filter */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Visibilidad
+            </label>
+            <select
+              value={visibilityFilter}
+              onChange={(e) => {
+                setVisibilityFilter(e.target.value as any);
+                setPage(1);
+              }}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+            >
+              <option value="all">Todos</option>
+              <option value="visible">Visibles</option>
+              <option value="hidden">Ocultos</option>
+              <option value="pending">Pendientes de Aprobación</option>
             </select>
           </div>
 

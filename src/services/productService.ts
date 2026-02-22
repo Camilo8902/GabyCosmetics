@@ -96,6 +96,10 @@ export async function getProducts(
       if (filters.is_visible !== undefined) {
         query = query.eq('is_visible', filters.is_visible);
       }
+      // Filter for products that have a company (for pending approval)
+      if ((filters as any).has_company) {
+        query = query.not('company_id', 'is', null);
+      }
     }
 
     const { data, error, count } = await query
@@ -542,10 +546,13 @@ export async function getBestSellers(limit = 8): Promise<Product[]> {
  */
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   try {
-    const { data, error } = await supabase
+    // First get the product without relationships
+    const { data: product, error } = await supabase
       .from('products')
       .select('*')
       .eq('slug', slug)
+      .eq('is_active', true)
+      .eq('is_visible', true)
       .single();
 
     if (error) {
@@ -553,7 +560,46 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       throw error;
     }
 
-    return data as Product;
+    if (!product) return null;
+
+    // Try to get images separately
+    let images: any[] = [];
+    try {
+      const { data: imagesData } = await supabase
+        .from('product_images')
+        .select('*')
+        .eq('product_id', product.id)
+        .order('order_index', { ascending: true });
+      images = imagesData || [];
+    } catch (e) {
+      console.warn('Could not fetch product images:', e);
+    }
+
+    // Try to get categories separately
+    let categories: any[] = [];
+    try {
+      const { data: catsData, error: catsError } = await supabase
+        .from('product_categories')
+        .select('category_id, categories(id, name, name_en, slug)')
+        .eq('product_id', product.id);
+      
+      if (catsError) {
+        console.error('Error fetching product categories:', catsError);
+      } else {
+        categories = catsData || [];
+      }
+    } catch (e) {
+      console.warn('Could not fetch product categories:', e);
+    }
+
+    // Combine product with relations
+    const productWithRelations = {
+      ...product,
+      images,
+      categories,
+    };
+
+    return productWithRelations as Product;
   } catch (error) {
     console.error('Error getting product by slug:', error);
     throw error;

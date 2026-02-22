@@ -159,10 +159,12 @@ function ProductCard({ product, index }: ProductCardProps) {
 
 export function RecentProducts() {
   const { t } = useTranslation();
-  const { data: products = [] } = useProducts(8);
+  // Fetch products with visibility filters for public display
+  const { data: productsData } = useProducts({ is_active: true, is_visible: true }, 1, 8);
+  const products = productsData?.data || [];
   
-  // Only display real products from database
-  const displayProducts = products.length > 0 ? products : [];
+  // Only display real products from database that are active and visible
+  const displayProducts = products.filter((p: any) => p.is_active && p.is_visible && (p.images?.[0]?.url || p.image_url));
 
   return (
     <section className="py-24 bg-gradient-to-b from-rose-50 to-white">

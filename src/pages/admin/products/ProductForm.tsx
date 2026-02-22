@@ -552,22 +552,39 @@ export function ProductForm() {
                     className="rounded border-gray-300 text-rose-600 focus:ring-rose-500"
                   />
                 </label>
-                <label className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Visible en Tienda</span>
-                  <input
-                    type="checkbox"
-                    {...register('is_visible')}
-                    className="rounded border-gray-300 text-rose-600 focus:ring-rose-500"
-                  />
-                </label>
-                <label className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Destacado</span>
-                  <input
-                    type="checkbox"
-                    {...register('is_featured')}
-                    className="rounded border-gray-300 text-rose-600 focus:ring-rose-500"
-                  />
-                </label>
+                
+                {/* Solo admin puede gestionar visibilidad */}
+                {isAdmin() && (
+                  <label className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Visible en Tienda</span>
+                    <input
+                      type="checkbox"
+                      {...register('is_visible')}
+                      className="rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+                    />
+                  </label>
+                )}
+                
+                {/* Solo admin puede destacar productos */}
+                {isAdmin() && (
+                  <label className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Destacado</span>
+                    <input
+                      type="checkbox"
+                      {...register('is_featured')}
+                      className="rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+                    />
+                  </label>
+                )}
+                
+                {/* Mensaje para empresas */}
+                {isCompany() && !isAdmin() && (
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p className="text-sm text-amber-700">
+                      <strong>Nota:</strong> Los productos creados por empresas requieren aprobación del administrador para ser visibles en la tienda y destacados.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 

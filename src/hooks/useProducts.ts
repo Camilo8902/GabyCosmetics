@@ -122,8 +122,16 @@ export function useCreateProduct() {
         throw new Error('Tu cuenta no tiene una empresa asociada. Contacta al administrador.');
       }
       
+      // Para empresas, el producto debe crearse con is_visible = false (requiere aprobación)
+      // y is_featured = false (solo admin puede destacar)
+      const productData = { ...product };
+      if (isCompany() && !isAdmin()) {
+        productData.is_visible = false;
+        productData.is_featured = false;
+      }
+      
       // Pass empty string for admin, or the company_id for company users
-      return productService.createProduct(companyId || '', product);
+      return productService.createProduct(companyId || '', productData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
