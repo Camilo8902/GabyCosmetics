@@ -139,3 +139,115 @@ export function useToggleCompanyActive() {
     },
   });
 }
+
+/**
+ * Hook for deleting a company (soft delete)
+ */
+export function useDeleteCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => companyService.deleteCompany(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Empresa eliminada');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al eliminar la empresa');
+    },
+  });
+}
+
+/**
+ * Hook for permanently deleting a company
+ */
+export function usePermanentDeleteCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => companyService.permanentDeleteCompany(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Empresa eliminada permanentemente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al eliminar la empresa');
+    },
+  });
+}
+
+/**
+ * Hook for fetching company stats
+ */
+export function useCompanyStats(companyId: string | null) {
+  return useQuery({
+    queryKey: ['companyStats', companyId],
+    queryFn: () => (companyId ? companyService.getCompanyStats(companyId) : null),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Hook for fetching company products
+ */
+export function useCompanyProducts(companyId: string | null, page = 1, pageSize = 10) {
+  return useQuery({
+    queryKey: ['companyProducts', companyId, page, pageSize],
+    queryFn: () => (companyId ? companyService.getCompanyProducts(companyId, page, pageSize) : null),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Hook for fetching company orders
+ */
+export function useCompanyOrders(companyId: string | null, page = 1, pageSize = 10) {
+  return useQuery({
+    queryKey: ['companyOrders', companyId, page, pageSize],
+    queryFn: () => (companyId ? companyService.getCompanyOrders(companyId, page, pageSize) : null),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Hook for changing company plan
+ */
+export function useChangeCompanyPlan() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, plan }: { id: string; plan: string }) =>
+      companyService.changeCompanyPlan(id, plan as any),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['company', variables.id] });
+      toast.success('Plan actualizado');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al cambiar el plan');
+    },
+  });
+}
+
+/**
+ * Hook for admin updating company
+ */
+export function useAdminUpdateCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<Company> }) =>
+      companyService.adminUpdateCompany(id, updates),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      queryClient.invalidateQueries({ queryKey: ['company', variables.id] });
+      toast.success('Empresa actualizada');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al actualizar la empresa');
+    },
+  });
+}

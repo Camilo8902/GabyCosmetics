@@ -32,6 +32,13 @@ const companyService = {
   canAddMoreProducts,
   verifyCompany,
   toggleCompanyActive,
+  adminUpdateCompany,
+  deleteCompany,
+  permanentDeleteCompany,
+  getCompanyStats,
+  getCompanyProducts,
+  getCompanyOrders,
+  changeCompanyPlan,
 };
 
 export { companyService };
@@ -653,5 +660,291 @@ export async function getMyPermissions(
   } catch (error) {
     console.error('Error getting permissions:', error);
     return [];
+  }
+}
+
+// ==========================================
+// FUNCIONES ADICIONALES DE ADMINISTRACIÓN
+// ==========================================
+
+/**
+ * Actualizar datos de empresa (admin)
+ */
+export async function adminUpdateCompany(
+  companyId: string,
+  data: Partial<Company>
+): Promise<{ company: Company | null; error: Error | null }> {
+  try {
+    const { data: company, error } = await supabase
+      .from('companies')
+      .update({
+        ...data,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', companyId)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    return { company: company as unknown as Company, error: null };
+  } catch (error) {
+    console.error('Error updating company:', error);
+    return { company: null, error: error as Error };
+  }
+}
+
+/**
+ * Eliminar empresa (soft delete - marcar como inactiva)
+ */
+export async function deleteCompany(
+  companyId: string
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    // Soft delete - marcar como eliminada
+    const { error } = await supabase
+      .from('companies')
+      .update({
+        is_active: false,
+        status: 'deleted',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', companyId);
+
+    if (error) throw error;
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error deleting company:', error);
+    return { success: false, error: error as Error };
+  }
+}
+
+/**
+ * Eliminar empresa permanentemente
+ */
+export async function permanentDeleteCompany(
+  companyId: string
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    // Primero eliminar productos asociados
+    await supabase
+      .from('products')
+      .delete()
+      .eq('company_id', companyId);
+
+    // Eliminar usuarios de la empresa
+    await supabase
+      .from('company_users')
+      .delete()
+      .eq('company_id', companyId);
+
+    // Eliminar suscripciones
+    await supabase
+      .from('subscriptions')
+      .delete()
+      .eq('company_id', companyId);
+
+    // Finalmente eliminar la empresa
+    const { error } = await supabase
+      .from('companies')
+      .delete()
+      .eq('id', companyId);
+
+    if (error) throw error;
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error permanently deleting company:', error);
+    return { success: false, error: error as Error };
+  }
+}
+
+/**
+ * Obtener estadísticas de una empresa
+ */
+export async function getCompanyStats(
+  companyId: string
+): Promise<{
+  products: number;
+  activeProducts: number;
+  orders: number;
+  revenue: number;
+  users: number;
+  error: Error | null;
+}> {
+  try {
+    // Contar productos
+    const { count: products } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId);
+
+    const { count: activeProducts } = await supabase
+      .from('products')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('is_active', true);
+
+    // Contar pedidos
+    const { count: orders } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId);
+
+    // Calcular ingresos
+    const { data: revenueData } = await supabase
+      .from('orders')
+      .select('total')
+      .eq('company_id', companyId)
+      .eq('status', 'delivered');
+
+    const revenue = revenueData?.reduce((sum, order) => sum + (order.total || 0), 0) || 0;
+
+    // Contar usuarios
+    const { count: users } = await supabase
+      .from('company_users')
+      .select('*', { count: 'exact', head: true })
+      .eq('company_id', companyId)
+      .eq('status', 'active');
+
+    return {
+      products: products || 0,
+      activeProducts: activeProducts || 0,
+      orders: orders || 0,
+      revenue,
+      users: users || 0,
+      error: null,
+    };
+  } catch (error) {
+    console.error('Error getting company stats:', error);
+    return {
+      products: 0,
+      activeProducts: 0,
+      orders: 0,
+      revenue: 0,
+      users: 0,
+      error: error as Error,
+    };
+  }
+}
+
+/**
+ * Obtener productos de una empresa
+ */
+export async function getCompanyProducts(
+  companyId: string,
+  page = 1,
+  pageSize = 10
+): Promise<{
+  data: any[];
+  total: number;
+  error: Error | null;
+}> {
+  try {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from('products')
+      .select('*, categories(name)', { count: 'exact' })
+      .eq('company_id', companyId)
+      .range(from, to)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return {
+      data: data || [],
+      total: count || 0,
+      error: null,
+    };
+  } catch (error) {
+    console.error('Error getting company products:', error);
+    return {
+      data: [],
+      total: 0,
+      error: error as Error,
+    };
+  }
+}
+
+/**
+ * Obtener pedidos de una empresa
+ */
+export async function getCompanyOrders(
+  companyId: string,
+  page = 1,
+  pageSize = 10
+): Promise<{
+  data: any[];
+  total: number;
+  error: Error | null;
+}> {
+  try {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    const { data, error, count } = await supabase
+      .from('orders')
+      .select('*, users(full_name, email)', { count: 'exact' })
+      .eq('company_id', companyId)
+      .range(from, to)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return {
+      data: data || [],
+      total: count || 0,
+      error: null,
+    };
+  } catch (error) {
+    console.error('Error getting company orders:', error);
+    return {
+      data: [],
+      total: 0,
+      error: error as Error,
+    };
+  }
+}
+
+/**
+ * Cambiar plan de empresa
+ */
+export async function changeCompanyPlan(
+  companyId: string,
+  plan: SubscriptionPlan
+): Promise<{ success: boolean; error: Error | null }> {
+  try {
+    // Actualizar en companies
+    const { error: companyError } = await supabase
+      .from('companies')
+      .update({
+        plan,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', companyId);
+
+    if (companyError) throw companyError;
+
+    // Actualizar o crear suscripción
+    const { error: subError } = await supabase
+      .from('subscriptions')
+      .upsert({
+        company_id: companyId,
+        plan,
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'company_id',
+      });
+
+    if (subError) throw subError;
+
+    return { success: true, error: null };
+  } catch (error) {
+    console.error('Error changing company plan:', error);
+    return { success: false, error: error as Error };
   }
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building2,
@@ -15,15 +15,26 @@ import {
   Phone,
   Calendar,
   Download,
+  Edit,
+  Trash2,
+  MoreVertical,
+  Package,
+  ShoppingCart,
+  DollarSign,
+  AlertTriangle,
+  Loader2,
+  Plus,
+  Settings,
 } from 'lucide-react';
-import { useCompanies, useCompanyRequests, useApproveRequest, useRejectRequest, useRequestsStats } from '@/hooks';
+import { useCompanies, useCompanyRequests, useApproveRequest, useRejectRequest, useRequestsStats, useDeleteCompany, useToggleCompanyActive, useCompanyStats } from '@/hooks';
 import { useGlobalMetrics } from '@/hooks/useGlobalMetrics';
 import { cn } from '@/lib/utils';
-import { formatDate } from '@/utils/formatters';
+import { formatDate, formatCurrency } from '@/utils/formatters';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import type { Company } from '@/types';
 import type { CompanyRequest } from '@/hooks/useCompanyRequests';
+import toast from 'react-hot-toast';
 
 // Tabs del módulo
 type Tab = 'all' | 'pending' | 'approved' | 'suspended' | 'requests';
@@ -51,6 +62,7 @@ const statusConfig = {
 };
 
 export function CompaniesListPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<Tab>('all');
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,6 +71,10 @@ export function CompaniesListPage() {
   const [showActionModal, setShowActionModal] = useState(false);
   const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
   const [notes, setNotes] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [showCompanyModal, setShowCompanyModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [actionMenuId, setActionMenuId] = useState<string | null>(null);
 
   const { data: companiesData, isLoading: companiesLoading } = useCompanies({}, page, 20);
   const { data: requestsData, isLoading: requestsLoading } = useCompanyRequests();
@@ -66,6 +82,8 @@ export function CompaniesListPage() {
   const { data: metrics } = useGlobalMetrics();
   const approveMutation = useApproveRequest();
   const rejectMutation = useRejectRequest();
+  const deleteCompany = useDeleteCompany();
+  const toggleActive = useToggleCompanyActive();
 
   const isLoading = companiesLoading || requestsLoading;
 
@@ -128,6 +146,27 @@ export function CompaniesListPage() {
     setSelectedRequest(request);
     setActionType(type);
     setShowActionModal(true);
+  };
+
+  // Handlers para empresas
+  const handleToggleActive = async (company: Company) => {
+    try {
+      await toggleActive.mutateAsync({ id: company.id, isActive: !company.is_active });
+    } catch (error) {
+      console.error('Error toggling company status:', error);
+    }
+    setActionMenuId(null);
+  };
+
+  const handleDelete = async () => {
+    if (!selectedCompany) return;
+    try {
+      await deleteCompany.mutateAsync(selectedCompany.id);
+      setShowDeleteModal(false);
+      setSelectedCompany(null);
+    } catch (error) {
+      console.error('Error deleting company:', error);
+    }
   };
 
   return (
@@ -507,13 +546,44 @@ export function CompaniesListPage() {
                         </p>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        <Link
-                          to={`/admin/companies/${company.id}`}
-                          className="inline-flex items-center gap-1 text-rose-600 hover:underline text-sm"
-                        >
-                          <Eye className="w-4 h-4" />
-                          Ver detalle
-                        </Link>
+                        <div className="flex items-center justify-end gap-2">
+                          <Link
+                            to={`/admin/companies/${company.id}`}
+                            className="p-2 text-gray-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Ver detalle"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                          <Link
+                            to={`/admin/companies/${company.id}/edit`}
+                            className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Editar"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleToggleActive(company)}
+                            className={cn(
+                              'p-2 rounded-lg transition-colors',
+                              company.is_active
+                                ? 'text-gray-500 hover:text-amber-600 hover:bg-amber-50'
+                                : 'text-gray-500 hover:text-green-600 hover:bg-green-50'
+                            )}
+                            title={company.is_active ? 'Suspender' : 'Activar'}
+                          >
+                            {company.is_active ? <XCircle className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedCompany(company);
+                              setShowDeleteModal(true);
+                            }}
+                            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -562,7 +632,7 @@ export function CompaniesListPage() {
           to="/admin/orders"
           className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
         >
-          <Clock className="w-5 h-5 text-purple-600" />
+          <ShoppingCart className="w-5 h-5 text-purple-600" />
           <div>
             <p className="font-medium text-purple-700">Pedidos</p>
             <p className="text-sm text-purple-600">Ver todos los pedidos</p>
@@ -758,6 +828,64 @@ export function CompaniesListPage() {
                     Aprobar
                   </button>
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Company Modal */}
+      <AnimatePresence>
+        {showDeleteModal && selectedCompany && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+            onClick={() => setShowDeleteModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl shadow-xl max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 border-b">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertTriangle className="w-6 h-6 text-red-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900">Eliminar Empresa</h3>
+                    <p className="text-sm text-gray-500">Esta acción no se puede deshacer</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6">
+                <p className="text-gray-700">
+                  ¿Estás seguro de que deseas eliminar la empresa <strong>{selectedCompany.company_name}</strong>?
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  La empresa será desactivada y no aparecerá en el listado.
+                </p>
+              </div>
+
+              <div className="p-6 border-t bg-gray-50 flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="px-4 py-2 text-gray-700 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteCompany.isPending}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {deleteCompany.isPending ? 'Eliminando...' : 'Eliminar'}
+                </button>
               </div>
             </motion.div>
           </motion.div>

@@ -38,6 +38,7 @@ import { UserForm } from '@/pages/admin/users/UserForm';
 import { CompaniesList } from '@/pages/admin/companies/CompaniesList';
 import { CompanyDetail } from '@/pages/admin/companies/CompanyDetail';
 import { CompanyRequests } from '@/pages/admin/companies/CompanyRequests';
+import { CompanyForm } from '@/pages/admin/companies/CompanyForm';
 import { CategoriesList, CategoryForm } from '@/pages/admin/categories';
 import { CompanyDashboard } from '@/pages/company/CompanyLayout';
 import { CompanyDashboardPage } from '@/pages/company/CompanyDashboardPage';
@@ -333,6 +334,7 @@ function App() {
             <Route path="users/:id/edit" element={<UserForm mode="edit" />} />
             <Route path="companies" element={<CompaniesList />} />
             <Route path="companies/:id" element={<CompanyDetail />} />
+            <Route path="companies/:id/edit" element={<CompanyForm />} />
             <Route path="company-requests" element={<CompanyRequests />} />
             <Route path="categories" element={<CategoriesList />} />
             <Route path="categories/new" element={
