@@ -182,7 +182,10 @@ export function useAssignUserToCompany() {
 
   return useMutation({
     mutationFn: ({ userId, companyId }: { userId: string; companyId: string | null }) =>
-      userService.assignUserToCompany(userId, companyId),
+      userService.assignUserToCompany(userId, companyId).then(result => {
+        if (result.error) throw result.error;
+        return result;
+      }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['user', variables.userId] });
