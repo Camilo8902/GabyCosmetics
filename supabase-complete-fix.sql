@@ -203,6 +203,7 @@ WITH CHECK (true);
 
 -- ==========================================
 -- STEP 5: Fix RLS for COMPANY_USERS table
+-- CRITICAL: Avoid infinite recursion by not using functions that query this table
 -- ==========================================
 
 ALTER TABLE public.company_users DISABLE ROW LEVEL SECURITY;
@@ -215,35 +216,58 @@ DROP POLICY IF EXISTS "Company admins can update" ON public.company_users;
 
 ALTER TABLE public.company_users ENABLE ROW LEVEL SECURITY;
 
--- Admin full access
+-- Admin full access (uses is_admin() which only queries users table)
 CREATE POLICY "Admins manage company_users"
 ON public.company_users FOR ALL
 TO authenticated
 USING (public.is_admin())
 WITH CHECK (public.is_admin());
 
--- Users can view their own company's users
+-- Users can view their own record
+CREATE POLICY "Users view own record"
+ON public.company_users FOR SELECT
+TO authenticated
+USING (user_id = auth.uid());
+
+-- Users can view others in same company (using direct query, not function)
 CREATE POLICY "Users view company members"
 ON public.company_users FOR SELECT
 TO authenticated
 USING (
-  user_id = auth.uid() OR public.user_belongs_to_company(company_id)
+  company_id IN (
+    SELECT cu.company_id FROM public.company_users cu 
+    WHERE cu.user_id = auth.uid() 
+    AND cu.status = 'active'
+  )
 );
 
--- Company admins can invite users
-CREATE POLICY "Company admins can invite"
+-- Allow insert for company owners (from companies table)
+CREATE POLICY "Company owners can invite"
 ON public.company_users FOR INSERT
 TO authenticated
 WITH CHECK (
-  public.user_belongs_to_company(company_id)
+  company_id IN (
+    SELECT c.id FROM public.companies c WHERE c.user_id = auth.uid()
+  )
+  OR public.is_admin()
 );
 
--- Company admins can update users
-CREATE POLICY "Company admins can update"
+-- Allow update for company owners
+CREATE POLICY "Company owners can update"
 ON public.company_users FOR UPDATE
 TO authenticated
-USING (public.user_belongs_to_company(company_id))
-WITH CHECK (public.user_belongs_to_company(company_id));
+USING (
+  company_id IN (
+    SELECT c.id FROM public.companies c WHERE c.user_id = auth.uid()
+  )
+  OR public.is_admin()
+)
+WITH CHECK (
+  company_id IN (
+    SELECT c.id FROM public.companies c WHERE c.user_id = auth.uid()
+  )
+  OR public.is_admin()
+);
 
 -- ==========================================
 -- STEP 6: Fix RLS for SUBSCRIPTIONS table

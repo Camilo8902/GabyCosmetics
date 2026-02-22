@@ -104,7 +104,9 @@ export function UserForm({ mode = 'create' }: UserFormProps) {
       newErrors.phone = 'Teléfono inválido';
     }
 
+    // Password validation only for new users or if password is provided
     if (!isEditing) {
+      // New user - password required
       if (!formData.password) {
         newErrors.password = 'La contraseña es requerida';
       } else if (formData.password.length < 6) {
@@ -114,7 +116,8 @@ export function UserForm({ mode = 'create' }: UserFormProps) {
       if (formData.password !== formData.confirm_password) {
         newErrors.confirm_password = 'Las contraseñas no coinciden';
       }
-    } else if (formData.password) {
+    } else if (formData.password && formData.password.length > 0) {
+      // Editing - password optional, but if provided must be valid
       if (formData.password.length < 6) {
         newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
       }
