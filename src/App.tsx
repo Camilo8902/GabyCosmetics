@@ -34,6 +34,7 @@ import { OrdersList } from '@/pages/admin/orders/OrdersList';
 import { OrderDetail } from '@/pages/admin/orders/OrderDetail';
 import { UsersList } from '@/pages/admin/users/UsersList';
 import { UserDetail } from '@/pages/admin/users/UserDetail';
+import { UserForm } from '@/pages/admin/users/UserForm';
 import { CompaniesList } from '@/pages/admin/companies/CompaniesList';
 import { CompanyDetail } from '@/pages/admin/companies/CompanyDetail';
 import { CompanyRequests } from '@/pages/admin/companies/CompanyRequests';
@@ -45,6 +46,7 @@ import { CompanyOrdersPage } from '@/pages/company/CompanyOrdersPage';
 import { CompanyInventoryPage } from '@/pages/company/CompanyInventoryPage';
 import { CompanyBillingPage } from '@/pages/company/CompanyBillingPage';
 import { GlobalReportsPage } from '@/pages/admin/reports/GlobalReportsPage';
+import { CompaniesListPage } from '@/pages/admin/companies/CompaniesListPage';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
 import { ProductDetailPage } from '@/pages/shop/ProductDetailPage';
 import { CheckoutPage } from '@/pages/shop/CheckoutPage';
@@ -326,7 +328,9 @@ function App() {
             <Route path="orders" element={<OrdersList />} />
             <Route path="orders/:id" element={<OrderDetail />} />
             <Route path="users" element={<UsersList />} />
+            <Route path="users/new" element={<UserForm mode="create" />} />
             <Route path="users/:id" element={<UserDetail />} />
+            <Route path="users/:id/edit" element={<UserForm mode="edit" />} />
             <Route path="companies" element={<CompaniesList />} />
             <Route path="companies/:id" element={<CompanyDetail />} />
             <Route path="company-requests" element={<CompanyRequests />} />

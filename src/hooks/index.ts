@@ -10,3 +10,4 @@ export * from './useCompanies';
 export * from './useAdminMetrics';
 export * from './useCompanyMetrics';
 export * from './useGlobalMetrics';
+export * from './useCompanyRequests';

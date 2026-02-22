@@ -7,6 +7,7 @@ interface UserFilters {
   role?: UserRole;
   isActive?: boolean;
   search?: string;
+  companyId?: string;
 }
 
 /**
@@ -52,6 +53,32 @@ export function useUser(id: string | null) {
 }
 
 /**
+ * Hook for creating a new user
+ */
+export function useCreateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userData: {
+      email: string;
+      full_name: string;
+      role: UserRole;
+      phone?: string;
+      company_id?: string;
+      is_active?: boolean;
+      password: string;
+    }) => userService.createUser(userData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Usuario creado exitosamente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al crear el usuario');
+    },
+  });
+}
+
+/**
  * Hook for updating a user
  */
 export function useUpdateUser() {
@@ -67,6 +94,42 @@ export function useUpdateUser() {
     },
     onError: (error: Error) => {
       toast.error(error.message || 'Error al actualizar el usuario');
+    },
+  });
+}
+
+/**
+ * Hook for deleting a user (soft delete)
+ */
+export function useDeleteUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => userService.deleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Usuario desactivado exitosamente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al desactivar el usuario');
+    },
+  });
+}
+
+/**
+ * Hook for permanently deleting a user
+ */
+export function usePermanentDeleteUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => userService.permanentDeleteUser(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success('Usuario eliminado permanentemente');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al eliminar el usuario');
     },
   });
 }
@@ -108,5 +171,49 @@ export function useToggleUserActive() {
     onError: (error: Error) => {
       toast.error(error.message || 'Error al cambiar el estado del usuario');
     },
+  });
+}
+
+/**
+ * Hook for assigning user to company
+ */
+export function useAssignUserToCompany() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, companyId }: { userId: string; companyId: string | null }) =>
+      userService.assignUserToCompany(userId, companyId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['user', variables.userId] });
+      toast.success(variables.companyId ? 'Usuario asignado a la empresa' : 'Usuario removido de la empresa');
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Error al asignar el usuario');
+    },
+  });
+}
+
+/**
+ * Hook for fetching users by company
+ */
+export function useCompanyUsers(companyId: string | null) {
+  return useQuery<User[]>({
+    queryKey: ['users', 'company', companyId],
+    queryFn: () => (companyId ? userService.getUsersByCompany(companyId) : Promise.resolve([])),
+    enabled: !!companyId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+/**
+ * Hook for checking if email exists
+ */
+export function useCheckEmailExists(email: string, enabled = false) {
+  return useQuery<boolean>({
+    queryKey: ['checkEmail', email],
+    queryFn: () => userService.checkEmailExists(email),
+    enabled: enabled && !!email,
+    staleTime: 1000 * 60 * 5,
   });
 }

@@ -405,32 +405,8 @@ export function GlobalReportsPage() {
         )}
       </motion.div>
 
-      {/* Quick Actions */}
-      <div className="grid sm:grid-cols-4 gap-4">
-        <Link
-          to="/admin/company-requests"
-          className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl hover:bg-amber-100 transition-colors"
-        >
-          <Activity className="w-5 h-5 text-amber-600" />
-          <div>
-            <p className="font-medium text-amber-700">Solicitudes</p>
-            <p className="text-sm text-amber-600">
-              {metrics?.pendingRequests || 0} pendientes
-            </p>
-          </div>
-        </Link>
-        <Link
-          to="/admin/companies"
-          className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl hover:bg-purple-100 transition-colors"
-        >
-          <Building2 className="w-5 h-5 text-purple-600" />
-          <div>
-            <p className="font-medium text-purple-700">Empresas</p>
-            <p className="text-sm text-purple-600">
-              {metrics?.totalCompanies || 0} registradas
-            </p>
-          </div>
-        </Link>
+      {/* Quick Actions - Only Orders and Users (Company management moved to /admin/companies) */}
+      <div className="grid sm:grid-cols-2 gap-4">
         <Link
           to="/admin/orders"
           className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
