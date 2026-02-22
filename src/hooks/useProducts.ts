@@ -198,13 +198,20 @@ export function useSetProductCategories() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ productId, categoryIds }: { productId: string; categoryIds: string[] }) =>
-      productService.setProductCategories(productId, categoryIds),
+    mutationFn: async ({ productId, categoryIds }: { productId: string; categoryIds: string[] }) => {
+      console.log('🔵 [useSetProductCategories] Hook llamado');
+      console.log('🔵 [useSetProductCategories] productId:', productId);
+      console.log('🔵 [useSetProductCategories] categoryIds:', categoryIds);
+      return productService.setProductCategories(productId, categoryIds);
+    },
     onSuccess: (_, variables) => {
+      console.log('✅ [useSetProductCategories] Categorías guardadas exitosamente');
       queryClient.invalidateQueries({ queryKey: ['product', variables.productId] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success('Categorías actualizadas exitosamente');
     },
     onError: (error: Error) => {
+      console.error('❌ [useSetProductCategories] Error:', error);
       toast.error(error.message || 'Error al actualizar categorías');
     },
   });

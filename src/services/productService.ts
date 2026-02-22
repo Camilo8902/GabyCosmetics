@@ -806,12 +806,23 @@ export async function setProductCategories(
   productId: string,
   categoryIds: string[]
 ): Promise<void> {
+  console.log('🔵 [setProductCategories] Iniciando...');
+  console.log('🔵 [setProductCategories] productId:', productId);
+  console.log('🔵 [setProductCategories] categoryIds:', categoryIds);
+  
   try {
     // Eliminar categorías existentes
-    await supabase
+    console.log('🔵 [setProductCategories] Eliminando categorías existentes...');
+    const { error: deleteError } = await supabase
       .from('product_categories')
       .delete()
       .eq('product_id', productId);
+    
+    if (deleteError) {
+      console.error('❌ [setProductCategories] Error al eliminar:', deleteError);
+      throw deleteError;
+    }
+    console.log('✅ [setProductCategories] Categorías existentes eliminadas');
 
     // Insertar nuevas categorías
     if (categoryIds.length > 0) {
@@ -819,15 +830,25 @@ export async function setProductCategories(
         product_id: productId,
         category_id: categoryId,
       }));
+      
+      console.log('🔵 [setProductCategories] Insertando nuevas categorías:', inserts);
 
-      const { error } = await supabase
+      const { error: insertError } = await supabase
         .from('product_categories')
         .insert(inserts);
 
-      if (error) throw error;
+      if (insertError) {
+        console.error('❌ [setProductCategories] Error al insertar:', insertError);
+        throw insertError;
+      }
+      console.log('✅ [setProductCategories] Categorías insertadas correctamente');
+    } else {
+      console.log('⚠️ [setProductCategories] No hay categorías para insertar');
     }
+    
+    console.log('✅ [setProductCategories] Proceso completado exitosamente');
   } catch (error) {
-    console.error('Error setting product categories:', error);
+    console.error('❌ [setProductCategories] Error general:', error);
     throw error;
   }
 }

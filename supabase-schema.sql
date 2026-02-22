@@ -108,6 +108,25 @@ CREATE TABLE public.company_invitations (
   CONSTRAINT company_invitations_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id),
   CONSTRAINT company_invitations_invited_by_fkey FOREIGN KEY (invited_by) REFERENCES auth.users(id)
 );
+CREATE TABLE public.company_requests (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  business_name character varying NOT NULL,
+  owner_name character varying NOT NULL,
+  email character varying NOT NULL,
+  phone character varying,
+  business_type character varying,
+  products_count character varying,
+  message text,
+  status character varying DEFAULT 'pending'::character varying,
+  notes text,
+  reviewed_by uuid,
+  reviewed_at timestamp with time zone,
+  submitted_at timestamp with time zone DEFAULT now(),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT company_requests_pkey PRIMARY KEY (id),
+  CONSTRAINT company_requests_reviewed_by_fkey FOREIGN KEY (reviewed_by) REFERENCES auth.users(id)
+);
 CREATE TABLE public.company_users (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   company_id uuid NOT NULL,
@@ -151,6 +170,34 @@ CREATE TABLE public.inventory (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT inventory_pkey PRIMARY KEY (id),
   CONSTRAINT inventory_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
+);
+CREATE TABLE public.inventory_movements (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  variant_id uuid NOT NULL,
+  movement_type character varying NOT NULL,
+  quantity_change integer NOT NULL,
+  previous_quantity integer NOT NULL,
+  new_quantity integer NOT NULL,
+  reason text,
+  reference_id character varying,
+  created_by uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT inventory_movements_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_movements_variant FOREIGN KEY (variant_id) REFERENCES public.product_variants(id)
+);
+CREATE TABLE public.low_stock_alerts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  variant_id uuid NOT NULL,
+  product_id uuid NOT NULL,
+  current_stock integer NOT NULL,
+  low_stock_threshold integer NOT NULL,
+  is_read boolean NOT NULL DEFAULT false,
+  is_resolved boolean NOT NULL DEFAULT false,
+  resolved_at timestamp with time zone,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT low_stock_alerts_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_alerts_variant FOREIGN KEY (variant_id) REFERENCES public.product_variants(id),
+  CONSTRAINT fk_alerts_product FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
 CREATE TABLE public.newsletter_subscribers (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -220,6 +267,24 @@ CREATE TABLE public.product_images (
   CONSTRAINT product_images_pkey PRIMARY KEY (id),
   CONSTRAINT product_images_product_id_fkey FOREIGN KEY (product_id) REFERENCES public.products(id)
 );
+CREATE TABLE public.product_variants (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  product_id uuid NOT NULL,
+  sku character varying NOT NULL UNIQUE,
+  name character varying NOT NULL,
+  name_en character varying DEFAULT ''::character varying,
+  price numeric NOT NULL DEFAULT 0,
+  compare_at_price numeric,
+  cost_price numeric,
+  barcode character varying,
+  weight numeric,
+  is_active boolean NOT NULL DEFAULT true,
+  sort_order integer DEFAULT 0,
+  attributes jsonb DEFAULT '{}'::jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT product_variants_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.products (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   company_id uuid,
@@ -244,6 +309,7 @@ CREATE TABLE public.products (
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   status character varying DEFAULT 'draft'::character varying CHECK (status IS NULL OR (status::text = ANY (ARRAY['draft'::character varying, 'active'::character varying, 'inactive'::character varying, 'archived'::character varying]::text[]))),
+  image_url text,
   CONSTRAINT products_pkey PRIMARY KEY (id),
   CONSTRAINT products_company_id_fkey FOREIGN KEY (company_id) REFERENCES public.companies(id)
 );
@@ -324,6 +390,20 @@ CREATE TABLE public.users (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT users_pkey PRIMARY KEY (id),
   CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
+);
+CREATE TABLE public.variant_inventory (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  variant_id uuid NOT NULL UNIQUE,
+  quantity integer NOT NULL DEFAULT 0,
+  reserved_quantity integer NOT NULL DEFAULT 0,
+  low_stock_threshold integer NOT NULL DEFAULT 10,
+  track_inventory boolean NOT NULL DEFAULT true,
+  allow_backorder boolean NOT NULL DEFAULT false,
+  location character varying,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT variant_inventory_pkey PRIMARY KEY (id),
+  CONSTRAINT fk_variant_inventory_variant FOREIGN KEY (variant_id) REFERENCES public.product_variants(id)
 );
 CREATE TABLE public.wishlist_items (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
