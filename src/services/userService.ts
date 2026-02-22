@@ -14,7 +14,6 @@ export const userService = {
       role?: UserRole;
       isActive?: boolean;
       search?: string;
-      companyId?: string;
     },
     page = 1,
     pageSize = 20
@@ -35,10 +34,6 @@ export const userService = {
 
       if (filters?.search) {
         query = query.or(`email.ilike.%${filters.search}%,full_name.ilike.%${filters.search}%`);
-      }
-
-      if (filters?.companyId) {
-        query = query.eq('company_id', filters.companyId);
       }
 
       // Apply sorting
@@ -119,7 +114,6 @@ export const userService = {
     full_name: string;
     role: UserRole;
     phone?: string;
-    company_id?: string;
     is_active?: boolean;
     password: string;
   }): Promise<User> {
@@ -139,6 +133,9 @@ export const userService = {
       if (authError) throw authError;
       if (!authData.user) throw new Error('Error creating user');
 
+      // Wait for trigger to create user in public.users
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Then update the user record with additional data
       const { data, error } = await supabase
         .from('users')
@@ -146,13 +143,12 @@ export const userService = {
           full_name: userData.full_name,
           role: userData.role,
           phone: userData.phone,
-          company_id: userData.company_id,
           is_active: userData.is_active ?? true,
           email_verified: false,
         })
         .eq('id', authData.user.id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data as User;
@@ -244,25 +240,70 @@ export const userService = {
   },
 
   /**
-   * Assign user to company
+   * Assign user to company (via company_users table)
    */
-  async assignUserToCompany(userId: string, companyId: string | null): Promise<User> {
-    return this.updateUser(userId, { company_id: companyId });
+  async assignUserToCompany(userId: string, companyId: string | null): Promise<{ success: boolean; error: Error | null }> {
+    try {
+      if (companyId) {
+        // Check if user already exists in company_users
+        const { data: existing } = await supabase
+          .from('company_users')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('company_id', companyId)
+          .maybeSingle();
+
+        if (!existing) {
+          // Create new company_user record
+          const { error } = await supabase
+            .from('company_users')
+            .insert({
+              user_id: userId,
+              company_id: companyId,
+              role: 'viewer',
+              status: 'active',
+              hired_at: new Date().toISOString(),
+            });
+
+          if (error) throw error;
+        } else {
+          // Update existing record to active
+          await supabase
+            .from('company_users')
+            .update({ status: 'active', updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+        }
+      } else {
+        // Remove from all companies (set status to removed)
+        await supabase
+          .from('company_users')
+          .update({ status: 'removed', removed_at: new Date().toISOString() })
+          .eq('user_id', userId);
+      }
+
+      return { success: true, error: null };
+    } catch (error) {
+      console.error('Error assigning user to company:', error);
+      return { success: false, error: error as Error };
+    }
   },
 
   /**
-   * Get users by company
+   * Get users by company (via company_users table)
    */
   async getUsersByCompany(companyId: string): Promise<User[]> {
     try {
       const { data, error } = await supabase
-        .from('users')
-        .select('*')
+        .from('company_users')
+        .select(`
+          user_id,
+          users (*)
+        `)
         .eq('company_id', companyId)
-        .order('created_at', { ascending: false });
+        .eq('status', 'active');
 
       if (error) throw error;
-      return (data || []) as User[];
+      return (data?.map((cu: any) => cu.users).filter(Boolean) || []) as User[];
     } catch (error) {
       console.error('Error fetching company users:', error);
       return [];

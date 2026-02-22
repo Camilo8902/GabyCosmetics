@@ -23,17 +23,20 @@ AS $$
   );
 $$;
 
--- Function to get current user's company ID (bypasses RLS)
+-- Function to get current user's company ID from company_users table
 CREATE OR REPLACE FUNCTION public.get_my_company_id()
 RETURNS UUID
 LANGUAGE sql
 SECURITY DEFINER
 SET search_path = public
 AS $$
-  SELECT company_id FROM public.users WHERE id = auth.uid();
+  SELECT company_id FROM public.company_users 
+  WHERE user_id = auth.uid() 
+  AND status = 'active'
+  LIMIT 1;
 $$;
 
--- Function to check if user belongs to company (bypasses RLS)
+-- Function to check if user belongs to company (via company_users table)
 CREATE OR REPLACE FUNCTION public.user_belongs_to_company(p_company_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -41,10 +44,11 @@ SECURITY DEFINER
 SET search_path = public
 AS $$
   SELECT EXISTS (
-    SELECT 1 FROM public.users 
-    WHERE id = auth.uid() 
-    AND (company_id = p_company_id OR role = 'admin')
-  );
+    SELECT 1 FROM public.company_users 
+    WHERE user_id = auth.uid() 
+    AND company_id = p_company_id
+    AND status = 'active'
+  ) OR public.is_admin();
 $$;
 
 -- Function to check if user is company owner (bypasses RLS)
@@ -79,27 +83,28 @@ DROP POLICY IF EXISTS "Service role can insert users" ON public.users;
 DROP POLICY IF EXISTS "Users can insert their own profile" ON public.users;
 DROP POLICY IF EXISTS "Admins have full access to users" ON public.users;
 DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
-DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
+DROP POLICY IF EXISTS "Users update own profile" ON public.users;
 DROP POLICY IF EXISTS "Allow insert during registration" ON public.users;
 DROP POLICY IF EXISTS "Allow insert for users" ON public.users;
 DROP POLICY IF EXISTS "Allow public registration" ON public.users;
+DROP POLICY IF EXISTS "Admins manage all users" ON public.users;
 
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
--- Admin full access
+-- Admin full access (covers SELECT, INSERT, UPDATE, DELETE)
 CREATE POLICY "Admins manage all users"
 ON public.users FOR ALL
 TO authenticated
 USING (public.is_admin())
 WITH CHECK (public.is_admin());
 
--- Users can read own profile
+-- Users can read own profile (OR admin via policy above)
 CREATE POLICY "Users read own profile"
 ON public.users FOR SELECT
 TO authenticated
 USING (id = auth.uid());
 
--- Users can update own profile (limited fields)
+-- Users can update own profile (OR admin via policy above)
 CREATE POLICY "Users update own profile"
 ON public.users FOR UPDATE
 TO authenticated
@@ -198,7 +203,6 @@ WITH CHECK (true);
 
 -- ==========================================
 -- STEP 5: Fix RLS for COMPANY_USERS table
--- This is the critical one causing infinite recursion
 -- ==========================================
 
 ALTER TABLE public.company_users DISABLE ROW LEVEL SECURITY;
@@ -211,19 +215,19 @@ DROP POLICY IF EXISTS "Company admins can update" ON public.company_users;
 
 ALTER TABLE public.company_users ENABLE ROW LEVEL SECURITY;
 
--- Admin full access (uses is_admin() which is SECURITY DEFINER)
+-- Admin full access
 CREATE POLICY "Admins manage company_users"
 ON public.company_users FOR ALL
 TO authenticated
 USING (public.is_admin())
 WITH CHECK (public.is_admin());
 
--- Users can view their own company's users (uses SECURITY DEFINER function)
+-- Users can view their own company's users
 CREATE POLICY "Users view company members"
 ON public.company_users FOR SELECT
 TO authenticated
 USING (
-  public.user_belongs_to_company(company_id)
+  user_id = auth.uid() OR public.user_belongs_to_company(company_id)
 );
 
 -- Company admins can invite users
@@ -349,7 +353,6 @@ CREATE TRIGGER on_auth_user_created
 CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
 CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 CREATE INDEX IF NOT EXISTS idx_users_is_active ON public.users(is_active);
-CREATE INDEX IF NOT EXISTS idx_users_company_id ON public.users(company_id);
 CREATE INDEX IF NOT EXISTS idx_companies_status ON public.companies(status);
 CREATE INDEX IF NOT EXISTS idx_companies_is_active ON public.companies(is_active);
 CREATE INDEX IF NOT EXISTS idx_companies_user_id ON public.companies(user_id);
@@ -369,7 +372,21 @@ GRANT EXECUTE ON FUNCTION public.user_belongs_to_company(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_company_owner(UUID) TO authenticated;
 
 -- ==========================================
--- STEP 11: Fix any existing users without public.users entry
+-- STEP 11: Ensure admin user has correct role
+-- ==========================================
+
+-- Update the first user to be admin if no admin exists
+UPDATE public.users 
+SET role = 'admin' 
+WHERE id = (
+  SELECT id FROM public.users 
+  ORDER BY created_at 
+  LIMIT 1
+)
+AND NOT EXISTS (SELECT 1 FROM public.users WHERE role = 'admin');
+
+-- ==========================================
+-- STEP 12: Fix any existing users without public.users entry
 -- ==========================================
 
 INSERT INTO public.users (id, email, full_name, role, is_active, email_verified, created_at, updated_at)
@@ -386,27 +403,6 @@ FROM auth.users u
 WHERE NOT EXISTS (SELECT 1 FROM public.users p WHERE p.id = u.id);
 
 -- ==========================================
--- STEP 12: Ensure admin user has correct role
--- ==========================================
-
--- Update the first user to be admin (adjust email as needed)
--- This ensures at least one user has admin role
-UPDATE public.users 
-SET role = 'admin' 
-WHERE email IN ('admin@gabycosmetics.com', 'admin@example.com')
-AND role != 'admin';
-
--- If no admin exists, make the first user an admin
-UPDATE public.users 
-SET role = 'admin' 
-WHERE id = (
-  SELECT id FROM public.users 
-  ORDER BY created_at 
-  LIMIT 1
-)
-AND NOT EXISTS (SELECT 1 FROM public.users WHERE role = 'admin');
-
--- ==========================================
 -- VERIFICATION QUERIES (run after applying)
 -- ==========================================
 
@@ -417,4 +413,3 @@ AND NOT EXISTS (SELECT 1 FROM public.users WHERE role = 'admin');
 -- SELECT * FROM public.subscriptions LIMIT 5;
 -- SELECT public.is_admin();
 -- SELECT public.get_my_company_id();
--- SELECT public.user_belongs_to_company('company-uuid-here');
