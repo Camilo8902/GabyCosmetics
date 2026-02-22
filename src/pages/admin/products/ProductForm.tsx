@@ -259,7 +259,11 @@ export function ProductForm() {
 
         // Navigate back
         console.log('🔵 [ProductForm] Navegando a lista de productos');
-        navigate('/admin/products');
+        if (isCompany()) {
+          navigate('/company/products');
+        } else {
+          navigate('/admin/products');
+        }
       } else {
         console.log('🟢 [ProductForm] Creando nuevo producto');
         
@@ -299,7 +303,11 @@ export function ProductForm() {
         }
 
         console.log('🔵 [ProductForm] Navegando a página de edición');
-        navigate(`/admin/products/${newProduct.id}/edit`);
+        if (isCompany()) {
+          navigate(`/company/products/${newProduct.id}/edit`);
+        } else {
+          navigate(`/admin/products/${newProduct.id}/edit`);
+        }
       }
     } catch (error) {
       console.error('❌ [ProductForm] Error saving product:', error);
