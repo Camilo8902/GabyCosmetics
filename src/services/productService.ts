@@ -29,19 +29,57 @@ export async function getProducts(
   pageSize = 20
 ): Promise<PaginatedResponse<Product>> {
   try {
+    // If filtering by category, we need to use a different approach
+    // because the relationship is through a junction table
+    let productIdsByCategory: string[] | null = null;
+    
+    if (filters?.categoryId) {
+      // Get product IDs that have the specified category
+      const { data: categoryProducts, error: catError } = await supabase
+        .from('product_categories')
+        .select('product_id')
+        .eq('category_id', filters.categoryId);
+      
+      if (catError) throw catError;
+      
+      productIdsByCategory = categoryProducts?.map(p => p.product_id) || [];
+      
+      // If no products have this category, return empty result
+      if (productIdsByCategory.length === 0) {
+        return {
+          data: [],
+          total: 0,
+          page,
+          pageSize,
+          totalPages: 0,
+        };
+      }
+    }
+
+    // Include categories and images relationships in the query
     let query = supabase
       .from('products')
-      .select('*', { count: 'exact' });
+      .select(`
+        *,
+        images:product_images(*),
+        categories:product_categories(
+          id,
+          category_id,
+          categories(id, name, name_en, slug)
+        )
+      `, { count: 'exact' });
 
     // Solo filtrar por company_id si se proporciona
     if (companyId) {
       query = query.eq('company_id', companyId);
     }
 
+    // Filter by product IDs if we have them from category filter
+    if (productIdsByCategory) {
+      query = query.in('id', productIdsByCategory);
+    }
+
     if (filters) {
-      if (filters.categoryId) {
-        query = query.eq('category_id', filters.categoryId);
-      }
       if (filters.minPrice !== undefined) {
         query = query.gte('price', filters.minPrice);
       }

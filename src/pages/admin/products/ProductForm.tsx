@@ -178,6 +178,11 @@ export function ProductForm() {
         console.log('🔵 [ProductForm] Comparando cambios...');
         console.log('🔵 [ProductForm] Producto original:', product);
         
+        // Get current category IDs from product
+        const currentCategoryIds = product.categories?.map((c: any) => c.category?.id || c.category_id || c.id).filter(Boolean) || [];
+        const categoriesChanged = selectedCategories.length !== currentCategoryIds.length || 
+          selectedCategories.some(id => !currentCategoryIds.includes(id));
+        
         // Check if any field has changed (excluding SKU which can be regenerated)
         const hasChanges = 
           product.name !== cleanData.name ||
@@ -196,10 +201,11 @@ export function ProductForm() {
           product.is_active !== cleanData.is_active ||
           product.is_featured !== cleanData.is_featured ||
           product.is_visible !== cleanData.is_visible ||
-          selectedCategories.length > 0 ||
+          categoriesChanged ||
           imageFile !== null;
 
         console.log('🔵 [ProductForm] ¿Hay cambios?:', hasChanges);
+        console.log('🔵 [ProductForm] Categorías cambiadas:', categoriesChanged);
 
         if (!hasChanges) {
           console.log('⚠️ [ProductForm] No se realizaron cambios');
@@ -242,14 +248,12 @@ export function ProductForm() {
         });
         console.log('✅ [ProductForm] Producto actualizado exitosamente');
 
-        // Save categories
-        if (selectedCategories.length > 0) {
-          await setProductCategories.mutateAsync({
-            productId: id,
-            categoryIds: selectedCategories,
-          });
-          console.log('✅ [ProductForm] Categorías actualizadas');
-        }
+        // Save categories - always call to handle both adding and removing categories
+        await setProductCategories.mutateAsync({
+          productId: id,
+          categoryIds: selectedCategories,
+        });
+        console.log('✅ [ProductForm] Categorías actualizadas');
 
         // Navigate back
         console.log('🔵 [ProductForm] Navegando a lista de productos');

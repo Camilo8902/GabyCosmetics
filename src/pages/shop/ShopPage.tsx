@@ -47,8 +47,10 @@ export function ShopPage() {
 
   // Convert real products to shop format
   const processedProducts = realProducts.map((p: any) => {
-    // Get first category from product
-    const firstCategory = p.categories?.[0]?.category || p.categories?.[0] || {};
+    // Get first category from product - the relationship structure is:
+    // p.categories = [{ id, category_id, categories: { id, name, name_en, slug } }]
+    const categoryRelation = p.categories?.[0];
+    const firstCategory = categoryRelation?.categories || categoryRelation?.category || {};
     return {
       id: p.id,
       name: p.name,
