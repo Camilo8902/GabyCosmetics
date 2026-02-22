@@ -3,13 +3,19 @@ import { persist } from 'zustand/middleware';
 import type { User, UserRole } from '@/types';
 import { supabase, getSession, initAuth } from '@/lib/supabase';
 
+// Extended user type with company info from company_users
+interface UserWithCompany extends User {
+  company_id?: string;
+  company_name?: string;
+}
+
 interface AuthState {
-  user: User | null;
+  user: UserWithCompany | null;
   isLoading: boolean;
   isAuthenticated: boolean;
 
   // Actions
-  setUser: (user: User | null) => void;
+  setUser: (user: UserWithCompany | null) => void;
   setLoading: (loading: boolean) => void;
   logout: () => Promise<void>;
   fetchUser: () => Promise<void>;
@@ -85,7 +91,31 @@ export const useAuthStore = create<AuthState>()(
             .from('users')
             .select('*')
             .eq('id', authUser.id)
-            .single();
+            .maybeSingle();
+
+          // Also fetch company info from company_users if user has company role
+          let companyInfo: { company_id: string; company_name: string } | null = null;
+          if (profile?.role === 'company' || authUser.user_metadata?.role === 'company') {
+            const { data: companyUser } = await supabase
+              .from('company_users')
+              .select(`
+                company_id,
+                companies (
+                  id,
+                  company_name
+                )
+              `)
+              .eq('user_id', authUser.id)
+              .eq('status', 'active')
+              .maybeSingle();
+            
+            if (companyUser?.companies) {
+              companyInfo = {
+                company_id: companyUser.company_id,
+                company_name: (companyUser.companies as any).company_name,
+              };
+            }
+          }
 
           if (profileError || !profile) {
             // If no profile exists, create one with default role
@@ -108,7 +138,7 @@ export const useAuthStore = create<AuthState>()(
             if (insertError) {
               console.error('❌ Error al crear perfil de usuario:', insertError);
               // If insert fails, try to use auth user data as fallback
-              const fallbackUser: User = {
+              const fallbackUser: UserWithCompany = {
                 id: authUser.id,
                 email: authUser.email || '',
                 full_name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'User',
@@ -118,6 +148,7 @@ export const useAuthStore = create<AuthState>()(
                 is_active: true,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
+                ...companyInfo,
               };
               set({
                 user: fallbackUser,
@@ -128,13 +159,13 @@ export const useAuthStore = create<AuthState>()(
             }
 
             set({
-              user: createdProfile as User,
+              user: { ...createdProfile, ...companyInfo } as UserWithCompany,
               isAuthenticated: true,
               isLoading: false
             });
           } else {
             set({
-              user: profile as User,
+              user: { ...profile, ...companyInfo } as UserWithCompany,
               isAuthenticated: true,
               isLoading: false
             });
