@@ -22,6 +22,7 @@ export function ResendVerificationPage() {
     setLoading(true);
 
     try {
+      // Intentar con signup primero
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email: email,
@@ -31,8 +32,28 @@ export function ResendVerificationPage() {
       });
 
       if (error) {
-        console.error('Error resending verification:', error);
-        toast.error(error.message);
+        console.error('Error con signup resend:', error);
+        
+        // Si el usuario ya está verificado, intentar con magic link
+        if (error.message.includes('already') || error.message.includes('verified')) {
+          toast.error('Este correo ya está verificado. Intenta iniciar sesión.');
+        } else {
+          // Intentar enviar magic link como alternativa
+          const { error: magicError } = await supabase.auth.signInWithOtp({
+            email: email,
+            options: {
+              emailRedirectTo: `${window.location.origin}/auth/callback`,
+              shouldCreateUser: false
+            }
+          });
+          
+          if (magicError) {
+            toast.error(magicError.message);
+          } else {
+            setSent(true);
+            toast.success('Se ha enviado un enlace de acceso a tu correo');
+          }
+        }
       } else {
         setSent(true);
         toast.success('Correo de verificación enviado');
