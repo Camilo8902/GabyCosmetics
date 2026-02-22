@@ -56,7 +56,7 @@ export async function getProducts(
       }
     }
 
-    // Include categories and images relationships in the query
+    // Include categories, images, and company relationships in the query
     // Note: product_categories has a composite primary key (product_id, category_id), no 'id' column
     let query = supabase
       .from('products')
@@ -66,7 +66,8 @@ export async function getProducts(
         categories:product_categories(
           category_id,
           categories(id, name, name_en, slug)
-        )
+        ),
+        company:companies(id, company_name)
       `, { count: 'exact' });
 
     // Solo filtrar por company_id si se proporciona

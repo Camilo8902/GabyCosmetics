@@ -13,6 +13,7 @@ import {
   EyeOff,
   CheckSquare,
   Square,
+  Building2,
 } from 'lucide-react';
 import { useProducts, useDeleteProduct, useUpdateProduct } from '@/hooks';
 import { DataTable } from '@/components/ui/DataTable';
@@ -324,6 +325,24 @@ export function ProductsList() {
             {product.is_visible ? 'Visible' : 'Oculto'}
           </span>
         </div>
+      ),
+      sortable: false,
+    },
+    {
+      key: 'company',
+      header: 'Empresa',
+      render: (product: Product) => (
+        product.company ? (
+          <Link
+            to={`/admin/companies/${product.company.id}`}
+            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
+          >
+            <Building2 className="w-3 h-3" />
+            {product.company.company_name}
+          </Link>
+        ) : (
+          <span className="text-sm text-gray-400">Sin empresa</span>
+        )
       ),
       sortable: false,
     },
