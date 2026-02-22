@@ -35,13 +35,6 @@ export function ShopPage() {
   const { data: productsData, isLoading } = useProducts();
   const realProducts = productsData?.data || [];
   const { data: realCategories = [] } = useCategories();
-  
-  // Debug: Log products data
-  console.log('🔵 [ShopPage] Productos cargados:', realProducts.length);
-  console.log('🔵 [ShopPage] Categorías cargadas:', realCategories.length);
-  realProducts.forEach((p: any) => {
-    console.log('🔵 [ShopPage] Producto:', p.name, 'categories:', p.categories);
-  });
 
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -54,16 +47,12 @@ export function ShopPage() {
 
   // Convert real products to shop format
   const processedProducts = realProducts.map((p: any) => {
-    // Get first category from product - the relationship structure is:
+    // Get ALL categories from product - the relationship structure is:
     // p.categories = [{ category_id: '...', categories: { id, name, name_en, slug } }]
     // Note: product_categories has no 'id' column, only product_id and category_id
-    const categoryRelation = p.categories?.[0];
-    const firstCategory = categoryRelation?.categories || {};
-    
-    // Debug logging
-    if (p.categories && p.categories.length > 0) {
-      console.log('🔵 [ShopPage] Producto:', p.name, 'Categorías:', p.categories, 'First:', firstCategory);
-    }
+    const allCategories = p.categories?.map((c: any) => c.categories).filter(Boolean) || [];
+    const firstCategory = allCategories[0] || {};
+    const allCategorySlugs = allCategories.map((c: any) => c.slug).filter(Boolean);
     
     return {
       id: p.id,
@@ -74,6 +63,7 @@ export function ShopPage() {
       compare_at_price: p.compare_at_price,
       category: firstCategory.slug || 'otros',
       category_name: firstCategory.name || 'Sin categoría',
+      category_slugs: allCategorySlugs, // Array of all category slugs for filtering
       subcategory: firstCategory.slug || 'otros',
       image: p.images?.[0]?.url || p.image_url || null,
       rating: 4.5,
@@ -84,30 +74,19 @@ export function ShopPage() {
 
   // Only show products that have images
   const allProducts = processedProducts.filter(p => p.image);
-  const categories = realCategories.length > 0 ? realCategories : [
-    { slug: 'cuidado-cabello', name: 'Cuidado del Cabello', name_en: 'Hair Care' },
-    { slug: 'aseo-personal', name: 'Aseo Personal', name_en: 'Personal Care' },
-  ];
+  // Use only real categories from database, no fallback
+  const categories = realCategories;
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
     let products = [...allProducts];
-    
-    console.log('🔵 [ShopPage] Filtrando productos...');
-    console.log('🔵 [ShopPage] selectedCategory:', selectedCategory);
-    console.log('🔵 [ShopPage] Total productos antes de filtro:', products.length);
 
-    // Category filter
+    // Category filter - check if product has the category in ANY of its categories
     if (selectedCategory) {
-      const beforeCount = products.length;
       products = products.filter((p: any) => {
-        const matches = p.category === selectedCategory;
-        if (!matches) {
-          console.log('⚠️ [ShopPage] Producto NO coincide:', p.name, 'category:', p.category, 'expected:', selectedCategory);
-        }
-        return matches;
+        // Check if the selected category is in the product's category_slugs array
+        return p.category_slugs?.includes(selectedCategory);
       });
-      console.log(`🔵 [ShopPage] Después de filtro categoría: ${products.length} (antes: ${beforeCount})`);
     }
 
     // Search filter

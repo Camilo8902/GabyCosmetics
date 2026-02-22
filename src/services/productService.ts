@@ -28,9 +28,6 @@ export async function getProducts(
   page = 1,
   pageSize = 20
 ): Promise<PaginatedResponse<Product>> {
-  console.log('🔵 [getProducts] Iniciando consulta...');
-  console.log('🔵 [getProducts] companyId:', companyId, 'filters:', filters);
-  
   try {
     // If filtering by category, we need to use a different approach
     // because the relationship is through a junction table
@@ -105,14 +102,6 @@ export async function getProducts(
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    
-    console.log('✅ [getProducts] Productos obtenidos:', data?.length);
-    // Log categories for each product
-    data?.forEach((p: any) => {
-      if (p.categories && p.categories.length > 0) {
-        console.log('🔵 [getProducts] Producto:', p.name, 'Categorías:', p.categories);
-      }
-    });
 
     return {
       data: data as Product[],
@@ -131,7 +120,6 @@ export async function getProducts(
  * Obtener un producto por ID
  */
 export async function getProductById(productId: string): Promise<Product | null> {
-  console.log('🔵 [getProductById] Obteniendo producto:', productId);
   try {
     // First get the product without relationships
     const { data: product, error } = await supabase
@@ -156,7 +144,6 @@ export async function getProductById(productId: string): Promise<Product | null>
         .eq('product_id', productId)
         .order('order_index', { ascending: true });
       images = imagesData || [];
-      console.log('🔵 [getProductById] Imágenes:', images.length);
     } catch (e) {
       console.warn('Could not fetch product images:', e);
     }
@@ -166,14 +153,13 @@ export async function getProductById(productId: string): Promise<Product | null>
     try {
       const { data: catsData, error: catsError } = await supabase
         .from('product_categories')
-        .select('*, categories(*)')
+        .select('category_id, categories(id, name, name_en, slug)')
         .eq('product_id', productId);
       
       if (catsError) {
-        console.error('❌ [getProductById] Error obteniendo categorías:', catsError);
+        console.error('Error fetching product categories:', catsError);
       } else {
         categories = catsData || [];
-        console.log('🔵 [getProductById] Categorías encontradas:', categories.length, categories);
       }
     } catch (e) {
       console.warn('Could not fetch product categories:', e);
@@ -185,8 +171,6 @@ export async function getProductById(productId: string): Promise<Product | null>
       images,
       categories,
     };
-    
-    console.log('✅ [getProductById] Producto completo:', productWithRelations);
 
     return productWithRelations as Product;
   } catch (error) {
@@ -827,23 +811,16 @@ export async function setProductCategories(
   productId: string,
   categoryIds: string[]
 ): Promise<void> {
-  console.log('🔵 [setProductCategories] Iniciando...');
-  console.log('🔵 [setProductCategories] productId:', productId);
-  console.log('🔵 [setProductCategories] categoryIds:', categoryIds);
-  
   try {
     // Eliminar categorías existentes
-    console.log('🔵 [setProductCategories] Eliminando categorías existentes...');
     const { error: deleteError } = await supabase
       .from('product_categories')
       .delete()
       .eq('product_id', productId);
     
     if (deleteError) {
-      console.error('❌ [setProductCategories] Error al eliminar:', deleteError);
       throw deleteError;
     }
-    console.log('✅ [setProductCategories] Categorías existentes eliminadas');
 
     // Insertar nuevas categorías
     if (categoryIds.length > 0) {
@@ -851,25 +828,17 @@ export async function setProductCategories(
         product_id: productId,
         category_id: categoryId,
       }));
-      
-      console.log('🔵 [setProductCategories] Insertando nuevas categorías:', inserts);
 
       const { error: insertError } = await supabase
         .from('product_categories')
         .insert(inserts);
 
       if (insertError) {
-        console.error('❌ [setProductCategories] Error al insertar:', insertError);
         throw insertError;
       }
-      console.log('✅ [setProductCategories] Categorías insertadas correctamente');
-    } else {
-      console.log('⚠️ [setProductCategories] No hay categorías para insertar');
     }
-    
-    console.log('✅ [setProductCategories] Proceso completado exitosamente');
   } catch (error) {
-    console.error('❌ [setProductCategories] Error general:', error);
+    console.error('Error setting product categories:', error);
     throw error;
   }
 }

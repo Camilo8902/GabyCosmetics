@@ -46,14 +46,11 @@ export function useProduct(id: string | null) {
     queryKey: ['product', id],
     queryFn: async () => {
       if (!id) return null;
-      console.log('🔵 [useProduct] Fetching product:', id);
       try {
         const product = await productService.getProductById(id);
-        console.log('🔵 [useProduct] Product fetched:', product);
         return product;
       } catch (error: any) {
-        console.error('❌ [useProduct] Error fetching product:', error);
-        // Return a minimal product object to prevent form errors
+        console.error('Error fetching product:', error);
         return null;
       }
     },
@@ -198,20 +195,13 @@ export function useSetProductCategories() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ productId, categoryIds }: { productId: string; categoryIds: string[] }) => {
-      console.log('🔵 [useSetProductCategories] Hook llamado');
-      console.log('🔵 [useSetProductCategories] productId:', productId);
-      console.log('🔵 [useSetProductCategories] categoryIds:', categoryIds);
-      return productService.setProductCategories(productId, categoryIds);
-    },
+    mutationFn: ({ productId, categoryIds }: { productId: string; categoryIds: string[] }) =>
+      productService.setProductCategories(productId, categoryIds),
     onSuccess: (_, variables) => {
-      console.log('✅ [useSetProductCategories] Categorías guardadas exitosamente');
       queryClient.invalidateQueries({ queryKey: ['product', variables.productId] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
-      toast.success('Categorías actualizadas exitosamente');
     },
     onError: (error: Error) => {
-      console.error('❌ [useSetProductCategories] Error:', error);
       toast.error(error.message || 'Error al actualizar categorías');
     },
   });
