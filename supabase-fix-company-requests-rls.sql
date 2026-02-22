@@ -36,6 +36,7 @@ DROP POLICY IF EXISTS "Allow users to update their own data" ON public.users;
 DROP POLICY IF EXISTS "Users can read own profile" ON public.users;
 DROP POLICY IF EXISTS "Users can update own profile" ON public.users;
 DROP POLICY IF EXISTS "Admins have full access to users" ON public.users;
+DROP POLICY IF EXISTS "Allow insert during registration" ON public.users;
 
 -- Re-enable RLS
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
@@ -126,6 +127,7 @@ DROP POLICY IF EXISTS "Allow company owners to update their company" ON public.c
 DROP POLICY IF EXISTS "Admins manage companies" ON public.companies;
 DROP POLICY IF EXISTS "Users can view active companies" ON public.companies;
 DROP POLICY IF EXISTS "Owners can update their company" ON public.companies;
+DROP POLICY IF EXISTS "Allow insert companies" ON public.companies;
 
 -- Re-enable RLS
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
@@ -169,6 +171,7 @@ CREATE INDEX IF NOT EXISTS idx_company_requests_created_at ON public.company_req
 CREATE INDEX IF NOT EXISTS idx_companies_status ON public.companies(status);
 CREATE INDEX IF NOT EXISTS idx_companies_is_active ON public.companies(is_active);
 CREATE INDEX IF NOT EXISTS idx_users_role ON public.users(role);
+CREATE INDEX IF NOT EXISTS idx_users_email ON public.users(email);
 
 -- ==========================================
 -- STEP 6: Grant permissions
@@ -178,10 +181,199 @@ GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.is_admin() TO anon;
 
 -- ==========================================
--- STEP 7: Verify RLS is working
+-- STEP 7: Create function to approve company request
+-- This creates user, company and updates request
 -- ==========================================
 
--- Test query (run as authenticated user)
--- SELECT * FROM company_requests LIMIT 1;
--- SELECT * FROM companies LIMIT 1;
--- SELECT * FROM users LIMIT 1;
+CREATE OR REPLACE FUNCTION public.approve_company_request(
+  p_request_id UUID,
+  p_reviewer_notes TEXT DEFAULT NULL,
+  p_temp_password TEXT DEFAULT NULL
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_request RECORD;
+  v_user_id UUID;
+  v_company_id UUID;
+  v_base_slug TEXT;
+  v_slug TEXT;
+  v_counter INT := 0;
+BEGIN
+  -- Get the request
+  SELECT * INTO v_request
+  FROM public.company_requests
+  WHERE id = p_request_id;
+  
+  IF NOT FOUND THEN
+    RETURN json_build_object('success', false, 'error', 'Solicitud no encontrada');
+  END IF;
+  
+  IF v_request.status != 'pending' THEN
+    RETURN json_build_object('success', false, 'error', 'La solicitud ya fue procesada');
+  END IF;
+  
+  -- Check if user already exists
+  SELECT id INTO v_user_id 
+  FROM public.users 
+  WHERE email = v_request.email;
+  
+  -- If user doesn't exist, create them
+  IF v_user_id IS NULL THEN
+    -- Create auth user using admin API (requires service role)
+    -- For now, we'll create just the public.users record
+    -- The auth user should be created via Edge Function or admin API
+    
+    -- Generate a UUID for the new user
+    v_user_id := gen_random_uuid();
+    
+    -- Insert into public.users
+    INSERT INTO public.users (
+      id,
+      email,
+      full_name,
+      role,
+      is_active,
+      email_verified,
+      created_at,
+      updated_at
+    ) VALUES (
+      v_user_id,
+      v_request.email,
+      v_request.owner_name,
+      'company',
+      true,
+      false,
+      now(),
+      now()
+    );
+  END IF;
+  
+  -- Generate unique slug
+  v_base_slug := lower(regexp_replace(
+    regexp_replace(v_request.business_name, '[^a-zA-Z0-9\s]', '', 'g'),
+    '\s+', '-', 'g'
+  ));
+  v_base_slug := regexp_replace(v_base_slug, '(^-|-$)', '', 'g');
+  v_slug := v_base_slug;
+  
+  -- Ensure unique slug
+  WHILE EXISTS (SELECT 1 FROM public.companies WHERE slug = v_slug) LOOP
+    v_counter := v_counter + 1;
+    v_slug := v_base_slug || '-' || v_counter;
+  END LOOP;
+  
+  -- Create the company
+  INSERT INTO public.companies (
+    user_id,
+    company_name,
+    slug,
+    email,
+    phone,
+    business_type,
+    status,
+    is_active,
+    is_verified,
+    plan,
+    approved_by,
+    approved_at,
+    created_at,
+    updated_at
+  ) VALUES (
+    v_user_id,
+    v_request.business_name,
+    v_slug,
+    v_request.email,
+    v_request.phone,
+    v_request.business_type,
+    'active',
+    true,
+    true,
+    'basic',
+    auth.uid(),
+    now(),
+    now(),
+    now()
+  ) RETURNING id INTO v_company_id;
+  
+  -- Update the request
+  UPDATE public.company_requests
+  SET 
+    status = 'approved',
+    notes = COALESCE(p_reviewer_notes, notes),
+    reviewed_by = auth.uid(),
+    reviewed_at = now(),
+    updated_at = now()
+  WHERE id = p_request_id;
+  
+  RETURN json_build_object(
+    'success', true,
+    'company_id', v_company_id,
+    'user_id', v_user_id,
+    'company_name', v_request.business_name,
+    'slug', v_slug
+  );
+END;
+$$;
+
+-- ==========================================
+-- STEP 8: Create function to reject company request
+-- ==========================================
+
+CREATE OR REPLACE FUNCTION public.reject_company_request(
+  p_request_id UUID,
+  p_reviewer_notes TEXT DEFAULT NULL
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_request RECORD;
+BEGIN
+  -- Get the request
+  SELECT * INTO v_request
+  FROM public.company_requests
+  WHERE id = p_request_id;
+  
+  IF NOT FOUND THEN
+    RETURN json_build_object('success', false, 'error', 'Solicitud no encontrada');
+  END IF;
+  
+  IF v_request.status != 'pending' THEN
+    RETURN json_build_object('success', false, 'error', 'La solicitud ya fue procesada');
+  END IF;
+  
+  -- Update the request
+  UPDATE public.company_requests
+  SET 
+    status = 'rejected',
+    notes = COALESCE(p_reviewer_notes, notes),
+    reviewed_by = auth.uid(),
+    reviewed_at = now(),
+    updated_at = now()
+  WHERE id = p_request_id;
+  
+  RETURN json_build_object(
+    'success', true,
+    'request_id', p_request_id
+  );
+END;
+$$;
+
+-- Grant execute permissions
+GRANT EXECUTE ON FUNCTION public.approve_company_request(UUID, TEXT, TEXT) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.reject_company_request(UUID, TEXT) TO authenticated;
+
+-- ==========================================
+-- VERIFICATION QUERIES (run after applying)
+-- ==========================================
+
+-- Test: SELECT * FROM company_requests LIMIT 5;
+-- Test: SELECT * FROM companies LIMIT 5;
+-- Test: SELECT * FROM users LIMIT 5;
+-- Test: SELECT public.is_admin();

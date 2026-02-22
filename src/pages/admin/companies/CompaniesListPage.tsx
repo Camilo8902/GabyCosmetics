@@ -118,13 +118,15 @@ export function CompaniesListPage() {
     return matchesFilter && matchesSearch;
   }) || [];
 
-  // Contar por estado
+  // Contar por estado - usar datos reales
   const counts = {
     all: companiesData?.total || 0,
     pending: requestsStats?.pending || 0,
     approved: companiesData?.data?.filter((c: Company) => c.is_active && c.is_verified).length || 0,
     suspended: companiesData?.data?.filter((c: Company) => !c.is_active).length || 0,
     requests: requestsStats?.total || 0,
+    approvedRequests: requestsStats?.approved || 0,
+    rejectedRequests: requestsStats?.rejected || 0,
   };
 
   // Handlers para solicitudes

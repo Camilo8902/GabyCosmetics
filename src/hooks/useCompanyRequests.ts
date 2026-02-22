@@ -59,7 +59,7 @@ export function usePendingRequests() {
   });
 }
 
-// Aprobar solicitud y crear empresa
+// Aprobar solicitud usando RPC function
 export function useApproveRequest() {
   const queryClient = useQueryClient();
 
@@ -68,95 +68,28 @@ export function useApproveRequest() {
       requestId, 
       notes 
     }: { requestId: string; notes?: string }) => {
-      // 1. Obtener la solicitud
-      const { data: requestData, error: fetchError } = await supabase
-        .from('company_requests')
-        .select('*')
-        .eq('id', requestId)
-        .single();
+      // Llamar a la función RPC que hace todo el trabajo
+      const { data, error } = await supabase.rpc('approve_company_request', {
+        p_request_id: requestId,
+        p_reviewer_notes: notes || null
+      });
 
-      if (fetchError) throw fetchError;
-      if (!requestData) throw new Error('Solicitud no encontrada');
-
-      // 2. Generar slug único
-      const baseSlug = requestData.business_name
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '') // Remove accents
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-      
-      let slug = baseSlug;
-      let counter = 0;
-      
-      // Verificar que el slug sea único
-      while (true) {
-        const { data: existingCompany } = await supabase
-          .from('companies')
-          .select('id')
-          .eq('slug', slug)
-          .single();
-        
-        if (!existingCompany) break;
-        counter++;
-        slug = `${baseSlug}-${counter}`;
+      if (error) {
+        console.error('Error approving request:', error);
+        throw error;
       }
 
-      // 3. Obtener el usuario actual
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      // 4. Crear la empresa en la tabla companies
-      const { data: newCompany, error: companyError } = await supabase
-        .from('companies')
-        .insert({
-          company_name: requestData.business_name,
-          slug: slug,
-          email: requestData.email,
-          phone: requestData.phone,
-          description: null,
-          business_type: requestData.business_type,
-          status: 'active',
-          is_active: true,
-          is_verified: true,
-          plan: 'basic',
-          approved_by: user?.id,
-          approved_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (companyError) {
-        console.error('Error creating company:', companyError);
-        throw companyError;
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al aprobar la solicitud');
       }
 
-      // 5. Actualizar la solicitud
-      const { error: updateError } = await supabase
-        .from('company_requests')
-        .update({
-          status: 'approved',
-          notes: notes || requestData.notes,
-          reviewed_by: user?.id,
-          reviewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', requestId);
-
-      if (updateError) {
-        console.error('Error updating request:', updateError);
-        throw updateError;
-      }
-
-      return { 
-        success: true, 
-        company: newCompany,
-        request: requestData 
-      };
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['company-requests'] });
       queryClient.invalidateQueries({ queryKey: ['companies'] });
-      toast.success('Solicitud aprobada y empresa creada');
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast.success(`Empresa "${data.company_name}" creada exitosamente`);
     },
     onError: (error: Error) => {
       console.error('Error approving request:', error);
@@ -165,7 +98,7 @@ export function useApproveRequest() {
   });
 }
 
-// Rechazar solicitud
+// Rechazar solicitud usando RPC function
 export function useRejectRequest() {
   const queryClient = useQueryClient();
 
@@ -174,21 +107,21 @@ export function useRejectRequest() {
       requestId, 
       notes 
     }: { requestId: string; notes?: string }) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from('company_requests')
-        .update({
-          status: 'rejected',
-          notes,
-          reviewed_by: user?.id,
-          reviewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', requestId);
+      const { data, error } = await supabase.rpc('reject_company_request', {
+        p_request_id: requestId,
+        p_reviewer_notes: notes || null
+      });
 
-      if (error) throw error;
-      return { success: true };
+      if (error) {
+        console.error('Error rejecting request:', error);
+        throw error;
+      }
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Error al rechazar la solicitud');
+      }
+
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-requests'] });
@@ -206,10 +139,9 @@ export function useRequestsStats() {
   return useQuery({
     queryKey: ['company-requests', 'stats'],
     queryFn: async () => {
-      // Obtener todas las solicitudes para contar
-      const { data, error, count } = await supabase
+      const { data, error } = await supabase
         .from('company_requests')
-        .select('status', { count: 'exact' });
+        .select('status');
 
       if (error) {
         console.error('Error fetching request stats:', error);
