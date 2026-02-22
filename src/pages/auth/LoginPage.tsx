@@ -166,9 +166,15 @@ export function LoginPage() {
             </div>
 
             {/* Forgot Password */}
-            <div className="text-right">
+            <div className="flex justify-between items-center">
               <Link
-                to="/auth/forgot-password"
+                to="/auth/resend-verification"
+                className="text-sm text-gray-600 hover:text-rose-600"
+              >
+                Reenviar verificación
+              </Link>
+              <Link
+                to="/auth/reset-password"
                 className="text-sm text-rose-600 hover:underline"
               >
                 {t('auth.forgot_password')}

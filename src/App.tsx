@@ -27,6 +27,7 @@ import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
 import { AuthCallback } from '@/pages/auth/AuthCallback';
 import { ResetPasswordPage } from '@/pages/auth/ResetPasswordPage';
+import { ResendVerificationPage } from '@/pages/auth/ResendVerificationPage';
 import { AdminDashboard } from '@/pages/admin/AdminDashboard';
 import { ProductsList } from '@/pages/admin/products/ProductsList';
 import { ProductForm } from '@/pages/admin/products/ProductForm';
@@ -302,6 +303,7 @@ function App() {
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/auth/resend-verification" element={<ResendVerificationPage />} />
 
           <Route path="/account" element={<ProtectedRoute><PublicLayout><div className="min-h-screen pt-24 max-w-7xl mx-auto px-4 py-8"><h1 className="text-3xl font-bold mb-6">Mi Cuenta</h1></div></PublicLayout></ProtectedRoute>} />
 
