@@ -23,15 +23,45 @@ export interface User {
 // Company (for company users)
 export interface Company {
   id: string;
-  user_id: string;
+  user_id?: string;
   company_name: string;
   logo_url?: string;
+  cover_image_url?: string;
   description?: string;
+  short_description?: string;
   website?: string;
   phone?: string;
+  email?: string;
   address?: string;
+  tax_id?: string;
+  business_type?: string;
+  fiscal_address?: Record<string, any>;
+  headquarters_address?: Record<string, any>;
+  social_links?: {
+    facebook?: string;
+    instagram?: string;
+    twitter?: string;
+    tiktok?: string;
+    youtube?: string;
+  };
+  settings?: {
+    currency?: string;
+    language?: string;
+    timezone?: string;
+    low_stock_alerts?: boolean;
+    low_stock_threshold?: number;
+    email_notifications?: boolean;
+    order_notifications?: boolean;
+    auto_fulfill_orders?: boolean;
+  };
+  metadata?: Record<string, any>;
   is_verified: boolean;
   is_active: boolean;
+  status?: 'pending' | 'approved' | 'rejected' | 'suspended' | 'active';
+  plan?: 'basic' | 'premium' | 'enterprise';
+  slug?: string;
+  approved_at?: string;
+  approved_by?: string;
   created_at: string;
   updated_at: string;
   user?: User; // User who owns the company

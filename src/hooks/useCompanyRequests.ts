@@ -17,6 +17,7 @@ export interface CompanyRequest {
   reviewed_at?: string;
   submitted_at: string;
   created_at: string;
+  updated_at?: string;
 }
 
 // Obtener todas las solicitudes
@@ -25,12 +26,15 @@ export function useCompanyRequests() {
     queryKey: ['company-requests'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('company_requests_view')
+        .from('company_requests')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as CompanyRequest[];
+      if (error) {
+        console.error('Error fetching company requests:', error);
+        throw error;
+      }
+      return (data || []) as CompanyRequest[];
     },
   });
 }
@@ -46,13 +50,16 @@ export function usePendingRequests() {
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data as CompanyRequest[];
+      if (error) {
+        console.error('Error fetching pending requests:', error);
+        throw error;
+      }
+      return (data || []) as CompanyRequest[];
     },
   });
 }
 
-// Aprobar solicitud
+// Aprobar solicitud y crear empresa
 export function useApproveRequest() {
   const queryClient = useQueryClient();
 
@@ -61,23 +68,98 @@ export function useApproveRequest() {
       requestId, 
       notes 
     }: { requestId: string; notes?: string }) => {
-      const { error } = await supabase
+      // 1. Obtener la solicitud
+      const { data: requestData, error: fetchError } = await supabase
+        .from('company_requests')
+        .select('*')
+        .eq('id', requestId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!requestData) throw new Error('Solicitud no encontrada');
+
+      // 2. Generar slug único
+      const baseSlug = requestData.business_name
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Remove accents
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      
+      let slug = baseSlug;
+      let counter = 0;
+      
+      // Verificar que el slug sea único
+      while (true) {
+        const { data: existingCompany } = await supabase
+          .from('companies')
+          .select('id')
+          .eq('slug', slug)
+          .single();
+        
+        if (!existingCompany) break;
+        counter++;
+        slug = `${baseSlug}-${counter}`;
+      }
+
+      // 3. Obtener el usuario actual
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // 4. Crear la empresa en la tabla companies
+      const { data: newCompany, error: companyError } = await supabase
+        .from('companies')
+        .insert({
+          company_name: requestData.business_name,
+          slug: slug,
+          email: requestData.email,
+          phone: requestData.phone,
+          description: null,
+          business_type: requestData.business_type,
+          status: 'active',
+          is_active: true,
+          is_verified: true,
+          plan: 'basic',
+          approved_by: user?.id,
+          approved_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (companyError) {
+        console.error('Error creating company:', companyError);
+        throw companyError;
+      }
+
+      // 5. Actualizar la solicitud
+      const { error: updateError } = await supabase
         .from('company_requests')
         .update({
           status: 'approved',
-          notes,
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+          notes: notes || requestData.notes,
+          reviewed_by: user?.id,
           reviewed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', requestId);
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('Error updating request:', updateError);
+        throw updateError;
+      }
+
+      return { 
+        success: true, 
+        company: newCompany,
+        request: requestData 
+      };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-requests'] });
-      toast.success('Solicitud aprobada');
+      queryClient.invalidateQueries({ queryKey: ['companies'] });
+      toast.success('Solicitud aprobada y empresa creada');
     },
     onError: (error: Error) => {
+      console.error('Error approving request:', error);
       toast.error(`Error: ${error.message}`);
     },
   });
@@ -92,23 +174,28 @@ export function useRejectRequest() {
       requestId, 
       notes 
     }: { requestId: string; notes?: string }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { error } = await supabase
         .from('company_requests')
         .update({
           status: 'rejected',
           notes,
-          reviewed_by: (await supabase.auth.getUser()).data.user?.id,
+          reviewed_by: user?.id,
           reviewed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
         .eq('id', requestId);
 
       if (error) throw error;
+      return { success: true };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['company-requests'] });
       toast.success('Solicitud rechazada');
     },
     onError: (error: Error) => {
+      console.error('Error rejecting request:', error);
       toast.error(`Error: ${error.message}`);
     },
   });
@@ -119,29 +206,30 @@ export function useRequestsStats() {
   return useQuery({
     queryKey: ['company-requests', 'stats'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Obtener todas las solicitudes para contar
+      const { data, error, count } = await supabase
         .from('company_requests')
-        .select('status', { count: 'exact' })
-        .then(async ({ data: statusData }) => {
-          const stats = {
-            total: 0,
-            pending: 0,
-            approved: 0,
-            rejected: 0,
-          };
-          
-          statusData?.forEach((item: { status: string }) => {
-            stats.total++;
-            if (item.status === 'pending') stats.pending++;
-            else if (item.status === 'approved') stats.approved++;
-            else if (item.status === 'rejected') stats.rejected++;
-          });
-          
-          return stats;
-        });
+        .select('status', { count: 'exact' });
 
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching request stats:', error);
+        throw error;
+      }
+
+      const stats = {
+        total: data?.length || 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+      };
+      
+      data?.forEach((item: { status: string }) => {
+        if (item.status === 'pending') stats.pending++;
+        else if (item.status === 'approved') stats.approved++;
+        else if (item.status === 'rejected') stats.rejected++;
+      });
+      
+      return stats;
     },
   });
 }
