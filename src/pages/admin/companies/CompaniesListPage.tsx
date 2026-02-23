@@ -180,6 +180,13 @@ export function CompaniesListPage() {
           <p className="text-gray-500">Administra empresas afiliadas y solicitudes de registro</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            to="/admin/companies/new"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            Nueva Empresa
+          </Link>
           <button className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
             <Download className="w-4 h-4" />
             Exportar
