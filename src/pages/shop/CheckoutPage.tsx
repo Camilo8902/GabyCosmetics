@@ -68,12 +68,7 @@ export function CheckoutPage() {
       const tax = subtotal * TAX_RATE;
       const finalTotal = subtotal + tax;
 
-      // Crear orden con ID único
-      const newOrderId = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      setOrderId(newOrderId);
-      console.log('📝 [CheckoutPage] Order ID created:', newOrderId);
-
-      // Guardar orden en Supabase
+      // Guardar orden en Supabase (el ID se genera automáticamente como UUID)
       try {
         if (!user?.id) {
           throw new Error('Usuario no autenticado');
@@ -82,12 +77,14 @@ export function CheckoutPage() {
         const orderData = {
           userId: user.id,
           items: items.map((item) => ({
-            id: item.id,
-            name: item.name,
-            price: item.price || 0,
+            id: item.product.id,
+            name: item.product.name,
+            price: item.product.price || 0,
             quantity: item.quantity,
-            image: item.image,
-            sku: item.sku,
+            image: item.product.image,
+            sku: item.product.sku,
+            company_id: item.product.company_id,
+            company_name: item.product.company_name,
           })),
           shippingInfo: {
             name: shipping.name,
@@ -99,11 +96,12 @@ export function CheckoutPage() {
             country: shipping.country,
           },
           total: finalTotal,
-          orderId: newOrderId,
         };
 
         const savedOrder = await createOrder(orderData);
-        console.log('✅ [CheckoutPage] Order saved to Supabase:', savedOrder.id);
+        const newOrderId = savedOrder.id;
+        setOrderId(newOrderId);
+        console.log('✅ [CheckoutPage] Order saved to Supabase:', newOrderId);
 
         // Crear Payment Intent en Stripe
         try {
@@ -111,6 +109,14 @@ export function CheckoutPage() {
             amount: finalTotal,
             orderId: newOrderId,
             email: shipping.email,
+            items: items.map((item) => ({
+              id: item.product.id,
+              name: item.product.name,
+              price: item.product.price || 0,
+              quantity: item.quantity,
+              company_id: item.product.company_id,
+              company_name: item.product.company_name,
+            })),
             metadata: {
               orderId: newOrderId,
               customerId: user.id,

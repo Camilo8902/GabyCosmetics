@@ -31,15 +31,12 @@ export async function createOrder(data: CreateOrderData) {
   console.log('📦 [Orders] Creating order in Supabase...', data);
 
   try {
-    const { userId, items, shippingInfo, total, orderId } = data;
+    const { userId, items, shippingInfo, total } = data;
 
-    // Generar ID de orden si no se proporciona
-    const finalOrderId = orderId || `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
+    // No proporcionar ID - dejar que Supabase genere el UUID automáticamente
     const { data: order, error } = await supabase
       .from('orders')
       .insert({
-        id: finalOrderId,
         user_id: userId,
         email: shippingInfo.email,
         total,
