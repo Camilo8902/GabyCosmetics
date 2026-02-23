@@ -47,33 +47,31 @@ export type { Company, CompanyUser, Subscription };
 /**
  * Crear una nueva empresa
  */
-export async function createCompany(data: {
-  name: string;
-  email: string;
-  phone?: string;
-  description?: string;
-  business_type?: string;
-  tax_id?: string;
-}): Promise<{ company: Company | null; error: Error | null }> {
+export async function createCompany(data: Partial<Company>): Promise<{ company: Company | null; error: Error | null }> {
   try {
-    // Generar slug único
-    const slug = data.name
-      .toLowerCase()
+    // Generar slug único si no se proporciona
+    const slug = data.slug || data.company_name
+      ?.toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
+      .replace(/(^-|-$)/g, '') || '';
 
     const { data: company, error } = await supabase
       .from('companies')
       .insert({
-        name: data.name,
+        company_name: data.company_name,
         slug: slug,
         email: data.email,
         phone: data.phone,
         description: data.description,
+        short_description: data.short_description,
+        website: data.website,
         business_type: data.business_type,
         tax_id: data.tax_id,
-        status: 'pending',
-        plan: 'basic',
+        address: data.address,
+        is_active: data.is_active ?? true,
+        is_verified: data.is_verified ?? false,
+        plan: data.plan || 'basic',
+        status: 'active',
       })
       .select()
       .single();

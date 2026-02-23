@@ -1,151 +1,128 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import {
-  ArrowLeft,
-  Save,
-  Building2,
-  Mail,
-  Phone,
-  Globe,
-  MapPin,
-  FileText,
-  Image,
-  Loader2,
-  AlertCircle,
-  Shield,
-  CreditCard,
-} from 'lucide-react';
-import { useCompany, useAdminUpdateCompany, useCompanyStats, useChangeCompanyPlan } from '@/hooks/useCompanies';
-import { cn } from '@/lib/utils';
-import { formatDate, formatCurrency } from '@/utils/formatters';
+import { ArrowLeft, Save, Building2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useCompany, useCreateCompany, useUpdateCompany } from '@/hooks/useCompanies';
 import toast from 'react-hot-toast';
-import type { Company, SubscriptionPlan } from '@/types';
 
-const planLabels: Record<SubscriptionPlan, string> = {
-  basic: 'Básico',
-  premium: 'Premium',
-  enterprise: 'Enterprise',
-};
+interface CompanyFormData {
+  company_name: string;
+  email: string;
+  phone: string;
+  description: string;
+  short_description: string;
+  website: string;
+  tax_id: string;
+  business_type: string;
+  address: string;
+  is_active: boolean;
+  is_verified: boolean;
+  plan: 'basic' | 'premium' | 'enterprise';
+}
 
-const planDescriptions: Record<SubscriptionPlan, string> = {
-  basic: 'Hasta 50 productos, soporte por email',
-  premium: 'Hasta 500 productos, soporte prioritario, analytics avanzados',
-  enterprise: 'Productos ilimitados, soporte 24/7, API access, personalización',
-};
+const businessTypes = [
+  { value: 'retail', label: 'Comercio Minorista' },
+  { value: 'wholesale', label: 'Comercio Mayorista' },
+  { value: 'manufacturer', label: 'Fabricante' },
+  { value: 'distributor', label: 'Distribuidor' },
+  { value: 'service', label: 'Servicios' },
+  { value: 'other', label: 'Otro' },
+];
+
+const plans = [
+  { value: 'basic', label: 'Básico' },
+  { value: 'premium', label: 'Premium' },
+  { value: 'enterprise', label: 'Empresarial' },
+];
 
 export function CompanyForm() {
-  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const isEditing = !!id;
+  const { id } = useParams<{ id: string }>();
+  const isEditing = Boolean(id);
 
-  const { data: company, isLoading: isLoadingCompany } = useCompany(id || null);
-  const { data: stats } = useCompanyStats(id || null);
-  const updateCompany = useAdminUpdateCompany();
-  const changePlan = useChangeCompanyPlan();
+  const { data: existingCompany, isLoading: isLoadingCompany } = useCompany(id || null);
+  const createCompany = useCreateCompany();
+  const updateCompany = useUpdateCompany();
 
-  const [formData, setFormData] = useState({
-    company_name: '',
-    description: '',
-    phone: '',
-    website: '',
-    address: '',
-    logo_url: '',
-    is_active: true,
-    is_verified: false,
-    plan: 'basic' as SubscriptionPlan,
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<CompanyFormData>({
+    defaultValues: {
+      company_name: '',
+      email: '',
+      phone: '',
+      description: '',
+      short_description: '',
+      website: '',
+      tax_id: '',
+      business_type: '',
+      address: '',
+      is_active: true,
+      is_verified: false,
+      plan: 'basic',
+    },
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
+  // Load existing company data when editing
   useEffect(() => {
-    if (company) {
-      setFormData({
-        company_name: company.company_name || '',
-        description: company.description || '',
-        phone: company.phone || '',
-        website: company.website || '',
-        address: company.address || '',
-        logo_url: company.logo_url || '',
-        is_active: company.is_active ?? true,
-        is_verified: company.is_verified ?? false,
-        plan: (company as any).plan || 'basic',
+    if (existingCompany) {
+      reset({
+        company_name: existingCompany.company_name || '',
+        email: existingCompany.email || '',
+        phone: existingCompany.phone || '',
+        description: existingCompany.description || '',
+        short_description: existingCompany.short_description || '',
+        website: existingCompany.website || '',
+        tax_id: existingCompany.tax_id || '',
+        business_type: existingCompany.business_type || '',
+        address: existingCompany.address || '',
+        is_active: existingCompany.is_active ?? true,
+        is_verified: existingCompany.is_verified ?? false,
+        plan: (existingCompany.plan as 'basic' | 'premium' | 'enterprise') || 'basic',
       });
     }
-  }, [company]);
+  }, [existingCompany, reset]);
 
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.company_name.trim()) {
-      newErrors.company_name = 'El nombre es requerido';
-    }
-
-    if (formData.website && !/^https?:\/\/.+/.test(formData.website)) {
-      newErrors.website = 'URL inválida (debe comenzar con http:// o https://)';
-    }
-
-    if (formData.logo_url && !/^https?:\/\/.+/.test(formData.logo_url)) {
-      newErrors.logo_url = 'URL inválida';
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    const checked = (e.target as HTMLInputElement).checked;
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-
-    if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) {
-      toast.error('Por favor corrija los errores del formulario');
-      return;
-    }
-
-    if (!id) return;
-
+  const onSubmit = async (data: CompanyFormData) => {
     try {
-      await updateCompany.mutateAsync({
-        id,
-        updates: {
-          company_name: formData.company_name,
-          description: formData.description || undefined,
-          phone: formData.phone || undefined,
-          website: formData.website || undefined,
-          address: formData.address || undefined,
-          logo_url: formData.logo_url || undefined,
-          is_active: formData.is_active,
-          is_verified: formData.is_verified,
-        },
-      });
+      const companyData = {
+        company_name: data.company_name,
+        email: data.email,
+        phone: data.phone || undefined,
+        description: data.description || undefined,
+        short_description: data.short_description || undefined,
+        website: data.website || undefined,
+        tax_id: data.tax_id || undefined,
+        business_type: data.business_type || undefined,
+        address: data.address || undefined,
+        is_active: data.is_active,
+        is_verified: data.is_verified,
+        plan: data.plan,
+        slug: data.company_name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, ''),
+      };
 
-      // Change plan if different
-      if (company && (company as any).plan !== formData.plan) {
-        await changePlan.mutateAsync({ id, plan: formData.plan });
+      if (isEditing && id) {
+        await updateCompany.mutateAsync({ id, updates: companyData });
+      } else {
+        await createCompany.mutateAsync(companyData as any);
       }
-
+      
       navigate('/admin/companies');
     } catch (error) {
       console.error('Error saving company:', error);
     }
   };
 
-  if (isLoadingCompany && isEditing) {
+  if (isLoadingCompany) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center min-h-[400px]">
         <div className="w-12 h-12 border-4 border-rose-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -155,319 +132,250 @@ export function CompanyForm() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button
-          onClick={() => navigate('/admin/companies')}
+        <Link
+          to="/admin/companies"
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-        </button>
+        </Link>
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             {isEditing ? 'Editar Empresa' : 'Nueva Empresa'}
           </h1>
-          <p className="text-gray-500">
+          <p className="text-gray-600 mt-1">
             {isEditing
               ? 'Modifica los datos de la empresa'
-              : 'Registra una nueva empresa en el sistema'}
+              : 'Crea una nueva empresa sin asignar usuario'}
           </p>
         </div>
       </div>
 
-      {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 space-y-6"
-          >
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-rose-600" />
-              Información de la Empresa
-            </h2>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Basic Information */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Building2 className="w-5 h-5 text-rose-600" />
+            <h2 className="text-lg font-bold text-gray-900">Información Básica</h2>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Company Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Nombre de la Empresa *
               </label>
               <input
                 type="text"
-                name="company_name"
-                value={formData.company_name}
-                onChange={handleChange}
-                className={cn(
-                  'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500',
+                {...register('company_name', {
+                  required: 'El nombre es requerido',
+                })}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 ${
                   errors.company_name ? 'border-red-500' : 'border-gray-300'
-                )}
+                }`}
                 placeholder="Nombre de la empresa"
               />
               {errors.company_name && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.company_name}
-                </p>
+                <p className="mt-1 text-sm text-red-500">{errors.company_name.message}</p>
               )}
             </div>
 
-            {/* Description */}
+            {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Descripción
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email *
               </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleChange}
-                rows={3}
+              <input
+                type="email"
+                {...register('email', {
+                  required: 'El email es requerido',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Email inválido',
+                  },
+                })}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500 ${
+                  errors.email ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="empresa@ejemplo.com"
+              />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Teléfono
+              </label>
+              <input
+                type="tel"
+                {...register('phone')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                placeholder="Descripción breve de la empresa..."
+                placeholder="+1 234 567 8900"
               />
             </div>
 
-            {/* Contact Info */}
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
-                  placeholder="+53 12345678"
-                />
-              </div>
+            {/* Website */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Sitio Web
+              </label>
+              <input
+                type="url"
+                {...register('website')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="https://www.ejemplo.com"
+              />
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                  <Globe className="w-4 h-4" />
-                  Sitio Web
-                </label>
-                <input
-                  type="url"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleChange}
-                  className={cn(
-                    'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500',
-                    errors.website ? 'border-red-500' : 'border-gray-300'
-                  )}
-                  placeholder="https://ejemplo.com"
-                />
-                {errors.website && (
-                  <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.website}
-                  </p>
-                )}
-              </div>
+            {/* Business Type */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tipo de Negocio
+              </label>
+              <select
+                {...register('business_type')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+              >
+                <option value="">Seleccionar tipo</option>
+                {businessTypes.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tax ID */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                RUC / NIF / Tax ID
+              </label>
+              <input
+                type="text"
+                {...register('tax_id')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="Identificación fiscal"
+              />
             </div>
 
             {/* Address */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
+              <label className="block text-sm font-medium text-gray-700 mb-2">
                 Dirección
               </label>
               <input
                 type="text"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
+                {...register('address')}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
                 placeholder="Dirección de la empresa"
               />
             </div>
+          </div>
 
-            {/* Logo URL */}
+          {/* Descriptions */}
+          <div className="mt-6 space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-2">
-                <Image className="w-4 h-4" />
-                URL del Logo
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descripción Corta
               </label>
               <input
-                type="url"
-                name="logo_url"
-                value={formData.logo_url}
-                onChange={handleChange}
-                className={cn(
-                  'w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500',
-                  errors.logo_url ? 'border-red-500' : 'border-gray-300'
-                )}
-                placeholder="https://ejemplo.com/logo.png"
+                type="text"
+                {...register('short_description')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="Breve descripción (máx. 150 caracteres)"
+                maxLength={150}
               />
-              {errors.logo_url && (
-                <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.logo_url}
-                </p>
-              )}
-              {formData.logo_url && (
-                <div className="mt-2">
-                  <img
-                    src={formData.logo_url}
-                    alt="Logo preview"
-                    className="w-20 h-20 object-contain rounded-lg border"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.png';
-                    }}
-                  />
-                </div>
-              )}
             </div>
-          </motion.div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Status */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white rounded-xl shadow-sm p-6"
-            >
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-rose-600" />
-                Estado
-              </h2>
-
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="is_active"
-                    checked={formData.is_active}
-                    onChange={handleChange}
-                    className="w-5 h-5 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">Empresa Activa</p>
-                    <p className="text-sm text-gray-500">La empresa puede operar</p>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    name="is_verified"
-                    checked={formData.is_verified}
-                    onChange={handleChange}
-                    className="w-5 h-5 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
-                  />
-                  <div>
-                    <p className="font-medium text-gray-900">Empresa Verificada</p>
-                    <p className="text-sm text-gray-500">La empresa ha sido verificada</p>
-                  </div>
-                </label>
-              </div>
-            </motion.div>
-
-            {/* Plan */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-xl shadow-sm p-6"
-            >
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-rose-600" />
-                Plan de Suscripción
-              </h2>
-
-              <div className="space-y-3">
-                {Object.entries(planLabels).map(([key, label]) => (
-                  <label
-                    key={key}
-                    className={cn(
-                      'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                      formData.plan === key
-                        ? 'border-rose-500 bg-rose-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    )}
-                  >
-                    <input
-                      type="radio"
-                      name="plan"
-                      value={key}
-                      checked={formData.plan === key}
-                      onChange={handleChange}
-                      className="mt-1"
-                    />
-                    <div>
-                      <p className="font-medium text-gray-900">{label}</p>
-                      <p className="text-sm text-gray-500">{planDescriptions[key as SubscriptionPlan]}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Stats (if editing) */}
-            {isEditing && stats && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-xl shadow-sm p-6"
-              >
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Estadísticas</h2>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Productos</span>
-                    <span className="font-medium">{stats.products}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Productos Activos</span>
-                    <span className="font-medium text-green-600">{stats.activeProducts}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Pedidos</span>
-                    <span className="font-medium">{stats.orders}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Ingresos</span>
-                    <span className="font-medium text-green-600">{formatCurrency(stats.revenue)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Usuarios</span>
-                    <span className="font-medium">{stats.users}</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descripción Completa
+              </label>
+              <textarea
+                {...register('description')}
+                rows={4}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+                placeholder="Descripción detallada de la empresa"
+              />
+            </div>
           </div>
+        </div>
+
+        {/* Settings */}
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Configuración</h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Plan */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Plan
+              </label>
+              <select
+                {...register('plan')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500"
+              >
+                {plans.map((plan) => (
+                  <option key={plan.value} value={plan.value}>
+                    {plan.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Active Status */}
+            <div className="flex items-center">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register('is_active')}
+                  className="w-5 h-5 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Empresa Activa</span>
+              </label>
+            </div>
+
+            {/* Verified Status */}
+            <div className="flex items-center">
+              <label className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  {...register('is_verified')}
+                  className="w-5 h-5 rounded border-gray-300 text-rose-600 focus:ring-rose-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Empresa Verificada</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Info message for new companies */}
+          {!isEditing && (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">
+                <strong>Nota:</strong> La empresa será creada sin usuario asignado. 
+                Podrás asignar usuarios desde la sección de usuarios o desde el detalle de la empresa.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-4">
-          <button
-            type="button"
-            onClick={() => navigate('/admin/companies')}
-            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          <Link
+            to="/admin/companies"
+            className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
             Cancelar
-          </button>
+          </Link>
           <button
             type="submit"
-            disabled={updateCompany.isPending || changePlan.isPending}
-            className="inline-flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isSubmitting}
+            className="flex items-center gap-2 px-6 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {updateCompany.isPending || changePlan.isPending ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Guardando...
-              </>
-            ) : (
-              <>
-                <Save className="w-5 h-5" />
-                Guardar Cambios
-              </>
-            )}
+            <Save className="w-4 h-4" />
+            {isSubmitting ? 'Guardando...' : 'Guardar Empresa'}
           </button>
         </div>
       </form>

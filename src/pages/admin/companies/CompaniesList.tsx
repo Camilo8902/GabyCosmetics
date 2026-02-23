@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Plus } from 'lucide-react';
 import { useCompanies } from '@/hooks';
 import { DataTable } from '@/components/ui/DataTable';
 import { SearchBar } from '@/components/ui/SearchBar';
@@ -142,6 +143,13 @@ export function CompaniesList() {
             Administra todas las empresas registradas
           </p>
         </div>
+        <Link
+          to="/admin/companies/new"
+          className="flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg hover:bg-rose-700 transition-colors"
+        >
+          <Plus className="w-5 h-5" />
+          Nueva Empresa
+        </Link>
       </div>
 
       {/* Filters */}

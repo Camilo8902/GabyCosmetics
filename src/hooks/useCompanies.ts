@@ -45,7 +45,11 @@ export function useCompanies(filters?: CompanyFilters, page = 1, pageSize = 20) 
 export function useCompany(id: string | null) {
   return useQuery<Company | null>({
     queryKey: ['company', id],
-    queryFn: () => (id ? companyService.getCompanyById(id) : Promise.resolve(null)),
+    queryFn: async () => {
+      if (!id) return null;
+      const result = await companyService.getCompanyById(id);
+      return result.company;
+    },
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
   });
@@ -57,7 +61,7 @@ export function useCompany(id: string | null) {
 export function useCompanyByUserId(userId: string | null) {
   return useQuery<Company | null>({
     queryKey: ['company', 'user', userId],
-    queryFn: () => (userId ? companyService.getCompanyByUserId(userId) : Promise.resolve(null)),
+    queryFn: () => (userId ? companyService.getCompanyById(userId) : Promise.resolve(null)),
     enabled: !!userId,
     staleTime: 1000 * 60 * 5,
   });
@@ -70,7 +74,11 @@ export function useCreateCompany() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (company: Partial<Company>) => companyService.createCompany(company),
+    mutationFn: async (company: Partial<Company>) => {
+      const result = await companyService.createCompany(company);
+      if (result.error) throw result.error;
+      return result.company;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       toast.success('Empresa creada exitosamente');
@@ -88,8 +96,11 @@ export function useUpdateCompany() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Company> }) =>
-      companyService.updateCompany(id, updates),
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Company> }) => {
+      const result = await companyService.updateCompany(id, updates);
+      if (result.error) throw result.error;
+      return result.company;
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['companies'] });
       queryClient.invalidateQueries({ queryKey: ['company', variables.id] });

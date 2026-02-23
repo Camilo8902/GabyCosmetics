@@ -337,6 +337,7 @@ function App() {
             <Route path="users/:id" element={<UserDetail />} />
             <Route path="users/:id/edit" element={<UserForm mode="edit" />} />
             <Route path="companies" element={<CompaniesListPage />} />
+            <Route path="companies/new" element={<CompanyForm />} />
             <Route path="companies/:id" element={<CompanyDetail />} />
             <Route path="companies/:id/edit" element={<CompanyForm />} />
             <Route path="company-requests" element={<CompanyRequests />} />
