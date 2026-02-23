@@ -10,11 +10,21 @@ export interface CartProduct {
   compare_at_price?: number;
   image?: string;
   slug: string;
+  company_id?: string;
+  company_name?: string;
 }
 
 export interface CartItemState {
   product: CartProduct;
   quantity: number;
+}
+
+// Grupo de items por empresa para checkout multi-vendedor
+export interface CompanyGroup {
+  company_id: string;
+  company_name: string;
+  items: CartItemState[];
+  subtotal: number;
 }
 
 interface CartState {
@@ -33,6 +43,11 @@ interface CartState {
   getItemCount: () => number;
   getSubtotal: () => number;
   getItem: (productId: string) => CartItemState | undefined;
+  
+  // Multi-vendedor
+  getItemsByCompany: () => CompanyGroup[];
+  getCompanyCount: () => number;
+  hasMultipleVendors: () => boolean;
 }
 
 export const useCartStore = create<CartState>()(
@@ -59,6 +74,8 @@ export const useCartStore = create<CartState>()(
             ? product.images[0].url
             : undefined,
           slug: product.slug,
+          company_id: 'company_id' in product ? product.company_id : undefined,
+          company_name: 'company_name' in product ? product.company_name : undefined,
         };
         
         console.log('🛒 [CartStore] CartProduct created:', cartProduct);
@@ -113,6 +130,46 @@ export const useCartStore = create<CartState>()(
 
       getItem: (productId) =>
         get().items.find(item => item.product.id === productId),
+
+      // Multi-vendedor: Agrupar items por empresa
+      getItemsByCompany: () => {
+        const items = get().items;
+        const companyMap = new Map<string, CompanyGroup>();
+
+        items.forEach(item => {
+          const companyId = item.product.company_id || 'platform';
+          const companyName = item.product.company_name || 'Gaby Cosmetics';
+
+          if (!companyMap.has(companyId)) {
+            companyMap.set(companyId, {
+              company_id: companyId,
+              company_name: companyName,
+              items: [],
+              subtotal: 0,
+            });
+          }
+
+          const group = companyMap.get(companyId)!;
+          group.items.push(item);
+          group.subtotal += (item.product.price || 0) * item.quantity;
+        });
+
+        return Array.from(companyMap.values());
+      },
+
+      // Multi-vendedor: Contar empresas en el carrito
+      getCompanyCount: () => {
+        const companyIds = new Set<string>();
+        get().items.forEach(item => {
+          companyIds.add(item.product.company_id || 'platform');
+        });
+        return companyIds.size;
+      },
+
+      // Multi-vendedor: Verificar si hay múltiples vendedores
+      hasMultipleVendors: () => {
+        return get().getCompanyCount() > 1;
+      },
     }),
     {
       name: 'gaby-cart-storage',

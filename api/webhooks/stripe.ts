@@ -47,7 +47,7 @@ export default async function handler(
         console.log('✅ Pago exitoso:', paymentIntent.id);
 
         // Actualizar orden en Supabase
-        const { orderId } = paymentIntent.metadata;
+        const { orderId, is_multi_vendor, vendors_json } = paymentIntent.metadata;
 
         if (orderId) {
           const { error } = await supabase
@@ -55,6 +55,7 @@ export default async function handler(
             .update({
               status: 'paid',
               payment_intent_id: paymentIntent.id,
+              paid_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             })
             .eq('id', orderId);
@@ -63,6 +64,38 @@ export default async function handler(
             console.error('❌ Error al actualizar orden:', error);
           } else {
             console.log('✅ Orden actualizada en BD:', orderId);
+          }
+
+          // Si es multi-vendedor, crear transferencias
+          if (is_multi_vendor === 'true' && vendors_json) {
+            console.log('🔄 Creando transferencias para múltiples vendedores...');
+            
+            try {
+              // Llamar al endpoint de transferencias
+              const baseUrl = process.env.VERCEL_URL 
+                ? `https://${process.env.VERCEL_URL}` 
+                : 'http://localhost:5173';
+              
+              const transferResponse = await fetch(`${baseUrl}/api/payments/create-transfers`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  paymentIntentId: paymentIntent.id,
+                  orderId: orderId,
+                }),
+              });
+
+              if (transferResponse.ok) {
+                console.log('✅ Transferencias creadas exitosamente');
+              } else {
+                console.error('⚠️ Error al crear transferencias:', await transferResponse.text());
+              }
+            } catch (transferError) {
+              console.error('❌ Error llamando endpoint de transferencias:', transferError);
+              // No lanzar error, el pago ya fue exitoso
+            }
           }
         }
 

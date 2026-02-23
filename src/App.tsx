@@ -48,6 +48,7 @@ import { CompanyProductsPage } from '@/pages/company/CompanyProductsPage';
 import { CompanyOrdersPage } from '@/pages/company/CompanyOrdersPage';
 import { CompanyInventoryPage } from '@/pages/company/CompanyInventoryPage';
 import { CompanyBillingPage } from '@/pages/company/CompanyBillingPage';
+import CompanyPaymentsPage from '@/pages/company/CompanyPaymentsPage';
 import { GlobalReportsPage } from '@/pages/admin/reports/GlobalReportsPage';
 import { CompaniesListPage } from '@/pages/admin/companies/CompaniesListPage';
 import { ConsultantDashboard } from '@/pages/consultant/ConsultantLayout';
@@ -395,6 +396,7 @@ function App() {
             <Route path="orders/:id" element={<OrderDetail />} />
             <Route path="inventory" element={<CompanyInventoryPage />} />
             <Route path="billing" element={<CompanyBillingPage />} />
+            <Route path="payments" element={<CompanyPaymentsPage />} />
             <Route path="stats" element={<CompanyDashboardPage />} />
             <Route path="settings" element={<div><h1 className="text-2xl font-bold mb-6">Configuración</h1></div>} />
           </Route>
