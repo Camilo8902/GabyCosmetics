@@ -3,7 +3,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useCartStore } from '@/store/cartStore';
 import { ShippingForm, ShippingFormData } from '@/components/checkout/ShippingForm';
 import { PaymentForm } from '@/components/checkout/PaymentForm';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock } from 'lucide-react';
 import { createPaymentIntent as createStripePaymentIntent } from '@/lib/stripe';
 import { createOrder } from '@/lib/orders';
 
