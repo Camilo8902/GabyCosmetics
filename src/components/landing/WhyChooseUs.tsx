@@ -39,43 +39,59 @@ export function WhyChooseUs() {
   const { data: staticContent } = useStaticContent();
 
   return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="section-padding bg-white">
+      <div className="container-custom">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <span className="text-rose-600 font-medium tracking-wider uppercase text-sm">
+          <motion.span
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="inline-block px-4 py-1.5 bg-rose-100 text-rose-700 font-medium tracking-wider uppercase text-xs rounded-full"
+          >
             {staticContent.promise.subtitle || 'Nuestra Promesa'}
-          </span>
-          <h2 className="mt-2 text-4xl md:text-5xl font-serif font-bold text-gray-900">
+          </motion.span>
+          <h2 className="mt-4 text-4xl md:text-5xl font-serif font-bold text-gray-900">
             {staticContent.promise.title || t('why_us.title')}
           </h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="mt-4 text-gray-500 max-w-xl mx-auto"
+          >
+            Compromiso con la calidad y satisfaccióntotal
+          </motion.p>
           <motion.div
             initial={{ width: 0 }}
-            whileInView={{ width: '4rem' }}
+            whileInView={{ width: '5rem' }}
             viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="h-1 bg-rose-600 mx-auto mt-4 rounded-full"
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="h-1 bg-gradient-to-r from-rose-500 to-pink-600 mx-auto mt-6 rounded-full"
           />
         </motion.div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ y: -10 }}
+              transition={{ delay: index * 0.1, duration: 0.5 }}
+              whileHover={{ y: -8 }}
               className="group"
             >
-              <div className="text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg hover:shadow-2xl transition-all duration-300">
+              <div className="glass-card text-center p-8 hover:shadow-lg transition-all duration-300">
                 {/* Icon */}
                 <motion.div
                   whileHover={{ rotate: 360, scale: 1.1 }}
@@ -88,10 +104,10 @@ export function WhyChooseUs() {
                 </motion.div>
 
                 {/* Content */}
-                <h3 className="text-xl font-bold text-gray-900 mb-3">
+                <h3 className="text-lg font-bold text-gray-900 mb-3">
                   {t(feature.titleKey)}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-gray-600 leading-relaxed text-sm">
                   {t(feature.descKey)}
                 </p>
 
@@ -110,7 +126,7 @@ export function WhyChooseUs() {
 
         {/* Trust Badges */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           className="mt-20 flex flex-wrap justify-center items-center gap-8 md:gap-16"
@@ -129,7 +145,7 @@ export function WhyChooseUs() {
               transition={{ delay: index * 0.1 }}
               className="text-center"
             >
-              <p className="text-3xl font-bold text-gray-900">{badge.label}</p>
+              <p className="text-3xl md:text-4xl font-bold text-gray-900">{badge.label}</p>
               <p className="text-sm text-gray-500">{badge.sub}</p>
             </motion.div>
           ))}

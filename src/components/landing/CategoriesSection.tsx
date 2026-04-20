@@ -43,33 +43,43 @@ export function CategoriesSection() {
   }, [realCategories]);
 
   return (
-    <section className="py-24 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section className="section-padding bg-white">
+      <div className="container-custom">
         {/* Section Header */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
           <motion.span
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-rose-600 font-medium tracking-wider uppercase text-sm"
+            transition={{ delay: 0.1 }}
+            className="inline-block px-4 py-1.5 bg-rose-100 text-rose-700 font-medium tracking-wider uppercase text-xs rounded-full"
           >
             {t('categories.subtitle')}
           </motion.span>
-          <h2 className="mt-2 text-4xl md:text-5xl font-serif font-bold text-gray-900">
+          <h2 className="mt-4 text-4xl md:text-5xl font-serif font-bold text-gray-900">
             {t('categories.title')}
           </h2>
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="mt-4 text-gray-500 max-w-xl mx-auto"
+          >
+            Explora nuestras categorías de productos premium
+          </motion.p>
           <motion.div
             initial={{ width: 0 }}
-            whileInView={{ width: '4rem' }}
+            whileInView={{ width: '5rem' }}
             viewport={{ once: true }}
-            transition={{ delay: 0.3, duration: 0.5 }}
-            className="h-1 bg-rose-600 mx-auto mt-4 rounded-full"
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="h-1 bg-gradient-to-r from-rose-500 to-pink-600 mx-auto mt-6 rounded-full"
           />
         </motion.div>
 
@@ -99,16 +109,18 @@ export function CategoriesSection() {
               <motion.div key={category.id} variants={itemVariants}>
                 <Link to={`/shop?category=${category.slug}`}>
                   <motion.div
-                    whileHover={{ y: -10 }}
-                    className="group relative h-48 sm:h-72 md:h-96 rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl bg-gradient-to-br from-gray-200 to-gray-300"
+                    whileHover={{ y: -8 }}
+                    className="group relative h-48 sm:h-72 md:h-96 rounded-2xl sm:rounded-3xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-gray-200 to-gray-300"
                   >
                     {/* Background Image */}
                     <div className="absolute inset-0">
-                      <img
+                      <motion.img
                         src={category.image}
                         alt={category.name}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        whileHover={{ scale: 1.1 }}
+                        transition={{ duration: 0.6 }}
                       />
                       <div
                         className={`absolute inset-0 bg-gradient-to-t ${category.color} opacity-60 mix-blend-multiply`}
@@ -159,7 +171,7 @@ export function CategoriesSection() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="px-8 py-4 border-2 border-gray-900 text-gray-900 rounded-full font-medium hover:bg-gray-900 hover:text-white transition-all inline-flex items-center gap-2"
+              className="btn-secondary inline-flex items-center gap-2"
             >
               {t('categories.view_all')}
               <ArrowRight className="w-5 h-5" />

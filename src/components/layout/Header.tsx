@@ -99,7 +99,10 @@ function HeaderContent() {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         className={cn(
-          'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white shadow-md'
+          'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+          isScrolled 
+            ? 'bg-white/95 backdrop-blur-md shadow-soft' 
+            : 'bg-white shadow-md'
         )}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -113,8 +116,7 @@ function HeaderContent() {
                 className="h-12 w-auto"
               />
               <span className={cn(
-                'font-serif text-xl font-bold tracking-wider hidden sm:block transition-colors',
-                isScrolled ? 'text-gray-900' : 'text-gray-900'
+                'font-serif text-xl font-bold tracking-wider hidden sm:block transition-colors text-gray-900'
               )}>
                 GABY COSMETICS
               </span>
