@@ -15,6 +15,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 // Layouts
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { WhatsAppButton } from '@/components/layout/WhatsAppButton';
 import { CartDrawer } from '@/components/common/CartDrawer';
 import { AdminLayout } from '@/pages/admin/AdminLayout';
 import { CompanyLayout } from '@/pages/company/CompanyLayout';
@@ -139,6 +140,7 @@ function PublicLayout({ children }: { children: React.ReactNode }) {
     <>
       <Header />
       {children}
+      <WhatsAppButton />
       <Footer />
       <CartDrawer />
     </>
