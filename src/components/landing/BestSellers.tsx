@@ -59,7 +59,7 @@ return (
           >
             Los productos favoritos de nuestros clientes. Calidad comprobada y resultados garantizados.
           </motion.p>
-<motion.div
+          <motion.div
             initial={{ width: 0 }}
             whileInView={{ width: '5rem' }}
             viewport={{ once: true }}
