@@ -59,20 +59,13 @@ return (
           >
             Los productos favoritos de nuestros clientes. Calidad comprobada y resultados garantizados.
           </motion.p>
-          <motion.div
+<motion.div
             initial={{ width: 0 }}
             whileInView={{ width: '5rem' }}
             viewport={{ once: true }}
             transition={{ delay: 0.3, duration: 0.6 }}
             className="h-1 bg-gradient-to-r from-rose-500 to-pink-600 mx-auto mt-6 rounded-full"
           />
-        </motion.div>
-          <h2 className="text-4xl md:text-5xl font-serif font-bold">
-            {t('products.best_sellers')}
-          </h2>
-          <p className="mt-4 text-gray-400 max-w-2xl mx-auto">
-            Los productos favoritos de nuestros clientes. Calidad comprobada y resultados garantizados.
-          </p>
         </motion.div>
 
         {/* Products */}
