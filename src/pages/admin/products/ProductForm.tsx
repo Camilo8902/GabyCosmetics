@@ -165,14 +165,14 @@ export function ProductForm() {
       console.log('🔵 [ProductForm] Datos del formulario:', data);
 
        // Clean up optional fields - convert empty strings to undefined
-       // For numbers, convert NaN (from empty input) to undefined, but preserve 0
+       // For numbers, convert NaN (from empty input) to null to explicitly set DB field to NULL, but preserve 0
        const cleanData = {
          ...data,
          short_description: data.short_description || undefined,
          short_description_en: data.short_description_en || undefined,
-         compare_at_price: typeof data.compare_at_price === 'number' && isNaN(data.compare_at_price) ? undefined : data.compare_at_price,
-         cost_price: typeof data.cost_price === 'number' && isNaN(data.cost_price) ? undefined : data.cost_price,
-         weight: typeof data.weight === 'number' && isNaN(data.weight) ? undefined : data.weight,
+         compare_at_price: typeof data.compare_at_price === 'number' && isNaN(data.compare_at_price) ? null : data.compare_at_price,
+         cost_price: typeof data.cost_price === 'number' && isNaN(data.cost_price) ? null : data.cost_price,
+         weight: typeof data.weight === 'number' && isNaN(data.weight) ? null : data.weight,
          sku: data.sku || undefined,
          barcode: data.barcode || undefined,
          company_id: data.company_id || undefined,
