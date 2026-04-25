@@ -27,11 +27,21 @@ export const phoneSchema = z
   .regex(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/, 'Número de teléfono inválido')
   .optional();
 
-// Price validation
-export const priceSchema = z
-  .number()
-  .min(VALIDATION.MIN_PRICE, `El precio debe ser mayor o igual a ${VALIDATION.MIN_PRICE}`)
-  .max(VALIDATION.MAX_PRICE, `El precio no puede ser mayor a ${VALIDATION.MAX_PRICE}`);
+ // Price validation
+ export const priceSchema = z
+   .number()
+   .min(VALIDATION.MIN_PRICE, `El precio debe ser mayor o igual a ${VALIDATION.MIN_PRICE}`)
+   .max(VALIDATION.MAX_PRICE, `El precio no puede ser mayor a ${VALIDATION.MAX_PRICE}`);
+
+// Helper schema for optional numeric fields that may be empty strings (from number inputs)
+ export const optionalNumberSchema = z.preprocess(
+   (val) => {
+     if (val === '' || val === null) return undefined;
+     if (typeof val === 'number' && isNaN(val)) return undefined;
+     return val;
+   },
+   priceSchema.optional()
+ );
 
 // Description validation
 export const descriptionSchema = z
@@ -101,11 +111,11 @@ export const productSchema = z.object({
   short_description: z.string().max(500).optional().or(z.literal('')),
   short_description_en: z.string().max(500).optional().or(z.literal('')),
   price: priceSchema,
-  compare_at_price: priceSchema.optional(),
-  cost_price: priceSchema.optional(),
+  compare_at_price: optionalNumberSchema,
+  cost_price: optionalNumberSchema,
   sku: z.string().optional(),
   barcode: z.string().optional(),
-  weight: z.number().min(0).optional(),
+  weight: optionalNumberSchema,
   is_active: z.boolean().default(true),
   is_featured: z.boolean().default(false),
   is_visible: z.boolean().default(true),

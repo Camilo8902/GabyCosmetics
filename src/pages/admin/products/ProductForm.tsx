@@ -165,15 +165,16 @@ export function ProductForm() {
       console.log('🔵 [ProductForm] Datos del formulario:', data);
 
        // Clean up optional fields - convert empty strings to undefined
+       // For numbers, convert NaN (from empty input) to undefined, but preserve 0
        const cleanData = {
          ...data,
          short_description: data.short_description || undefined,
          short_description_en: data.short_description_en || undefined,
-         compare_at_price: data.compare_at_price || undefined,
-         cost_price: data.cost_price || undefined,
+         compare_at_price: typeof data.compare_at_price === 'number' && isNaN(data.compare_at_price) ? undefined : data.compare_at_price,
+         cost_price: typeof data.cost_price === 'number' && isNaN(data.cost_price) ? undefined : data.cost_price,
+         weight: typeof data.weight === 'number' && isNaN(data.weight) ? undefined : data.weight,
          sku: data.sku || undefined,
          barcode: data.barcode || undefined,
-         weight: data.weight || undefined,
          company_id: data.company_id || undefined,
        };
 
