@@ -164,15 +164,17 @@ export function ProductForm() {
       console.log('🔵 [ProductForm] isEditing:', isEditing);
       console.log('🔵 [ProductForm] Datos del formulario:', data);
 
-      // Clean up optional fields - convert empty strings to undefined
-      const cleanData = {
-        ...data,
-        short_description: data.short_description || undefined,
-        short_description_en: data.short_description_en || undefined,
-        sku: data.sku || undefined,
-        barcode: data.barcode || undefined,
-        company_id: data.company_id || undefined,
-      };
+       // Clean up optional fields - convert empty strings to undefined
+       const cleanData = {
+         ...data,
+         short_description: data.short_description || undefined,
+         short_description_en: data.short_description_en || undefined,
+         compare_at_price: data.compare_at_price || undefined,
+         cost_price: data.cost_price || undefined,
+         sku: data.sku || undefined,
+         barcode: data.barcode || undefined,
+         company_id: data.company_id || undefined,
+       };
 
       // If editing, check if there are actual changes
       if (isEditing && product) {
