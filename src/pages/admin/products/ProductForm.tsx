@@ -173,6 +173,7 @@ export function ProductForm() {
          cost_price: data.cost_price || undefined,
          sku: data.sku || undefined,
          barcode: data.barcode || undefined,
+         weight: data.weight || undefined,
          company_id: data.company_id || undefined,
        };
 
